@@ -1,3 +1,4 @@
+*.opensdf
 CHelpLib/*.sdf
 CHelpLib/*.suo
 CHelpLib/ipch/*

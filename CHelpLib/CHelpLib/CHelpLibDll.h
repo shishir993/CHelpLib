@@ -100,9 +100,6 @@ DllExpImp BOOL HT_fGetNext(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr,
 
 DllExpImp void HT_vDumpTable(CHL_HTABLE *phtable);
 
-// Unit Tests
-DllExpImp void vTests();
-
 #ifdef __cplusplus
 }
 #endif

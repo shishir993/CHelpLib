@@ -83,7 +83,6 @@
     <ClInclude Include="IOFunctions.h" />
     <ClInclude Include="MemFunctions.h" />
     <ClInclude Include="StringFunctions.h" />
-    <ClInclude Include="Tests.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Assert.c" />
@@ -92,7 +91,6 @@
     <ClCompile Include="IOFunctions.c" />
     <ClCompile Include="MemFunctions.c" />
     <ClCompile Include="StringFunctions.c" />
-    <ClCompile Include="Tests.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
