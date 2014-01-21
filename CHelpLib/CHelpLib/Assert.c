@@ -1,5 +1,5 @@
 
-// Assert.cpp
+// Assert.c
 // Contains functions that provides the ASSERT() service
 // Shishir K Prasad (http://www.shishirprasad.net)
 // History

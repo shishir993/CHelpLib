@@ -8,10 +8,13 @@
 
 /* Prime numbers from 
  * https://en.wikipedia.org/wiki/List_of_prime_numbers#Centered_heptagonal_primes
+ * and Carol primes for 16769023
+ * and Circular primes for 319993, 919393
  */
 unsigned int hashSizes[] = {43,     197,    547,    1471,
                             4663,   8233,   11173,  14561,  
-                            20483};
+                            20483,  93563,  319993, 919393,
+                            16769023};
 
 static void vDeleteNode(int ktype, int vtype, HT_NODE *pnode);
 
@@ -557,6 +560,17 @@ BOOL HT_fGetNext(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr,
         *pvalsize = pItr->phtCurNodeInList->valsize;
 
     return TRUE;
+}
+
+
+int HT_iGetNearestTableSizeIndex(int maxNumberOfEntries)
+{
+    int index = 0;
+
+    while(index < (_countof(hashSizes)-1) && maxNumberOfEntries > hashSizes[index])
+        ++index;
+
+    return index;
 }
 
 

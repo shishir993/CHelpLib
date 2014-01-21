@@ -78,6 +78,7 @@
     <ClInclude Include="CHelpLibDll.h" />
     <ClInclude Include="CommonInclude.h" />
     <ClInclude Include="DbgHelpers.h" />
+    <ClInclude Include="General.h" />
     <ClInclude Include="Hashtable.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="IOFunctions.h" />
@@ -87,6 +88,7 @@
   <ItemGroup>
     <ClCompile Include="Assert.c" />
     <ClCompile Include="CHelpLibDllMain.c" />
+    <ClCompile Include="General.c" />
     <ClCompile Include="Hashtable.c" />
     <ClCompile Include="IOFunctions.c" />
     <ClCompile Include="MemFunctions.c" />

@@ -4,9 +4,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <Windows.h>
+#include <math.h>
 #include "CHelpLibDll.h"
+#include "PerfTests.h"
 
-#define MAX_RAND_COUNT  9999
+#define MAX_RAND_COUNT      9999
+#define MAX_TIME_TESTS      10
+#define MAX_RUNS_SYS_CALL   3
 
 struct _keyval {
     DWORD dwkey;
@@ -21,17 +25,21 @@ DWORD testKeysNum[] = { 0x080011211, 0x0041106E, 0x004118A0,
                         0,           1,          -1,
                         15123};
 
+BOOL fTestHT_TableSizes();
 BOOL fTestHT_StrStr();
 BOOL fTestHT_NumStr();
 BOOL fTestStrings();
 BOOL fTestHT_NumStrRand();
 BOOL fCompareRetrievedKeyVals(struct _keyval *pOriginal, int nOrigCount, struct _keyval *pRetrieved, int nRetCount);
-
+void rdtscBusiness();
+void doSysCallTimingTests();
+void rdtsc_Query();
 
 int main()
 {
     BOOL success = TRUE;
 
+    #if 0
     // hashtable tests
     OutputDebugString(L"Starting unit tests on CHelpLib.dll");
     success = fTestHT_StrStr() & success;
@@ -39,10 +47,36 @@ int main()
     success = fTestStrings() & success;
 
     success = fTestHT_NumStrRand() & success;
+    success = fTestHT_TableSizes();
+    #endif
 
-    OutputDebugString(L"Tests done. Exiting...");
+    #if 1
+    OutputDebugString(L"Starting perf tests on CHelpLib.dll");
+    //doPerfTests();
+    //doSysCallTimingTests();
+    rdtsc_Query();
+    #endif
+
+    #if 0
+    rdtscBusiness();
+    #endif
+
+    OutputDebugString(L"\nTests done. Exiting...");
     return !success;
 }
+
+BOOL fTestHT_TableSizes()
+{
+    int tableSize = 0;
+
+    int entriesToCheck[] = { 50000, 100000, 700000, 1<<23, 1<<24 };
+
+    for(int i = 0; i < _countof(entriesToCheck); ++i)
+        wprintf(L"%10d %d\n", entriesToCheck[i], HT_iGetNearestTableSizeIndex(entriesToCheck[i]));
+
+    return TRUE;
+}
+
 
 BOOL fTestHT_StrStr()
 {
@@ -608,4 +642,183 @@ BOOL fCompareRetrievedKeyVals(struct _keyval *pOriginal, int nOrigCount, struct 
     wprintf(L"Number of non-matches = %d\n", numNotFound);
 
     return fAllFound;
+}
+
+
+void rdtscBusiness()
+{
+    LONGLONG ts, te, tdiff[MAX_TIME_TESTS];
+    LONGLONG tavg = 0;
+
+    int nTests = 0;
+    int nOuterTests  = 0;
+    register int i = 0;
+
+    CONTEXT thContext;
+
+    // reset some variables
+    __asm
+    {
+        mov nTests, 0
+        mov ecx, MAX_TIME_TESTS
+        xor eax, eax
+        lea edi, tdiff
+        rep stos
+    }
+
+    while(nTests < MAX_TIME_TESTS)
+    {
+        ts = te = 0;
+    
+        // ** playing with rdtsc **
+        __asm
+        {
+            rdtsc
+            mov dword ptr [ts+4], edx
+            mov dword ptr [ts], eax
+        }
+
+        // perform a system call
+        GetThreadContext(GetCurrentThread(), &thContext);
+
+        __asm
+        {
+            rdtsc
+            mov dword ptr [te+4], edx
+            mov dword ptr [te], eax
+        }
+
+        tdiff[nTests++] = te - ts;
+    }
+
+    nTests = 0;
+    while(nTests < MAX_TIME_TESTS)
+    {
+        tavg += tdiff[nTests];
+        wprintf(L"Elapsed counts: %I64u\n", tdiff[nTests]);
+        ++nTests;
+    }
+
+    tavg = tavg/MAX_TIME_TESTS;
+    wprintf(L"Elapsed Average: %I64u\n", tavg);
+
+    return;
+}
+
+
+void doSysCallTimingTests()
+{
+    LARGE_INTEGER freq = {0};
+    LARGE_INTEGER counterStart = {0};
+    LARGE_INTEGER counterEnd = {0};
+
+    LONGLONG elapsedCounts = 0;
+    double elapsedTime[10] = {0};
+
+    int numRuns = 0;
+    int sizes[MAX_RUNS_SYS_CALL] = { 500, 50000, 100000 };
+
+    //CONTEXT thContext;
+    HANDLE hCurThread;
+
+    DWORD dwError = 0;
+    BOOL testSuccess[MAX_RUNS_SYS_CALL] = {TRUE};
+
+    // This retrieves the counts per second
+    if(!QueryPerformanceFrequency(&freq))
+    {
+        dwError = GetLastError();
+        wprintf(L"testHashtable(): QueryPerformanceFrequency() failed %d\n", dwError);
+        return;
+    }
+
+    while(numRuns < MAX_RUNS_SYS_CALL)
+    {
+        wprintf(L"Beginning run %d\n", numRuns);
+
+        // Begin counter
+        if(!QueryPerformanceCounter(&counterStart))
+        {
+            dwError = GetLastError();
+            wprintf(L"testHashtable(): QueryPerformanceCounter() failed %d\n", dwError);
+            return;
+        }
+
+        //
+        // Code to test
+        //
+        for(int i = 0; i < sizes[numRuns]; ++i)
+            hCurThread = GetCurrentThread();
+
+        // End counter
+        if(!QueryPerformanceCounter(&counterEnd))
+        {
+            dwError = GetLastError();
+            wprintf(L"testHashtable(): QueryPerformanceCounter() failed %d\n", dwError);
+            return;
+        }
+
+        // Get the elapsed time
+        elapsedCounts = counterEnd.QuadPart - counterStart.QuadPart;
+        elapsedTime[numRuns] = (double)(elapsedCounts / (double)freq.QuadPart);
+        ++numRuns;
+    }
+
+    wprintf(L"Performance counter ticks %I64u times per second\n", freq.QuadPart);
+    wprintf(L"Resolution is %lf nanoseconds\n", (1.0/(double)freq.QuadPart)*1e9);
+
+    wprintf(L"%16s %13s %s\n---------------------------------------------------------\n",
+        L"RunSize", L"TimeSeconds", L"TimeMicro");
+    for(numRuns = 0; numRuns < MAX_RUNS_SYS_CALL; ++numRuns)
+        wprintf(L"%16d %5.8lf %16.3lf %s\n", sizes[numRuns], elapsedTime[numRuns], elapsedTime[numRuns] * 1e6);
+
+    return;
+}
+
+void rdtsc_Query()
+{
+    LONGLONG rdtsc1;
+    LARGE_INTEGER query1;
+    LONGLONG diff;
+
+    LONG temp;
+
+    __asm
+    {
+        rdtsc
+        mov dword ptr [rdtsc1], eax
+        mov dword ptr [rdtsc1+4], edx
+    }
+
+    if(!QueryPerformanceCounter(&query1))
+    {
+        wprintf(L"QueryPerformanceCounter() failed: %d\n", GetLastError());
+        return;
+    }
+
+    __asm
+    {
+        mov eax, dword ptr [rdtsc1]
+        mov edx, dword ptr [query1]
+        sub eax, edx
+        mov dword ptr [temp], eax
+    }
+
+    abs(temp);
+
+    __asm mov dword ptr [diff], eax
+
+    __asm
+    {
+        mov eax, dword ptr [rdtsc1+4]
+        mov edx, dword ptr [query1+4]
+        sub eax, edx
+        mov dword ptr [temp], eax
+    }
+
+    abs(temp);
+
+    __asm mov dword ptr [diff+4], eax
+
+    return;
 }

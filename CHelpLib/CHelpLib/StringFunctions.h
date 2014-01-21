@@ -14,9 +14,6 @@ extern "C" {
 
 #include "CommonInclude.h"
 
-// Exported functions
-WCHAR* Chl_GetFilenameFromPath(WCHAR *pwsFilepath, int numCharsInput);
-
 #ifdef __cplusplus
 }
 #endif

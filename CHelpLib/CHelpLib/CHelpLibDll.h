@@ -98,7 +98,12 @@ DllExpImp BOOL HT_fGetNext(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr,
                             OUT void *pkey, OUT int *pkeysize,
                             OUT void *pval, OUT int *pvalsize);
 
+DllExpImp int  HT_iGetNearestTableSizeIndex(int maxNumberOfEntries);
 DllExpImp void HT_vDumpTable(CHL_HTABLE *phtable);
+
+// General functions
+DllExpImp BOOL Chl_fIsOverflowINT(int a, int b);
+DllExpImp BOOL Chl_fIsOverflowUINT(unsigned int a, unsigned int b);
 
 #ifdef __cplusplus
 }

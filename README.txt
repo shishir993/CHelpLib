@@ -28,3 +28,7 @@ BOOL HT_fGetNext(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr,
                             OUT void *pval, OUT int *pvalsize);
 
 void HT_vDumpTable(CHL_HTABLE *phtable);
+
+-- General functions
+BOOL IsOverflowINT(int a, int b);
+BOOL IsOverflowUINT(unsigned int a, unsigned int b);
