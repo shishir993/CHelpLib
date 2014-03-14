@@ -93,7 +93,7 @@ BOOL testHastable_NumNum(int nEntries, BOOL fRandomize)
     CHL_HTABLE *phtable = NULL;
     int counter;
 
-    if(!HT_fCreate(&phtable, 10, HT_KEY_DWORD, HT_VAL_DWORD))
+    if(!fChlDsCreateHT(&phtable, 10, HT_KEY_DWORD, HT_VAL_DWORD))
         goto error_return;
 
     if(fRandomize)
@@ -108,12 +108,12 @@ BOOL testHastable_NumNum(int nEntries, BOOL fRandomize)
     {
         for(counter = 0; counter < nEntries; ++counter)
         {
-            if(!HT_fInsert(phtable, &counter, sizeof(DWORD), &counter, sizeof(DWORD)))
+            if(!fChlDsInsertHT(phtable, &counter, sizeof(DWORD), &counter, sizeof(DWORD)))
                 goto error_return;
         }
     }
 
-    HT_fDestroy(phtable);
+    fChlDsDestroyHT(phtable);
     if(keys) free(keys);
     if(vals) free(vals);
     return TRUE;
@@ -121,6 +121,6 @@ BOOL testHastable_NumNum(int nEntries, BOOL fRandomize)
     error_return:
     if(keys) free(keys);
     if(vals) free(vals);
-    if(phtable) HT_fDestroy(phtable);
+    if(phtable) fChlDsDestroyHT(phtable);
     return FALSE;
 }

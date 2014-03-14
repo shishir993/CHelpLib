@@ -8,16 +8,16 @@
 
 #include "IOFunctions.h"
 
-// ChlfReadLineFromStdin()
+// fChlIoReadLineFromStdin()
 // Reads input characters from stdin and fills the buffer psBuffer.
 // psBuffer is guaranteed to be null terminated upon successful return.
 // Atmost dwBufSize - 1 characters will be read and stored into buffer.
 // psBuffer     : Pointer to buffer where input characters must be stored
 // dwBufSize    : Size in bytes, including null terminator.
 // 
-DllExpImp BOOL ChlfReadLineFromStdin(OUT TCHAR *psBuffer, IN DWORD dwBufSize)
+DllExpImp BOOL fChlIoReadLineFromStdin(__in DWORD dwBufSize, __out WCHAR *psBuffer)
 {
-    TCHAR ch;
+    WCHAR ch;
     DWORD dwReadChars = 0;
 
     ASSERT(psBuffer);
@@ -27,13 +27,15 @@ DllExpImp BOOL ChlfReadLineFromStdin(OUT TCHAR *psBuffer, IN DWORD dwBufSize)
 
     while(dwReadChars < (dwBufSize-1))
     {
-        ch = (TCHAR)getchar();
+        ch = (WCHAR)getchar();
         if(ch == '\n')
+        {
             break;
+        }
         psBuffer[dwReadChars] = ch;
         ++dwReadChars;
     }
     psBuffer[dwReadChars] = 0;
     return TRUE;
 
-}// ChlfReadLineFromStdin()
+}// fChlIoReadLineFromStdin()

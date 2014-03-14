@@ -7,7 +7,7 @@
 
 #include "StringFunctions.h"
 
-WCHAR* Chl_GetFilenameFromPath(WCHAR *pwsFilepath, int inputLen)
+WCHAR* pszChlSzGetFilenameFromPath(WCHAR *pwsFilepath, int inputLen)
 {
     WCHAR *pws = NULL;
 

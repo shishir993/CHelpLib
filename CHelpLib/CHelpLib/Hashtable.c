@@ -63,7 +63,7 @@ DWORD _hashs(int tablesize, const BYTE *key, int keysize)
     return (DWORD)(hash % tablesize);
 }
 
-BOOL HT_fCreate(CHL_HTABLE **pHTableOut, int nKeyToTableSize, int keyType, int valType)
+BOOL fChlDsCreateHT(CHL_HTABLE **pHTableOut, int nKeyToTableSize, int keyType, int valType)
 {   
     int newTableSize = 0;
     CHL_HTABLE *pnewtable = NULL;
@@ -89,7 +89,7 @@ BOOL HT_fCreate(CHL_HTABLE **pHTableOut, int nKeyToTableSize, int keyType, int v
     newTableSize = hashSizes[nKeyToTableSize];
     if((pnewtable = (CHL_HTABLE*)malloc(sizeof(CHL_HTABLE))) == NULL)
     {
-        logerr("HT_fCreate(): malloc() ");
+        logerr("fChlDsCreateHT(): malloc() ");
         goto error_return;
     }
     
@@ -105,7 +105,7 @@ BOOL HT_fCreate(CHL_HTABLE **pHTableOut, int nKeyToTableSize, int keyType, int v
     pnewtable->phtNodes = (HT_NODE**)calloc(1, newTableSize * sizeof(HT_NODE*));
     if(pnewtable->phtNodes == NULL)
     {
-        logerr("HT_fCreate(): calloc() ");
+        logerr("fChlDsCreateHT(): calloc() ");
         goto error_return;
     }
 
@@ -118,10 +118,10 @@ BOOL HT_fCreate(CHL_HTABLE **pHTableOut, int nKeyToTableSize, int keyType, int v
     *pHTableOut = NULL;
     return FALSE;
     
-}// HT_fCreate()
+}// fChlDsCreateHT()
 
 
-BOOL HT_fDestroy(CHL_HTABLE *phtable)
+BOOL fChlDsDestroyHT(CHL_HTABLE *phtable)
 {   
     int i = 0;
     int limit;
@@ -195,7 +195,7 @@ static void vDeleteNode(int ktype, int vtype, HT_NODE *pnode)
 }// vDeleteNode()
 
 
-BOOL HT_fInsert(CHL_HTABLE *phtable, void *pvkey, int keySize, void *pval, int valSize)
+BOOL fChlDsInsertHT(CHL_HTABLE *phtable, void *pvkey, int keySize, void *pval, int valSize)
 {
     DWORD index;
     HT_NODE *pnewnode = NULL;
@@ -221,13 +221,13 @@ BOOL HT_fInsert(CHL_HTABLE *phtable, void *pvkey, int keySize, void *pval, int v
 
     // create a new hashtable node
     if( (pnewnode = (HT_NODE*)malloc(sizeof(HT_NODE))) == NULL )
-    { logerr("HT_fInsert(): malloc() "); goto error_return; }
+    { logerr("fChlDsInsertHT(): malloc() "); goto error_return; }
     
     switch(keytype)
     {
         case HT_KEY_STR:
-            if(!ChlfMemAlloc((void**)&pnewnode->key.skey, keySize, NULL))
-            { logerr("HT_fInsert(): ChlfMemAlloc() "); goto delete_newnode_return; }
+            if(!fChlMmAlloc((void**)&pnewnode->key.skey, keySize, NULL))
+            { logerr("fChlDsInsertHT(): fChlMmAlloc() "); goto delete_newnode_return; }
             memcpy(pnewnode->key.skey, pvkey, keySize);
             pnewnode->keysize = keySize;
             pszkey = (BYTE*)pvkey;
@@ -253,13 +253,13 @@ BOOL HT_fInsert(CHL_HTABLE *phtable, void *pvkey, int keySize, void *pval, int v
             break;
 
         case HT_VAL_STR:
-            if(!ChlfMemAlloc((void**)&pnewnode->val.pbVal, valSize, NULL))
-            { logerr("HT_fInsert(): ChlfMemAlloc() "); goto delete_newnode_return; }
+            if(!fChlMmAlloc((void**)&pnewnode->val.pbVal, valSize, NULL))
+            { logerr("fChlDsInsertHT(): fChlMmAlloc() "); goto delete_newnode_return; }
             memcpy(pnewnode->val.pbVal, pval, valSize);
             break;
 
         default:
-            logerr("HT_fInsert(): Invalid valType %d\n", phtable->htValType);
+            logerr("fChlDsInsertHT(): Invalid valType %d\n", phtable->htValType);
             goto delete_newnode_return;
     }
     pnewnode->valsize = valSize;
@@ -314,10 +314,10 @@ delete_newnode_return:
     
 error_return:
     if(fLocked && !ReleaseMutex(phtable->hMuAccess))
-        logerr("HT_fInsert(): error_return mutex unlock ");
+        logerr("fChlDsInsertHT(): error_return mutex unlock ");
     return FALSE;
     
-}// HT_fInsert()
+}// fChlDsInsertHT()
 
 
 int exhandler(int excode, LPEXCEPTION_POINTERS exptrs)
@@ -334,7 +334,7 @@ int exhandler(int excode, LPEXCEPTION_POINTERS exptrs)
 }
 
 
-BOOL HT_fFind(CHL_HTABLE *phtable, void *pvkey, int keySize, __out void *pval, __out int *pvalsize)
+BOOL fChlDsFindHT(CHL_HTABLE *phtable, void *pvkey, int keySize, __out void *pval, __out int *pvalsize)
 {
     int index = 0;
     HT_NODE *phtFoundNode = NULL;
@@ -395,13 +395,13 @@ BOOL HT_fFind(CHL_HTABLE *phtable, void *pvkey, int keySize, __out void *pval, _
     not_found:
     if(pvalsize) *pvalsize = 0;
     if(fLocked && !ReleaseMutex(phtable->hMuAccess))
-        logerr("HT_fFind(): not_found mutex unlock ");
+        logerr("fChlDsFindHT(): not_found mutex unlock ");
     return FALSE;
     
-}// HT_fFind()
+}// fChlDsFindHT()
 
 
-BOOL HT_fRemove(CHL_HTABLE *phtable, void *pvkey, int keySize)
+BOOL fChlDsRemoveHT(CHL_HTABLE *phtable, void *pvkey, int keySize)
 {   
     int index = 0;
     HT_NODE *phtFoundNode = NULL;
@@ -464,13 +464,13 @@ BOOL HT_fRemove(CHL_HTABLE *phtable, void *pvkey, int keySize)
     
     error_return:
     if(fLocked && !ReleaseMutex(phtable->hMuAccess))
-        logerr("HT_fRemove(): error_return mutex unlock ");
+        logerr("fChlDsRemoveHT(): error_return mutex unlock ");
     return FALSE;
     
-}// HT_fRemove()
+}// fChlDsRemoveHT()
 
 
-DllExpImp BOOL HT_fInitIterator(CHL_HT_ITERATOR *pItr)
+DllExpImp BOOL fChlDsInitIteratorHT(CHL_HT_ITERATOR *pItr)
 {
     if(!pItr) return FALSE;
 
@@ -481,9 +481,9 @@ DllExpImp BOOL HT_fInitIterator(CHL_HT_ITERATOR *pItr)
 }
 
 
-BOOL HT_fGetNext(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr, 
-                    OUT void *pkey, OUT int *pkeysize,
-                    OUT void *pval, OUT int *pvalsize)
+BOOL fChlDsGetNextHT(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr, 
+                    __out void *pkey, __out int *pkeysize,
+                    __out void *pval, __out int *pvalsize)
 {
     
     int indexIterator;
@@ -563,7 +563,7 @@ BOOL HT_fGetNext(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr,
 }
 
 
-int HT_iGetNearestTableSizeIndex(int maxNumberOfEntries)
+int fChlDsGetNearestTableSizeIndex(int maxNumberOfEntries)
 {
     int index = 0;
 
@@ -574,7 +574,7 @@ int HT_iGetNearestTableSizeIndex(int maxNumberOfEntries)
 }
 
 
-void HT_vDumpTable(CHL_HTABLE *phtable)
+void fChlDsDumpHT(CHL_HTABLE *phtable)
 {   
     int i;
     int nNodes = 0;
@@ -657,10 +657,10 @@ void HT_vDumpTable(CHL_HTABLE *phtable)
         
     fend:
     if(fLocked && !ReleaseMutex(phtable->hMuAccess))
-        logerr("HT_vDumpTable(): mutex unlock ");  
+        logerr("fChlDsDumpHT(): mutex unlock ");  
     return;
     
-}// HT_vDumpTable
+}// fChlDsDumpHT
 
 
 BOOL fOwnMutex(HANDLE hMutex)
@@ -797,7 +797,7 @@ BOOL fFindKeyInList(HT_NODE *pFirstHTNode, void *pvkey, int keysize, HT_KEYTYPE 
 }
 
 
-void vCopyKeyOut(union _key *pukey, HT_KEYTYPE keyType, OUT void *pkey)
+void vCopyKeyOut(union _key *pukey, HT_KEYTYPE keyType, __out void *pkey)
 {
     ASSERT(pukey && pkey);
 
@@ -822,7 +822,7 @@ void vCopyKeyOut(union _key *pukey, HT_KEYTYPE keyType, OUT void *pkey)
 }
 
 
-void vCopyValOut(union _val *puval, HT_VALTYPE valType, OUT void *pval)
+void vCopyValOut(union _val *puval, HT_VALTYPE valType, __out void *pval)
 {
     ASSERT(puval && pval);
 

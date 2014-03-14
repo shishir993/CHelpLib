@@ -4,7 +4,7 @@
 // Shishir K Prasad (http://www.shishirprasad.net)
 // History
 //      06/23/13 Initial version
-//
+//      03/13/13 Function name modifications. Naming convention.
 
 #ifndef _CHELPLIBDLL_H
 #define _CHELPLIBDLL_H
@@ -73,37 +73,38 @@ typedef struct _hashtableIterator {
     HT_NODE *phtCurNodeInList;  // current position in the sibling list
 }CHL_HT_ITERATOR;
 
-// Functions exported
+// ** Functions exported **
 
 // MemFunctions
-DllExpImp BOOL ChlfMemAlloc(OUT void **pvAddr, IN size_t uSizeBytes, OPTIONAL DWORD *pdwError);
-DllExpImp void ChlvMemFree(IN void **pvToFree);
+DllExpImp BOOL fChlMmAlloc(__out void **pvAddr, __in size_t uSizeBytes, OPTIONAL DWORD *pdwError);
+DllExpImp void vChlMmFree(__in void **pvToFree);
 
 // IOFunctions
-DllExpImp BOOL ChlfReadLineFromStdin(OUT TCHAR *psBuffer, IN DWORD dwBufSize);
+DllExpImp BOOL fChlIoReadLineFromStdin(__in DWORD dwBufSize, __out WCHAR *psBuffer);
 
 // StringFunctions
-DllExpImp WCHAR* Chl_GetFilenameFromPath(WCHAR *pwsFilepath, int numCharsInput);
+DllExpImp WCHAR* pszChlSzGetFilenameFromPath(WCHAR *pwsFilepath, int numCharsInput);
 
+// DataStructure Functions
 // Hastable functions
-DllExpImp BOOL HT_fCreate(CHL_HTABLE **pHTableOut, int nKeyToTableSize, int keyType, int valType);
-DllExpImp BOOL HT_fDestroy(CHL_HTABLE *phtable);
+DllExpImp BOOL fChlDsCreateHT(CHL_HTABLE **pHTableOut, int nKeyToTableSize, int keyType, int valType);
+DllExpImp BOOL fChlDsDestroyHT(CHL_HTABLE *phtable);
 
-DllExpImp BOOL HT_fInsert (CHL_HTABLE *phtable, void *pvkey, int keySize, void *pval, int valSize);
-DllExpImp BOOL HT_fFind   (CHL_HTABLE *phtable, void *pvkey, int keySize, OUT void *pval, OUT int *pvalsize);
-DllExpImp BOOL HT_fRemove (CHL_HTABLE *phtable, void *pvkey, int keySize);
+DllExpImp BOOL fChlDsInsertHT (CHL_HTABLE *phtable, void *pvkey, int keySize, void *pval, int valSize);
+DllExpImp BOOL fChlDsFindHT   (CHL_HTABLE *phtable, void *pvkey, int keySize, __out void *pval, __out int *pvalsize);
+DllExpImp BOOL fChlDsRemoveHT (CHL_HTABLE *phtable, void *pvkey, int keySize);
 
-DllExpImp BOOL HT_fInitIterator(CHL_HT_ITERATOR *pItr);
-DllExpImp BOOL HT_fGetNext(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr, 
-                            OUT void *pkey, OUT int *pkeysize,
-                            OUT void *pval, OUT int *pvalsize);
+DllExpImp BOOL fChlDsInitIteratorHT(CHL_HT_ITERATOR *pItr);
+DllExpImp BOOL fChlDsGetNextHT(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr, 
+                            __out void *pkey, __out int *pkeysize,
+                            __out void *pval, __out int *pvalsize);
 
-DllExpImp int  HT_iGetNearestTableSizeIndex(int maxNumberOfEntries);
-DllExpImp void HT_vDumpTable(CHL_HTABLE *phtable);
+DllExpImp int  fChlDsGetNearestTableSizeIndex(int maxNumberOfEntries);
+DllExpImp void fChlDsDumpHT(CHL_HTABLE *phtable);
 
 // General functions
-DllExpImp BOOL Chl_fIsOverflowINT(int a, int b);
-DllExpImp BOOL Chl_fIsOverflowUINT(unsigned int a, unsigned int b);
+DllExpImp BOOL fChlGnIsOverflowINT(int a, int b);
+DllExpImp BOOL fChlGnIsOverflowUINT(unsigned int a, unsigned int b);
 
 #ifdef __cplusplus
 }

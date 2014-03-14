@@ -8,11 +8,11 @@
 
 #include "General.h"
 
-// Chl_fIsOverflowINT()
+// fChlGnIsOverflowINT()
 // Given two integers, returns TRUE if adding them results
 // in overflow, FALSE otherwise.
 //
-BOOL Chl_fIsOverflowINT(int a, int b)
+BOOL fChlGnIsOverflowINT(int a, int b)
 {
     __asm
     {
@@ -28,11 +28,11 @@ ret_overflow:
     return TRUE;
 }
 
-// Chl_fIsOverflowUINT()
+// fChlGnIsOverflowUINT()
 // Given two unsigned integers, returns TRUE if 
 // adding them results in overflow, FALSE otherwise.
 //
-BOOL Chl_fIsOverflowUINT(unsigned int a, unsigned int b)
+BOOL fChlGnIsOverflowUINT(unsigned int a, unsigned int b)
 {
     __asm 
     {

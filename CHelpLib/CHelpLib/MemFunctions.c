@@ -8,10 +8,10 @@
 
 #include "MemFunctions.h"
 
-// ChlfMemAlloc()
+// fChlMmAlloc()
 // Allocates the requested size in bytes of memory
 // 
-DllExpImp BOOL ChlfMemAlloc(OUT void **pvAddr, IN size_t uSizeBytes, OPTIONAL DWORD *pdwError)
+DllExpImp BOOL fChlMmAlloc(__out void **pvAddr, __in size_t uSizeBytes, OPTIONAL DWORD *pdwError)
 {
     void *pv = NULL;
 
@@ -29,14 +29,14 @@ DllExpImp BOOL ChlfMemAlloc(OUT void **pvAddr, IN size_t uSizeBytes, OPTIONAL DW
     *pvAddr = NULL;
     IFPTR_SETVAL(pdwError, 0);
     return FALSE;
-}// ChlfMemAlloc()
+}// fChlMmAlloc()
 
 
-// ChlvMemFree()
+// vChlMmFree()
 // Deallocated memory pointed to by pvToFree and sets the provided pointer
 // to NULL to prevent accessing free'd locations.
 // 
-DllExpImp void ChlvMemFree(IN void **pvToFree)
+DllExpImp void vChlMmFree(__in void **pvToFree)
 {
     ASSERT(pvToFree && *pvToFree);
     free(*pvToFree);
