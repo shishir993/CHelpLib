@@ -52,9 +52,9 @@ int main()
 
     #if 1
     OutputDebugString(L"Starting perf tests on CHelpLib.dll");
-    //doPerfTests();
+    doPerfTests();
     //doSysCallTimingTests();
-    rdtsc_Query();
+    //rdtsc_Query();
     #endif
 
     #if 0
@@ -72,7 +72,7 @@ BOOL fTestHT_TableSizes()
     int entriesToCheck[] = { 50000, 100000, 700000, 1<<23, 1<<24 };
 
     for(int i = 0; i < _countof(entriesToCheck); ++i)
-        wprintf(L"%10d %d\n", entriesToCheck[i], fChlDsGetNearestTableSizeIndex(entriesToCheck[i]));
+        wprintf(L"%10d %d\n", entriesToCheck[i], iChlDsGetNearestTableSizeIndex(entriesToCheck[i]));
 
     return TRUE;
 }
@@ -86,7 +86,7 @@ BOOL fTestHT_StrStr()
     int nItemsInserted = 0;
 
     // Create a str:str htable
-    if(!fChlDsCreateHT(&phtable, 3, HT_KEY_STR, HT_VAL_STR))
+    if(!fChlDsCreateHT(&phtable, 3, HT_KEY_STR, HT_VAL_STR, FALSE))
         return FALSE;
 
     // Insert abcd:"hello,there"
@@ -208,7 +208,7 @@ BOOL fTestHT_StrStr()
     if(!fChlDsRemoveHT(phtable, testKeys[4], strlen(testKeys[4])))
         printf("Failed to remove testKeys[2]\n");
 
-    fChlDsDumpHT(phtable);
+    vChlDsDumpHT(phtable);
 
     fChlDsDestroyHT(phtable);
 
@@ -226,7 +226,7 @@ BOOL fTestHT_NumStr()
     int nItemsInserted = 0;
 
     // Create a str:str htable
-    if(!fChlDsCreateHT(&phtable, 3, HT_KEY_DWORD, HT_VAL_STR))
+    if(!fChlDsCreateHT(&phtable, 3, HT_KEY_DWORD, HT_VAL_STR, FALSE))
         return FALSE;
 
     // Insert abcd:"hello,there"
@@ -355,7 +355,7 @@ BOOL fTestHT_NumStr()
     if(!fChlDsRemoveHT(phtable, &testKeysNum[4], sizeof(DWORD)))
         printf("Failed to remove testKeysNum[4]\n");
 
-    fChlDsDumpHT(phtable);
+    vChlDsDumpHT(phtable);
 
     fChlDsDestroyHT(phtable);
     OutputDebugString(L"Finished second test");
@@ -499,7 +499,7 @@ BOOL fTestHT_NumStrRand()
 
     __try
     {
-        if(!fChlDsCreateHT(&phtable, 2, HT_KEY_DWORD, HT_VAL_DWORD))
+        if(!fChlDsCreateHT(&phtable, 2, HT_KEY_DWORD, HT_VAL_DWORD, FALSE))
         {
             fSuccess = FALSE;
             wprintf(L"Failed to create hash table\n");

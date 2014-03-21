@@ -9,7 +9,8 @@
 #include "MemFunctions.h"
 
 // fChlMmAlloc()
-// Allocates the requested size in bytes of memory
+// Allocates the requested size in bytes of memory.
+// Allocated area is initialized to all zeroes.
 // 
 DllExpImp BOOL fChlMmAlloc(__out void **pvAddr, __in size_t uSizeBytes, OPTIONAL DWORD *pdwError)
 {
@@ -21,6 +22,8 @@ DllExpImp BOOL fChlMmAlloc(__out void **pvAddr, __in size_t uSizeBytes, OPTIONAL
     if((pv = malloc(uSizeBytes)) == NULL)
         goto error_return;
     
+    ZeroMemory(pv, uSizeBytes);
+
     *pvAddr = pv;
     IFPTR_SETVAL(pdwError, 0);
     return TRUE;

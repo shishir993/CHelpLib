@@ -16,12 +16,11 @@ unsigned int hashSizes[] = {43,     197,    547,    1471,
                             20483,  93563,  319993, 919393,
                             16769023};
 
-static void vDeleteNode(int ktype, int vtype, HT_NODE *pnode);
-
 // File-local Functions
 static DWORD _hashu(int tablesize, DWORD key);
 static DWORD _hashs(int tablesize, const BYTE *key, int keysize);
 static BOOL fOwnMutex(HANDLE hMutex);
+static void vDeleteNode(int ktype, int vtype, HT_NODE *pnode, BOOL fFreeVal);
 static BOOL fIsDuplicateKey(union _key *pLeftKey, void *pRightKey, HT_KEYTYPE keytype, int keysize);
 static BOOL fIsDuplicateVal(union _val *pLeftVal, void *pRightVal, HT_VALTYPE valtype, int valsize);
 static BOOL fUpdateNodeVal(HT_NODE *pnode, void *pval, HT_VALTYPE valType, int valSize);
@@ -63,7 +62,18 @@ DWORD _hashs(int tablesize, const BYTE *key, int keysize)
     return (DWORD)(hash % tablesize);
 }
 
-BOOL fChlDsCreateHT(CHL_HTABLE **pHTableOut, int nKeyToTableSize, int keyType, int valType)
+// Creates a hashtable and returns a pointer which can be used for later operations
+// on the table.
+// params:
+//      pHTableOut: Address of pointer where to copy the pointer to the hashtable
+//      nEstEntries: Estimated number of entries that would be in the table at any given time.
+//                   This is used to determine the initial size of the hashtable.
+//      keyType: Type of variable that is used as key - a string or a number
+//      valType: Type of value that is stored - number, string or void(can be anything)
+//      fValInHeapMem: Set this to true if the value(void type) is allocated memory on the heap
+//                     so that it is freed whenever an table entry is removed or when table is destroyed.
+// 
+BOOL fChlDsCreateHT(CHL_HTABLE **pHTableOut, int nEstEntries, int keyType, int valType, BOOL fValInHeapMem)
 {   
     int newTableSize = 0;
     CHL_HTABLE *pnewtable = NULL;
@@ -73,7 +83,7 @@ BOOL fChlDsCreateHT(CHL_HTABLE **pHTableOut, int nKeyToTableSize, int keyType, i
 
     // validate parameters
     if(!pHTableOut) return FALSE;
-    if(nKeyToTableSize < 0 || nKeyToTableSize >= _countof(hashSizes)) return FALSE;
+    if(nEstEntries < 0) return FALSE;
     if(keyType != HT_KEY_STR && keyType != HT_KEY_DWORD) return FALSE;
     if(valType < HT_VAL_DWORD && valType > HT_VAL_STR) return FALSE;
     
@@ -86,13 +96,14 @@ BOOL fChlDsCreateHT(CHL_HTABLE **pHTableOut, int nKeyToTableSize, int keyType, i
     swprintf_s(wsMutexName, 32, L"%s_%08X", HT_MUTEX_NAME, uiRand);
 
     // 
-    newTableSize = hashSizes[nKeyToTableSize];
+    newTableSize = hashSizes[iChlDsGetNearestTableSizeIndex(nEstEntries)];
     if((pnewtable = (CHL_HTABLE*)malloc(sizeof(CHL_HTABLE))) == NULL)
     {
         logerr("fChlDsCreateHT(): malloc() ");
         goto error_return;
     }
     
+    pnewtable->fValIsInHeap = fValInHeapMem;
     pnewtable->nTableSize = newTableSize;
     pnewtable->htKeyType = keyType;
     pnewtable->htValType = valType;
@@ -152,7 +163,7 @@ BOOL fChlDsDestroyHT(CHL_HTABLE *phtable)
         while(pcurnode)
         {
             pnextnode = pcurnode->pnext;
-            vDeleteNode(ktype, vtype, pcurnode);
+            vDeleteNode(ktype, vtype, pcurnode, phtable->fValIsInHeap);
             pcurnode = pnextnode;
         }// while pcurnode
         
@@ -168,7 +179,7 @@ BOOL fChlDsDestroyHT(CHL_HTABLE *phtable)
 }// HT_Destroy()
 
 
-static void vDeleteNode(int ktype, int vtype, HT_NODE *pnode)
+static void vDeleteNode(int ktype, int vtype, HT_NODE *pnode, BOOL fFreeVal)
 {
     ASSERT(pnode);
 
@@ -186,7 +197,14 @@ static void vDeleteNode(int ktype, int vtype, HT_NODE *pnode)
         default: logerr("Incorrect keytype %d", ktype); ASSERT(FALSE);
     }
 
-    if(vtype == HT_VAL_STR && pnode->val.pbVal) free(pnode->val.pbVal);
+    if(vtype == HT_VAL_STR && pnode->val.pbVal)
+    {
+        free(pnode->val.pbVal);
+    }
+    else if(fFreeVal)
+    {
+        free(pnode->val.pval);
+    }
     
     DBG_MEMSET(pnode, sizeof(HT_NODE));
     free(pnode);
@@ -285,7 +303,7 @@ BOOL fChlDsInsertHT(CHL_HTABLE *phtable, void *pvkey, int keySize, void *pval, i
             {
                 // Both key and value are same
                 // Delete the newly created node and return
-                vDeleteNode(phtable->htKeyType, phtable->htValType, pnewnode);
+                vDeleteNode(phtable->htKeyType, phtable->htValType, pnewnode, phtable->fValIsInHeap);
                 ReleaseMutex(phtable->hMuAccess);
                 return TRUE;
             }
@@ -310,7 +328,7 @@ BOOL fChlDsInsertHT(CHL_HTABLE *phtable, void *pvkey, int keySize, void *pval, i
     return TRUE;
     
 delete_newnode_return:
-    vDeleteNode(phtable->htKeyType, phtable->htValType, pnewnode);
+    vDeleteNode(phtable->htKeyType, phtable->htValType, pnewnode, phtable->fValIsInHeap);
     
 error_return:
     if(fLocked && !ReleaseMutex(phtable->hMuAccess))
@@ -457,7 +475,7 @@ BOOL fChlDsRemoveHT(CHL_HTABLE *phtable, void *pvkey, int keySize)
     else
         phtable->phtNodes[index] = NULL;
 
-    vDeleteNode(keytype, phtable->htValType, phtFoundNode);
+    vDeleteNode(keytype, phtable->htValType, phtFoundNode, phtable->fValIsInHeap);
     
     ReleaseMutex(phtable->hMuAccess);
     return TRUE;
@@ -563,7 +581,7 @@ BOOL fChlDsGetNextHT(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr,
 }
 
 
-int fChlDsGetNearestTableSizeIndex(int maxNumberOfEntries)
+int iChlDsGetNearestTableSizeIndex(int maxNumberOfEntries)
 {
     int index = 0;
 
@@ -574,7 +592,7 @@ int fChlDsGetNearestTableSizeIndex(int maxNumberOfEntries)
 }
 
 
-void fChlDsDumpHT(CHL_HTABLE *phtable)
+void vChlDsDumpHT(CHL_HTABLE *phtable)
 {   
     int i;
     int nNodes = 0;
@@ -657,10 +675,10 @@ void fChlDsDumpHT(CHL_HTABLE *phtable)
         
     fend:
     if(fLocked && !ReleaseMutex(phtable->hMuAccess))
-        logerr("fChlDsDumpHT(): mutex unlock ");  
+        logerr("vChlDsDumpHT(): mutex unlock ");  
     return;
     
-}// fChlDsDumpHT
+}// vChlDsDumpHT
 
 
 BOOL fOwnMutex(HANDLE hMutex)

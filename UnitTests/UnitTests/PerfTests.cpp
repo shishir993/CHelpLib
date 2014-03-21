@@ -93,7 +93,7 @@ BOOL testHastable_NumNum(int nEntries, BOOL fRandomize)
     CHL_HTABLE *phtable = NULL;
     int counter;
 
-    if(!fChlDsCreateHT(&phtable, 10, HT_KEY_DWORD, HT_VAL_DWORD))
+    if(!fChlDsCreateHT(&phtable, 10, HT_KEY_DWORD, HT_VAL_DWORD, FALSE))
         goto error_return;
 
     if(fRandomize)
