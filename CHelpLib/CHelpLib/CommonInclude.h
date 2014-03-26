@@ -17,15 +17,14 @@ extern "C" {
 #include <stdlib.h>
 #include <stdio.h>
 #include <Windows.h>
+#include <Psapi.h>
 #include <string.h>
 #include <malloc.h>
 #include <errno.h>
 
-#include "assert.h"
-#include "DbgHelpers.h"
-#include "CHelpLibDll.h"
 #include "Assert.h"
 #include "DbgHelpers.h"
+#include "CHelpLibDll.h"
 #include "Helpers.h"
 
 #ifdef __cplusplus

@@ -45,6 +45,12 @@
     <ClInclude Include="General.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GuiFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MemFunctions.c">
@@ -66,6 +72,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="General.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GuiFunctions.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessFunctions.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

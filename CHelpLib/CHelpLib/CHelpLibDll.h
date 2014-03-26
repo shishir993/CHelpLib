@@ -4,7 +4,7 @@
 // Shishir K Prasad (http://www.shishirprasad.net)
 // History
 //      06/23/13 Initial version
-//      03/13/13 Function name modifications. Naming convention.
+//      03/13/14 Function name modifications. Naming convention.
 
 #ifndef _CHELPLIBDLL_H
 #define _CHELPLIBDLL_H
@@ -114,6 +114,12 @@ DllExpImp BOOL fChlDsGetNextHT(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr,
 
 DllExpImp int  iChlDsGetNearestTableSizeIndex(int maxNumberOfEntries);
 DllExpImp void vChlDsDumpHT(CHL_HTABLE *phtable);
+
+// Gui Functions
+DllExpImp BOOL fChlGuiCenterWindow(HWND hWnd);
+
+// Process Functions
+DllExpImp BOOL fChlPsGetProcNameFromID(DWORD pid, WCHAR *pwsProcName, DWORD dwBufSize);
 
 // General functions
 DllExpImp BOOL fChlGnIsOverflowINT(int a, int b);

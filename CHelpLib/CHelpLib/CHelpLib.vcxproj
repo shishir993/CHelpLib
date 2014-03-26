@@ -50,10 +50,12 @@
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CHELPLIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -79,19 +81,23 @@
     <ClInclude Include="CommonInclude.h" />
     <ClInclude Include="DbgHelpers.h" />
     <ClInclude Include="General.h" />
+    <ClInclude Include="GuiFunctions.h" />
     <ClInclude Include="Hashtable.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="IOFunctions.h" />
     <ClInclude Include="MemFunctions.h" />
+    <ClInclude Include="ProcessFunctions.h" />
     <ClInclude Include="StringFunctions.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Assert.c" />
     <ClCompile Include="CHelpLibDllMain.c" />
     <ClCompile Include="General.c" />
+    <ClCompile Include="GuiFunctions.c" />
     <ClCompile Include="Hashtable.c" />
     <ClCompile Include="IOFunctions.c" />
     <ClCompile Include="MemFunctions.c" />
+    <ClCompile Include="ProcessFunctions.c" />
     <ClCompile Include="StringFunctions.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
