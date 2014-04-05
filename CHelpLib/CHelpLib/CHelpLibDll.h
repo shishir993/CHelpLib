@@ -118,6 +118,11 @@ DllExpImp void vChlDsDumpHT(CHL_HTABLE *phtable);
 // Gui Functions
 DllExpImp BOOL fChlGuiCenterWindow(HWND hWnd);
 
+// Given the window handle and the number of characters, returns the 
+// width and height in pixels that will be occupied by a string of that
+// consisting of those number of characters
+DllExpImp BOOL fChlGuiGetTextArea(HWND hWindow, int nCharsInText, __out int *pnPixelsWidth, __out int *pnPixelsHeight);
+
 // Process Functions
 DllExpImp BOOL fChlPsGetProcNameFromID(DWORD pid, WCHAR *pwsProcName, DWORD dwBufSize);
 

@@ -49,3 +49,39 @@ BOOL fChlGuiCenterWindow(HWND hWnd)
     return TRUE;
 
 }// fChlGuiCenterWindow()
+
+// Given the window handle and the number of characters, returns the 
+// width and height in pixels that will be occupied by a string of that
+// consisting of those number of characters
+BOOL fChlGuiGetTextArea(HWND hWindow, int nCharsInText, __out int *pnPixelsWidth, __out int *pnPixelsHeight)
+{
+    HDC hDC;
+    TEXTMETRIC stTextMetric;
+
+    // Parameter validation
+    if(!ISVALID_HANDLE(hWindow) || nCharsInText < 0 || !pnPixelsWidth || !pnPixelsHeight)
+    {
+        SetLastError(ERROR_BAD_ARGUMENTS);
+        goto error_return;
+    }
+    
+    if(!(hDC = GetDC(hWindow)))
+    {
+        goto error_return;
+    }
+
+    // TODO: hDC is uninitialized so system (bitmap) font by default? Should I select the font into the DC first?
+
+    if(!GetTextMetrics(hDC, &stTextMetric))
+    {
+        goto error_return;
+    }
+
+    *pnPixelsWidth = stTextMetric.tmMaxCharWidth * nCharsInText;
+    *pnPixelsHeight = stTextMetric.tmHeight + stTextMetric.tmExternalLeading;
+
+    return TRUE;
+
+error_return:
+    return FALSE;
+}
