@@ -1,12 +1,7 @@
 
-#define _CRT_RAND_S
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <Windows.h>
-#include <math.h>
-#include "CHelpLibDll.h"
+
 #include "PerfTests.h"
+#include "TestLinkedList.h"
 
 #define MAX_RAND_COUNT      9999
 #define MAX_TIME_TESTS      10
@@ -50,7 +45,7 @@ int main()
     success = fTestHT_TableSizes();
     #endif
 
-    #if 1
+    #if 0
     OutputDebugString(L"Starting perf tests on CHelpLib.dll");
     doPerfTests();
     //doSysCallTimingTests();
@@ -59,6 +54,10 @@ int main()
 
     #if 0
     rdtscBusiness();
+    #endif
+
+    #if 1
+        fTestLinkedList();
     #endif
 
     OutputDebugString(L"\nTests done. Exiting...");

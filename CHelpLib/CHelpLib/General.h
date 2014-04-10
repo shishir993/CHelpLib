@@ -15,6 +15,8 @@ extern "C" {
 
 #include "CommonInclude.h"
 
+BOOL fOwnMutex(HANDLE hMutex);
+
 #ifdef __cplusplus
 }
 #endif

@@ -21,6 +21,14 @@ extern "C" {
 
 // Defines
 
+// Custom error codes
+#define CHLE_MEM_ENOMEM     17000
+#define CHLE_MEM_GEN        17001
+#define CHLE_MUTEX_TIMEOUT  17010
+
+#define CHLE_LLIST_EINVAL   17100
+#define CHLE_LLIST_VALTYPE  17101
+
 // hashtable key types
 #define HT_KEY_STR      10
 #define HT_KEY_DWORD    11
@@ -30,8 +38,16 @@ extern "C" {
 #define HT_VAL_PTR      13
 #define HT_VAL_STR      14
 
+// LinkedList value types
+#define LL_VAL_BYTE     20
+#define LL_VAL_UINT     21
+#define LL_VAL_DWORD    22
+#define LL_VAL_LONGLONG 23
+#define LL_VAL_PTR      24
+
 typedef int HT_KEYTYPE;
 typedef int HT_VALTYPE;
+typedef int LL_VALTYPE;
 
 // Structures
 union _key {
@@ -74,6 +90,30 @@ typedef struct _hashtableIterator {
     HT_NODE *phtCurNodeInList;  // current position in the sibling list
 }CHL_HT_ITERATOR;
 
+// ******** Linked List ********
+union _nodeval {
+    BYTE bval;
+    UINT uval;
+    DWORD dwval;
+    LONGLONG longlongval;
+    void *pval;
+};
+
+typedef struct _LlNode {
+    union _nodeval nodeval;
+    DWORD dwValSize;
+    struct _LlNode *pleft;
+    struct _LlNode *pright;
+}LLNODE, *PLLNODE;
+
+typedef struct _LinkedList {
+    int nCurNodes;
+    int nMaxNodes;
+    LL_VALTYPE valType;
+    PLLNODE pHead;
+    HANDLE hMuAccess;
+}CHL_LLIST, *PCHL_LLIST;
+
 // ** Functions exported **
 
 // MemFunctions
@@ -114,6 +154,14 @@ DllExpImp BOOL fChlDsGetNextHT(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr,
 
 DllExpImp int  iChlDsGetNearestTableSizeIndex(int maxNumberOfEntries);
 DllExpImp void vChlDsDumpHT(CHL_HTABLE *phtable);
+
+// Linked List Functions
+DllExpImp BOOL fChlDsCreateLL(__out PCHL_LLIST *ppLList, LL_VALTYPE valType, OPTIONAL int nEstEntries);
+DllExpImp BOOL fChlDsInsertLL(PCHL_LLIST pLList, void *pval, int valsize);
+DllExpImp BOOL fChlDsRemoveLL(PCHL_LLIST pLList, void *pvValToFind, BOOL fStopOnFirstFind, BOOL (*pfnComparer)(void*, void*));
+DllExpImp BOOL fChlDsRemoveAtLL(PCHL_LLIST pLList, int iIndexToRemove, __out OPTIONAL void **ppval);
+DllExpImp BOOL fChlDsFindLL(PCHL_LLIST pLList, __in void *pvValToFind, BOOL (*pfnComparer)(void*, void*), __out OPTIONAL void **ppval);
+DllExpImp BOOL fChlDsDestroyLL(PCHL_LLIST pLList);
 
 // Gui Functions
 DllExpImp BOOL fChlGuiCenterWindow(HWND hWnd);

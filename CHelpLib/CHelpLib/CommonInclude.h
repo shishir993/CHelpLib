@@ -27,6 +27,8 @@ extern "C" {
 #include "CHelpLibDll.h"
 #include "Helpers.h"
 
+#define HT_MUTEX_NAME   (TEXT("CHL_MUTEX_NAME"))
+
 #ifdef __cplusplus
 }
 #endif

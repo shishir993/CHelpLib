@@ -1,8 +1,8 @@
 
 
 #include "Hashtable.h"
+#include "General.h"
 
-#define HT_MUTEX_NAME   (TEXT("CHL_MUTEX_NAME"))
 #define HT_ITR_FIRST    0xdeedbeed
 #define HT_ITR_NEXT     0xabcddcba
 
@@ -19,7 +19,6 @@ unsigned int hashSizes[] = {43,     197,    547,    1471,
 // File-local Functions
 static DWORD _hashu(int tablesize, DWORD key);
 static DWORD _hashs(int tablesize, const BYTE *key, int keysize);
-static BOOL fOwnMutex(HANDLE hMutex);
 static void vDeleteNode(int ktype, int vtype, HT_NODE *pnode, BOOL fFreeVal);
 static BOOL fIsDuplicateKey(union _key *pLeftKey, void *pRightKey, HT_KEYTYPE keytype, int keysize);
 static BOOL fIsDuplicateVal(union _val *pLeftVal, void *pRightVal, HT_VALTYPE valtype, int valsize);
@@ -679,40 +678,6 @@ void vChlDsDumpHT(CHL_HTABLE *phtable)
     return;
     
 }// vChlDsDumpHT
-
-
-BOOL fOwnMutex(HANDLE hMutex)
-{
-    int nTries = 0;
-
-    ASSERT(hMutex && hMutex != INVALID_HANDLE_VALUE);
-
-    while(nTries < 10)
-    {
-        switch(WaitForSingleObject(hMutex, 500))
-        {
-            case WAIT_OBJECT_0:
-                goto got_it;
-
-            case WAIT_ABANDONED: // todo
-                return FALSE;
-
-            case WAIT_TIMEOUT:
-                break;
-
-            case WAIT_FAILED:
-                return FALSE;
-        }
-        ++nTries;
-    }
-
-    got_it:
-    if(nTries == 10)
-        return FALSE;
-
-    return TRUE;
-}
-
 
 BOOL fIsDuplicateKey(union _key *pLeftKey, void *pRightKey, HT_KEYTYPE keytype, int keysize)
 {

@@ -58,6 +58,10 @@
       <AdditionalLibraryDirectories>S:\MyBriefcase\Coding\C\CHelpLib\CHelpLib\Debug</AdditionalLibraryDirectories>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;CHelpLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y S:\MyBriefcase\Coding\C\CHelpLib\CHelpLib\Debug\CHelpLib.dll $(OutDir)</Command>
+      <Message>Copying CHelpLib DLL</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -80,11 +84,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Assert.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PerfTests.cpp" />
+    <ClCompile Include="TestLinkedList.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Assert.h" />
+    <ClInclude Include="Common.h" />
     <ClInclude Include="PerfTests.h" />
+    <ClInclude Include="TestLinkedList.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

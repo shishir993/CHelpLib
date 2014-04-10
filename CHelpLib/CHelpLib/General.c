@@ -47,3 +47,39 @@ BOOL fChlGnIsOverflowUINT(unsigned int a, unsigned int b)
 ret_overflow:
     return TRUE;
 }
+
+// Try to get ownership of mutex. This function tries to get the mutex
+// with 10 retries with a 500ms interval between each retry.
+//
+BOOL fOwnMutex(HANDLE hMutex)
+{
+    int nTries = 0;
+
+    ASSERT(hMutex && hMutex != INVALID_HANDLE_VALUE);
+
+    while(nTries < 10)
+    {
+        switch(WaitForSingleObject(hMutex, 500))
+        {
+            case WAIT_OBJECT_0:
+                goto got_it;
+
+            case WAIT_ABANDONED: // todo
+                return FALSE;
+
+            case WAIT_TIMEOUT:
+            case WAIT_FAILED:
+                break;
+        }
+        ++nTries;
+    }
+
+    if(nTries == 10)
+    {
+        SetLastError(CHLE_MUTEX_TIMEOUT);
+        return FALSE;
+    }
+
+got_it:
+    return TRUE;
+}

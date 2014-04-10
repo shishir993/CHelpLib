@@ -28,9 +28,10 @@ DllExpImp BOOL fChlMmAlloc(__out void **pvAddr, __in size_t uSizeBytes, OPTIONAL
     IFPTR_SETVAL(pdwError, 0);
     return TRUE;
 
-    error_return:
+error_return:
     *pvAddr = NULL;
-    IFPTR_SETVAL(pdwError, 0);
+    IFPTR_SETVAL(pdwError, errno);
+    SetLastError(CHLE_MEM_GEN);
     return FALSE;
 }// fChlMmAlloc()
 
