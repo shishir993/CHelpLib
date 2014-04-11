@@ -111,6 +111,7 @@ typedef struct _LinkedList {
     int nMaxNodes;
     LL_VALTYPE valType;
     PLLNODE pHead;
+    PLLNODE pTail;
     HANDLE hMuAccess;
 }CHL_LLIST, *PCHL_LLIST;
 

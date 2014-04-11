@@ -3,7 +3,7 @@
 // Shishir K Prasad (http://www.shishirprasad.net)
 // History
 //      04/05/14 Initial version
-//
+//      04/10/14 Changed to insert at end logic
 
 #include "LinkedList.h"
 #include "General.h"
@@ -11,7 +11,8 @@
 static void vCopyValOut(PLLNODE pnode, LL_VALTYPE valType, __out void **ppValOut);
 static BOOL fPopulateNode(PLLNODE pNodeToPopulate, LL_VALTYPE valType, void *pval, int valsize);
 static void vInsertNode(PCHL_LLIST pLList, PLLNODE pNodeToInsert);
-static void vRemoveNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove);
+static void vUnlinkNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove);
+static void vFreeNodeMem(PLLNODE pnode, LL_VALTYPE valType, BOOL fFreeValMem);
 
 DllExpImp BOOL fChlDsCreateLL(__out PCHL_LLIST *ppLList, LL_VALTYPE valType, OPTIONAL int nEstEntries)
 {
@@ -153,7 +154,9 @@ BOOL fChlDsRemoveLL(PCHL_LLIST pLList, __in void *pvValToFind, BOOL fStopOnFirst
         {
             fFoundNode = TRUE;
 
-            vRemoveNode(pLList, pCurNode);
+            vUnlinkNode(pLList, pCurNode);
+            vFreeNodeMem(pCurNode, pLList->valType, TRUE);
+
             --(pLList->nCurNodes);
 
             if(fStopOnFirstFind)
@@ -211,12 +214,20 @@ BOOL fChlDsRemoveAtLL(PCHL_LLIST pLList, int iIndexToRemove, __out OPTIONAL void
     }
 
     ASSERT(pCurNode);
+
+    vUnlinkNode(pLList, pCurNode);
+
     if(ppval)
     {
         vCopyValOut(pCurNode, pLList->valType, ppval);
-    }
 
-    vRemoveNode(pLList, pCurNode);
+        // DO NOT free value memory since we are returning it
+        vFreeNodeMem(pCurNode, pLList->valType, FALSE);
+    }
+    else
+    {
+        vFreeNodeMem(pCurNode, pLList->valType, TRUE);
+    }
 
     ReleaseMutex(pLList->hMuAccess);
     return TRUE;
@@ -308,12 +319,8 @@ BOOL fChlDsDestroyLL(PCHL_LLIST pLList)
     {
         pNextNode = pCurNode->pright;
 
-        if(valType == LL_VAL_PTR)
-        {
-            vChlMmFree((void**)&pCurNode->nodeval.pval);
-        }
+        vFreeNodeMem(pCurNode, valType, TRUE);
 
-        vChlMmFree((void**)&pCurNode);
         pCurNode = pNextNode;
     }
 
@@ -411,21 +418,26 @@ static void vInsertNode(PCHL_LLIST pLList, PLLNODE pNodeToInsert)
 
         pNodeToInsert->pleft = pNodeToInsert->pright = NULL;
         pLList->pHead = pNodeToInsert;
+        pLList->pTail = pNodeToInsert;
     }
     else
     {
         ASSERT(pLList->nCurNodes > 0);
+        ASSERT(pLList->pTail);
 
-        // Insert at the beginning
-        pNodeToInsert->pright = pLList->pHead;
-        pNodeToInsert->pleft = NULL;
+        // Insert at the end
 
-        pLList->pHead->pleft = pNodeToInsert;
-        pLList->pHead = pNodeToInsert;
+        // First, set new node's links
+        pNodeToInsert->pright = NULL;
+        pNodeToInsert->pleft = pLList->pTail;
+
+        // Link to tail and reassign
+        pLList->pTail->pright = pNodeToInsert;
+        pLList->pTail = pNodeToInsert;
     }
 }
 
-static void vRemoveNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove)
+static void vUnlinkNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove)
 {
     ASSERT(pLList);
     ASSERT(pNodeToRemove);
@@ -441,11 +453,25 @@ static void vRemoveNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove)
         {
             pNodeToRemove->pright->pleft = pNodeToRemove->pleft;
         }
+
+        // Could be first and last node as well!
+        if(pNodeToRemove == pLList->pTail)
+        {
+            ASSERT(pNodeToRemove->pright == NULL);
+
+            pLList->pTail = NULL;
+        }
     }
     else
     {
         // Not removing the first node, so this should be true
         ASSERT(pLList->pHead != pNodeToRemove);
+
+        // Removing the last one?
+        if(pNodeToRemove == pLList->pTail)
+        {
+            pLList->pTail = pNodeToRemove->pleft;
+        }
 
         if(pNodeToRemove->pleft)
         {
@@ -457,13 +483,18 @@ static void vRemoveNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove)
             pNodeToRemove->pright->pleft = pNodeToRemove->pleft;
         }
     }
+}
+
+static void vFreeNodeMem(PLLNODE pnode, LL_VALTYPE valType, BOOL fFreeValMem)
+{
+    ASSERT(pnode);
 
     // Free memory occupied by the value, if applicable
-    if(pLList->valType == LL_VAL_PTR)
+    if(fFreeValMem && valType == LL_VAL_PTR)
     {
-        vChlMmFree((void**)&pNodeToRemove->nodeval.pval);
+        vChlMmFree((void**)&pnode->nodeval.pval);
     }
 
     // Finally, free the node itself
-    vChlMmFree((void**)pNodeToRemove);
+    vChlMmFree((void**)&pnode);
 }
