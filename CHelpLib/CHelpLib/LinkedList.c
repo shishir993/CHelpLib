@@ -91,7 +91,7 @@ BOOL fChlDsInsertLL(PCHL_LLIST pLList, void *pval, int valsize)
     }
 
     // Insert into linked list at the head
-    if(!fOwnMutex(pLList->hMuAccess))
+    if(!fChlGnOwnMutex(pLList->hMuAccess))
     {
         goto error_return;
     }
@@ -138,7 +138,7 @@ BOOL fChlDsRemoveLL(PCHL_LLIST pLList, __in void *pvValToFind, BOOL fStopOnFirst
         goto error_return;
     }
 
-    if(!fOwnMutex(pLList->hMuAccess))
+    if(!fChlGnOwnMutex(pLList->hMuAccess))
     {
         goto error_return;
     }
@@ -198,7 +198,7 @@ BOOL fChlDsRemoveAtLL(PCHL_LLIST pLList, int iIndexToRemove, __out OPTIONAL void
         goto error_return;
     }
 
-    if(!fOwnMutex(pLList->hMuAccess))
+    if(!fChlGnOwnMutex(pLList->hMuAccess))
     {
         goto error_return;
     }
@@ -255,7 +255,7 @@ BOOL fChlDsFindLL(PCHL_LLIST pLList, __in void *pvValToFind, BOOL (*pfnComparer)
         goto error_return;
     }
 
-    if(!fOwnMutex(pLList->hMuAccess))
+    if(!fChlGnOwnMutex(pLList->hMuAccess))
     {
         goto error_return;
     }
@@ -306,7 +306,7 @@ BOOL fChlDsDestroyLL(PCHL_LLIST pLList)
         goto error_return;
     }
 
-    if(!fOwnMutex(pLList->hMuAccess))
+    if(!fChlGnOwnMutex(pLList->hMuAccess))
     {
         goto error_return;
     }

@@ -8,6 +8,8 @@
 
 #include "General.h"
 
+#define MAPVIEW_NAME    L"Chl_FileMapViewName"
+
 // fChlGnIsOverflowINT()
 // Given two integers, returns TRUE if adding them results
 // in overflow, FALSE otherwise.
@@ -51,7 +53,7 @@ ret_overflow:
 // Try to get ownership of mutex. This function tries to get the mutex
 // with 10 retries with a 500ms interval between each retry.
 //
-BOOL fOwnMutex(HANDLE hMutex)
+BOOL fChlGnOwnMutex(HANDLE hMutex)
 {
     int nTries = 0;
 
@@ -82,4 +84,68 @@ BOOL fOwnMutex(HANDLE hMutex)
 
 got_it:
     return TRUE;
+}
+
+// Create a memory mapping given a handle to a file and return
+// return the handle to the memory mapped area.
+// 
+BOOL fChlGnCreateMemMapOfFile(HANDLE hFile,  DWORD dwReqProtection, __out PHANDLE phMapObj, __out PHANDLE phMapView)
+{
+    DWORD dwRetVal = 0;
+	DWORD dwFileSize = 0;
+
+    HANDLE hFileMapObj = NULL;
+    HANDLE hFileMapView = NULL;
+
+    // Validate arguments
+    if(!ISVALID_HANDLE(hFile) || !phMapObj || !phMapView)
+    {
+        SetLastError(ERROR_BAD_ARGUMENTS);
+        goto error_return;
+    }
+
+    DBG_UNREFERENCED_PARAMETER(dwReqProtection);
+
+	if( (dwRetVal = GetFileSize(hFile, &dwFileSize)) == INVALID_FILE_SIZE )
+	{
+		goto error_return;
+	}
+
+    // dwRetVal is filesize LOW word and dwFileSize will have HIGH word
+
+	if(dwRetVal == 0 && dwFileSize == 0)
+	{
+        SetLastError(CHLE_EMPTY_FILE);
+		goto error_return;
+	}
+
+	// Create a memory mapping for the file with GENERIC_READ
+	// that is, create the file mapping object
+	if( (hFileMapObj = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, MAPVIEW_NAME)) == NULL )
+	{
+		goto error_return;
+	}
+
+	// check for ERROR_ALREADY_EXISTS ??
+
+	// map this file mapping object into our address space
+	if( (hFileMapView = MapViewOfFile(hFileMapObj, FILE_MAP_READ, 0, 0, 0)) == NULL )
+	{
+		goto error_return;
+	}
+
+    *phMapObj = hFileMapObj;
+    *phMapView = hFileMapView;
+
+    return TRUE;
+
+error_return:
+    // DO NOT close handle hFile because it was given to us by the caller
+
+    if(ISVALID_HANDLE(hFileMapObj))
+    {
+        CloseHandle(hFileMapObj);
+    }
+
+    return FALSE;
 }

@@ -25,9 +25,14 @@ extern "C" {
 #define CHLE_MEM_ENOMEM     17000
 #define CHLE_MEM_GEN        17001
 #define CHLE_MUTEX_TIMEOUT  17010
+#define CHLE_EMPTY_FILE     17011
 
 #define CHLE_LLIST_EINVAL   17100
 #define CHLE_LLIST_VALTYPE  17101
+
+#define CHLE_PROC_DOSHEADER     17150
+#define CHLE_PROC_TEXTSECHDR    17151
+#define CHLE_PROC_NOEXEC        17152
 
 // hashtable key types
 #define HT_KEY_STR      10
@@ -174,10 +179,20 @@ DllExpImp BOOL fChlGuiGetTextArea(HWND hWindow, int nCharsInText, __out int *pnP
 
 // Process Functions
 DllExpImp BOOL fChlPsGetProcNameFromID(DWORD pid, WCHAR *pwsProcName, DWORD dwBufSize);
+DllExpImp BOOL fChlPsGetNtHeaders(HANDLE hMapView, __out PIMAGE_NT_HEADERS *ppstNtHeaders);
+DllExpImp BOOL fChlPsGetPtrToCode(
+                                DWORD dwFileBase, 
+                                PIMAGE_NT_HEADERS pNTHeaders, 
+                                __out PDWORD pdwCodePtr, 
+                                __out PDWORD pdwSizeOfData,
+                                __out PDWORD pdwCodeSecVirtAddr);
+DllExpImp BOOL fChlPsGetEnclosingSectionHeader(DWORD rva, PIMAGE_NT_HEADERS pNTHeader, __out PIMAGE_SECTION_HEADER *ppstSecHeader);
 
 // General functions
 DllExpImp BOOL fChlGnIsOverflowINT(int a, int b);
 DllExpImp BOOL fChlGnIsOverflowUINT(unsigned int a, unsigned int b);
+DllExpImp BOOL fChlGnOwnMutex(HANDLE hMutex);
+DllExpImp BOOL fChlGnCreateMemMapOfFile(HANDLE hFile, DWORD dwReqProtection, __out PHANDLE phMapObj, __out PHANDLE phMapView);
 
 #ifdef __cplusplus
 }

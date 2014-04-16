@@ -142,7 +142,7 @@ BOOL fChlDsDestroyHT(CHL_HTABLE *phtable)
 
     if(!phtable) return FALSE;
     
-    if(!fOwnMutex(phtable->hMuAccess))
+    if(!fChlGnOwnMutex(phtable->hMuAccess))
         return FALSE;
     
     ktype = phtable->htKeyType;
@@ -282,7 +282,7 @@ BOOL fChlDsInsertHT(CHL_HTABLE *phtable, void *pvkey, int keySize, void *pval, i
     pnewnode->valsize = valSize;
 
     // insert into hashtable
-    if(!fOwnMutex(phtable->hMuAccess))
+    if(!fChlGnOwnMutex(phtable->hMuAccess))
         goto error_return;
     fLocked = TRUE;
 
@@ -380,7 +380,7 @@ BOOL fChlDsFindHT(CHL_HTABLE *phtable, void *pvkey, int keySize, __out void *pva
         default: logerr("Incorrect keytype %d", keytype); goto not_found;
     }
     
-    if(!fOwnMutex(phtable->hMuAccess))
+    if(!fChlGnOwnMutex(phtable->hMuAccess))
         goto not_found;
     fLocked = TRUE;
     
@@ -449,7 +449,7 @@ BOOL fChlDsRemoveHT(CHL_HTABLE *phtable, void *pvkey, int keySize)
         default: logerr("Incorrect keytype %d", phtable->htKeyType); goto error_return;
     }
     
-    if(!fOwnMutex(phtable->hMuAccess))
+    if(!fChlGnOwnMutex(phtable->hMuAccess))
         goto error_return;
     fLocked = TRUE;
     
@@ -610,7 +610,7 @@ void vChlDsDumpHT(CHL_HTABLE *phtable)
     keyType = phtable->htKeyType;
     valType = phtable->htValType;
     
-    if(!fOwnMutex(phtable->hMuAccess))
+    if(!fChlGnOwnMutex(phtable->hMuAccess))
         goto fend;
     fLocked = TRUE;
     

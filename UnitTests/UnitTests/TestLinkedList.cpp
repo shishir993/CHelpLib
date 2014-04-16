@@ -179,8 +179,7 @@ void vFreePointerList(PTESTSTRUCT *ppTestStructs, int nElems)
 }
 
 ////////////////////////////////////////////////////////////////////// 
-// ************************ Test Helpers ************************
-// END
+// ************************ Test Functions ************************
 
 //
 BOOL fTestLinkedList()
