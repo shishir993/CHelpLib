@@ -164,7 +164,7 @@ DllExpImp void vChlDsDumpHT(CHL_HTABLE *phtable);
 // Linked List Functions
 DllExpImp BOOL fChlDsCreateLL(__out PCHL_LLIST *ppLList, LL_VALTYPE valType, OPTIONAL int nEstEntries);
 DllExpImp BOOL fChlDsInsertLL(PCHL_LLIST pLList, void *pval, int valsize);
-DllExpImp BOOL fChlDsRemoveLL(PCHL_LLIST pLList, void *pvValToFind, BOOL fStopOnFirstFind, BOOL (*pfnComparer)(void*, void*));
+DllExpImp BOOL fChlDsRemoveLL(PCHL_LLIST pLList, void *pvValToFind, BOOL fStopOnFirstFind, BOOL (*pfnComparer)(void*, void*), __out OPTIONAL void **ppval);
 DllExpImp BOOL fChlDsRemoveAtLL(PCHL_LLIST pLList, int iIndexToRemove, __out OPTIONAL void **ppval);
 DllExpImp BOOL fChlDsFindLL(PCHL_LLIST pLList, __in void *pvValToFind, BOOL (*pfnComparer)(void*, void*), __out OPTIONAL void **ppval);
 DllExpImp BOOL fChlDsDestroyLL(PCHL_LLIST pLList);

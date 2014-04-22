@@ -31,6 +31,8 @@ DllExpImp BOOL fChlMmAlloc(__out void **pvAddr, __in size_t uSizeBytes, OPTIONAL
 error_return:
     *pvAddr = NULL;
     IFPTR_SETVAL(pdwError, errno);
+
+    // TODO: don't mask the errno value here
     SetLastError(CHLE_MEM_GEN);
     return FALSE;
 }// fChlMmAlloc()

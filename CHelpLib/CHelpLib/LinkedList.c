@@ -123,7 +123,7 @@ error_return:
     return FALSE;
 }
 
-BOOL fChlDsRemoveLL(PCHL_LLIST pLList, __in void *pvValToFind, BOOL fStopOnFirstFind, BOOL (*pfnComparer)(void*, void*))
+DllExpImp BOOL fChlDsRemoveLL(PCHL_LLIST pLList, void *pvValToFind, BOOL fStopOnFirstFind, BOOL (*pfnComparer)(void*, void*), __out OPTIONAL void **ppval)
 {
     PLLNODE pCurNode = NULL;
     void *pvCurVal = NULL;
@@ -155,7 +155,18 @@ BOOL fChlDsRemoveLL(PCHL_LLIST pLList, __in void *pvValToFind, BOOL fStopOnFirst
             fFoundNode = TRUE;
 
             vUnlinkNode(pLList, pCurNode);
-            vFreeNodeMem(pCurNode, pLList->valType, TRUE);
+            
+            if(ppval)
+            {
+                *ppval = pvCurVal;
+
+                // DO NOT free value memory since we are returning it
+                vFreeNodeMem(pCurNode, valType, FALSE);
+            }
+            else
+            {
+                vFreeNodeMem(pCurNode, valType, TRUE);
+            }
 
             --(pLList->nCurNodes);
 
