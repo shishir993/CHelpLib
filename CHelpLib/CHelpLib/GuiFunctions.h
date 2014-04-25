@@ -14,6 +14,7 @@ extern "C" {
 #endif
 
 #include "CommonInclude.h"
+#include <Commctrl.h>
 
 #ifdef __cplusplus
 }

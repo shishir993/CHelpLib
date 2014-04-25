@@ -85,3 +85,116 @@ BOOL fChlGuiGetTextArea(HWND hWindow, int nCharsInText, __out int *pnPixelsWidth
 error_return:
     return FALSE;
 }
+
+BOOL fChlGuiInitListViewColumns(HWND hList, WCHAR *apszColumNames[], int nColumns, OPTIONAL int *paiColumnSizePercent)
+{
+    int index;
+    LVCOLUMN lvColumn = {0};
+
+    int *paiColumnSizes = NULL;
+    
+    RECT rcList;
+    LONG lListWidth;
+
+    // Parameter validation
+    if(!ISVALID_HANDLE(hList) || !apszColumNames || nColumns <= 0)
+    {
+        SetLastError(ERROR_BAD_ARGUMENTS);
+        return FALSE;
+    }
+
+    // Calculate listview width
+    if(!GetWindowRect(hList, &rcList))
+    {
+        goto error_return;
+    }
+
+    lListWidth = rcList.right - rcList.left;
+
+    // Create memory to hold calculated column sizes
+    if(!fChlMmAlloc((void**)&paiColumnSizes, sizeof(int) * nColumns, NULL))
+    {
+        goto error_return;
+    }
+
+    // Calculate column sizes
+    if(!paiColumnSizePercent)
+    {
+        for(index = 0; index < nColumns; ++index)
+        {
+            paiColumnSizes[index] = 0.5 * lListWidth;
+        }
+    }
+    else
+    {
+        for(index = 0; index < nColumns; ++index)
+        {
+            paiColumnSizes[index] = paiColumnSizePercent[index] / 100.0 * lListWidth;
+        }
+    }
+
+    // List view headers
+    lvColumn.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+
+    for(index = 0; index < nColumns; ++index)
+    {
+        lvColumn.pszText = apszColumNames[index];
+        lvColumn.cx = paiColumnSizes[index];
+        SendMessage(hList, LVM_INSERTCOLUMN, index, (LPARAM)&lvColumn);
+    }
+
+    vChlMmFree((void**)&paiColumnSizes);
+    return TRUE;
+
+error_return:
+    IFPTR_FREE(paiColumnSizes);
+    return FALSE;
+}
+
+BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems)
+{
+    int index;
+    int iRetVal;
+    int nItemsInListView;
+
+    LVITEM lvItem;
+
+    // Parameter validation
+    if(!ISVALID_HANDLE(hList) || !apszItemText || nItems <= 0)
+    {
+        SetLastError(ERROR_BAD_ARGUMENTS);
+        return FALSE;
+    }
+
+    // First, get the current number of list items to use as item index
+    nItemsInListView = ListView_GetItemCount(hList);
+
+    // Insert the item, as in, append to the list
+    ZeroMemory(&lvItem, sizeof(lvItem));
+
+    lvItem.iItem = nItemsInListView;
+	lvItem.mask = LVIF_TEXT;
+	lvItem.pszText = apszItemText[0];
+	if( (iRetVal = SendMessage(hList, LVM_INSERTITEM, 0, (LPARAM)&lvItem)) == -1 )
+	{
+		goto error_return;
+	}
+
+    ASSERT(iRetVal == nItemsInListView);
+
+    // Now, insert sub items
+    for(index = 1; index < nItems; ++index)
+    {
+        lvItem.iSubItem = index;
+		lvItem.pszText = apszItemText[index];
+		if( !SendMessage(hList, LVM_SETITEMTEXT, lvItem.iItem, (LPARAM)&lvItem) )
+		{
+			goto error_return;
+		}
+    }
+
+    return TRUE;
+
+error_return:
+    return FALSE;
+}
