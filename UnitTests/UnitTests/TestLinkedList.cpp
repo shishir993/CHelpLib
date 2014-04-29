@@ -347,7 +347,7 @@ static BOOL fInsertRemoveFind()
 
     // Remove using the other remove function
     wprintf(L"Remove the last one using *RemoveLL() function\n");
-    if(!fChlDsRemoveLL(pLList, ppTestStructs[numTestData-1], TRUE, fCompareTestStructs))
+    if(!fChlDsRemoveLL(pLList, ppTestStructs[numTestData-1], TRUE, fCompareTestStructs, (void**)&pRetrievedTestData))
     {
         wprintf(L"!!!! Could not remove at %d using RemoveLL()\n", numTestData-1);
         goto test_failed;

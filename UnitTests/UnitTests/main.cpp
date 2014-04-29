@@ -30,6 +30,9 @@ void rdtscBusiness();
 void doSysCallTimingTests();
 void rdtsc_Query();
 
+BOOL fTestCreateFileWithSize();
+void vTestFileMapping();
+
 int main()
 {
     BOOL success = TRUE;
@@ -56,8 +59,16 @@ int main()
     rdtscBusiness();
     #endif
 
-    #if 1
+    #if 0
         fTestLinkedList();
+    #endif
+
+    #if 0
+        fTestCreateFileWithSize();
+    #endif
+
+    #if 1
+        vTestFileMapping();
     #endif
 
     OutputDebugString(L"\nTests done. Exiting...");
@@ -817,6 +828,176 @@ void rdtsc_Query()
     abs(temp);
 
     __asm mov dword ptr [diff+4], eax
+
+    return;
+}
+
+BOOL fTestCreateFileWithSize()
+{
+    static WCHAR aszFilenames[][32] = { L"file1.tmp", L"file2.tmp", L"file3.tmp" };
+    static int aiFileSizes[] = { 0, 
+                                 512, 
+                                 1024 * 1024 // 1 MB
+                               };
+
+    HANDLE hFile = 0;
+    DWORD dwFileSizeLow, dwFileSizeHigh;
+
+    int nSampleCounts = _countof(aiFileSizes);
+
+    ASSERT(_countof(aiFileSizes) == _countof(aszFilenames));
+
+    int index;
+
+    BOOL fRetVal = TRUE;
+
+    wprintf(L"*************\nBegin TEST fChlIoCreateFileWithSize()\n");
+
+    for(index = 0; index < nSampleCounts; ++index)
+    {
+        if(!fChlIoCreateFileWithSize(aszFilenames[index], aiFileSizes[index], &hFile))
+        {
+            fRetVal = FALSE;
+            wprintf(L"FAILED: Create %s %d. Error = %u\n", aszFilenames[index], aiFileSizes[index], GetLastError());
+            continue;
+        }
+
+        // Verify file handle
+        if(!ISVALID_HANDLE(hFile))
+        {
+            fRetVal = FALSE;
+            wprintf(L"FAILED: Invalid handle %s %d. Error = %u\n", aszFilenames[index], aiFileSizes[index], GetLastError());
+            continue;
+        }
+
+        // Verify file size
+        // Close handle to make sure file contents are flushed to disk
+        CloseHandle(hFile);
+
+        hFile = NULL;
+
+        // Open it again and get file size
+        hFile = CreateFile(aszFilenames[index], GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if(hFile == INVALID_HANDLE_VALUE)
+        {
+            fRetVal = FALSE;
+            wprintf(L"FAILED: CreateFile() failed %u\n", GetLastError());
+            goto end_of_for;
+        }
+
+        dwFileSizeLow = GetFileSize(hFile, &dwFileSizeHigh);
+
+        if(dwFileSizeHigh != 0)
+        {
+            fRetVal = FALSE;
+            wprintf(L"FAILED: HighPart = %u, LowPart = %u. %u\n", dwFileSizeHigh, dwFileSizeLow, GetLastError());
+        }
+        else if(dwFileSizeLow != aiFileSizes[index])
+        {
+            fRetVal = FALSE;
+            wprintf(L"FAILED: HighPart = %u, LowPart = %u. Expected %d. %u\n", dwFileSizeHigh, dwFileSizeLow, aiFileSizes[index], GetLastError());
+        }
+
+        wprintf(L"PASSED: %d: %s %d\n", index, aszFilenames[index], aiFileSizes[index]);
+
+end_of_for:
+        if(hFile) 
+        {
+            CloseHandle(hFile);
+            DeleteFile(aszFilenames[index]);
+        }
+
+        hFile = NULL;
+
+        dwFileSizeHigh = dwFileSizeLow = 0;
+    }
+
+    return fRetVal;
+}
+
+void vTestFileMapping()
+{
+    HANDLE hFile = NULL;
+    HANDLE hMapObj = NULL;
+    HANDLE hView = NULL;
+
+    int iSize = 512;
+    int index;
+
+    BYTE abData[4097];
+
+    if(!fChlIoCreateFileWithSize(L"file1.tmp", iSize, &hFile))
+    {
+        wprintf(L"FAILED: Create. Error = %u\n", GetLastError());
+        return;
+    }
+
+    // Map it
+    if( (hMapObj = CreateFileMapping(hFile, NULL, PAGE_READWRITE, 0, 0, L"dfajdsfk")) == NULL )
+	{
+        wprintf(L"FAILED: CreateFileMapping. Error = %u\n", GetLastError());
+		goto end_of_func;
+	}
+
+	// check for ERROR_ALREADY_EXISTS ??
+
+	// map this file mapping object into our address space
+	if( (hView = MapViewOfFile(hMapObj, FILE_MAP_WRITE, 0, 0, 0)) == NULL )
+	{
+        wprintf(L"FAILED: MapViewOfFile. Error = %u\n", GetLastError());
+		goto end_of_func;
+	}
+
+    // test write
+    PBYTE pb = (PBYTE)hView;
+
+    wprintf(L"Base address: %p\n", pb);
+
+    __try
+    {
+        for(index = 0; index < _countof(abData); ++index)
+        {
+            *pb++ = abData[index];
+            wprintf(L"Succes at %d %p\n", index, pb);
+        }
+    }
+    __except(0, EXCEPTION_EXECUTE_HANDLER)
+    {
+        wprintf(L"FAILED at %d %p\n", index, pb);
+    }
+
+    MEMORY_BASIC_INFORMATION memBasic = {0};
+
+    if(VirtualQuery(hView, &memBasic, sizeof(MEMORY_BASIC_INFORMATION)) == 0)
+    {
+        wprintf(L"FAILED: VirtualQuery %u\n", GetLastError());
+    }
+    else
+    {
+        wprintf(L"0x%p %u 0x%08x 0x%08x 0x%08x\n",
+            memBasic.BaseAddress,
+            memBasic.RegionSize,
+            memBasic.State,
+            memBasic.Protect,
+            memBasic.Type
+            );
+    }
+
+end_of_func:
+    if(hView)
+    {
+        UnmapViewOfFile(hView);
+    }
+
+    if(hMapObj)
+    {
+        CloseHandle(hMapObj);
+    }
+
+    if(hFile)
+    {
+        CloseHandle(hFile);
+    }
 
     return;
 }

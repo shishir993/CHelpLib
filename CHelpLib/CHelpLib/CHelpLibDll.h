@@ -128,6 +128,7 @@ DllExpImp void vChlMmFree(__in void **pvToFree);
 
 // IOFunctions
 DllExpImp BOOL fChlIoReadLineFromStdin(__in DWORD dwBufSize, __out WCHAR *psBuffer);
+DllExpImp BOOL fChlIoCreateFileWithSize(__in PWCHAR pszFilepath, __in int iSizeBytes, __out PHANDLE phFile);
 
 // StringFunctions
 DllExpImp WCHAR* pszChlSzGetFilenameFromPath(WCHAR *pwsFilepath, int numCharsInput);
