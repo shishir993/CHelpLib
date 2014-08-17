@@ -180,8 +180,6 @@ BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems)
 		goto error_return;
 	}
 
-    ASSERT(iRetVal == nItemsInListView);
-
     // Now, insert sub items
     for(index = 1; index < nItems; ++index)
     {
