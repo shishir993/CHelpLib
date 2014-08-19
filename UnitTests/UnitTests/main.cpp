@@ -48,6 +48,8 @@ int main()
     success = fTestHT_TableSizes();
     #endif
 
+    success = fTestStrings() & success;
+
     #if 0
     OutputDebugString(L"Starting perf tests on CHelpLib.dll");
     doPerfTests();
@@ -67,7 +69,7 @@ int main()
         fTestCreateFileWithSize();
     #endif
 
-    #if 1
+    #if 0
         vTestFileMapping();
     #endif
 

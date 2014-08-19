@@ -151,10 +151,10 @@ error_return:
     return FALSE;
 }
 
-BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems)
+BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems, LPARAM lParam)
 {
     int index;
-    int iRetVal;
+    int iInsertedAt;
     int nItemsInListView;
 
     LVITEM lvItem;
@@ -173,9 +173,10 @@ BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems)
     ZeroMemory(&lvItem, sizeof(lvItem));
 
     lvItem.iItem = nItemsInListView;
-	lvItem.mask = LVIF_TEXT;
+	lvItem.mask = LVIF_TEXT|LVIF_PARAM;
 	lvItem.pszText = apszItemText[0];
-	if( (iRetVal = SendMessage(hList, LVM_INSERTITEM, 0, (LPARAM)&lvItem)) == -1 )
+    lvItem.lParam = lParam;
+	if( (iInsertedAt = SendMessage(hList, LVM_INSERTITEM, 0, (LPARAM)&lvItem)) == -1 )
 	{
 		goto error_return;
 	}
@@ -185,7 +186,7 @@ BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems)
     {
         lvItem.iSubItem = index;
 		lvItem.pszText = apszItemText[index];
-		if( !SendMessage(hList, LVM_SETITEMTEXT, lvItem.iItem, (LPARAM)&lvItem) )
+		if( !SendMessage(hList, LVM_SETITEMTEXT, iInsertedAt, (LPARAM)&lvItem) )
 		{
 			goto error_return;
 		}

@@ -178,7 +178,7 @@ DllExpImp BOOL fChlGuiCenterWindow(HWND hWnd);
 // consisting of those number of characters
 DllExpImp BOOL fChlGuiGetTextArea(HWND hWindow, int nCharsInText, __out int *pnPixelsWidth, __out int *pnPixelsHeight);
 DllExpImp BOOL fChlGuiInitListViewColumns(HWND hList, WCHAR *apszColumNames[], int nColumns, OPTIONAL int *paiColumnSizePercent);
-DllExpImp BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems);
+DllExpImp BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems, __in_opt LPARAM lParam);
 
 // Process Functions
 DllExpImp BOOL fChlPsGetProcNameFromID(DWORD pid, WCHAR *pwsProcName, DWORD dwBufSize);
