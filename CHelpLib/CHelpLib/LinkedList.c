@@ -90,7 +90,6 @@ BOOL fChlDsInsertLL(PCHL_LLIST pLList, void *pval, int valsize)
         goto error_return;
     }
 
-    // Insert into linked list at the head
     if(!fChlGnOwnMutex(pLList->hMuAccess))
     {
         goto error_return;
@@ -99,7 +98,6 @@ BOOL fChlDsInsertLL(PCHL_LLIST pLList, void *pval, int valsize)
     fMutexLocked = TRUE;
 
     vInsertNode(pLList, pnewnode);
-
     ++(pLList->nCurNodes);
 
     ReleaseMutex(pLList->hMuAccess);
@@ -218,7 +216,7 @@ BOOL fChlDsRemoveAtLL(PCHL_LLIST pLList, int iIndexToRemove, __out OPTIONAL void
 
     // Loop until we have address of node to remove
     pCurNode = pLList->pHead;
-    for(itr = 0; itr < iIndexToRemove; ++itr)
+    for(itr = 1; itr <= iIndexToRemove; ++itr)
     {
         ASSERT(pCurNode);
         pCurNode = pCurNode->pright;
@@ -227,6 +225,7 @@ BOOL fChlDsRemoveAtLL(PCHL_LLIST pLList, int iIndexToRemove, __out OPTIONAL void
     ASSERT(pCurNode);
 
     vUnlinkNode(pLList, pCurNode);
+    --(pLList->nCurNodes);
 
     if(ppval)
     {
@@ -242,6 +241,61 @@ BOOL fChlDsRemoveAtLL(PCHL_LLIST pLList, int iIndexToRemove, __out OPTIONAL void
 
     ReleaseMutex(pLList->hMuAccess);
     return TRUE;
+
+error_return:
+    if(fMutexLocked)
+    {
+        ReleaseMutex(pLList->hMuAccess);    
+    }
+    return FALSE;
+}
+
+BOOL fChlDsPeekAtLL(PCHL_LLIST pLList, int iIndexToPeek, __out void **ppval)
+{
+    BOOL fFoundNode = FALSE;
+    BOOL fMutexLocked = FALSE;
+
+    PLLNODE pCurNode = NULL;
+
+    if(!pLList || iIndexToPeek < 0 || iIndexToPeek >= pLList->nCurNodes)
+    {
+        SetLastError(ERROR_BAD_ARGUMENTS);
+        goto error_return;
+    }
+
+    if(!fChlGnOwnMutex(pLList->hMuAccess))
+    {
+        goto error_return;
+    }
+
+    fMutexLocked = TRUE;
+    if(iIndexToPeek == 0)
+    {
+        vCopyValOut(pLList->pHead, pLList->valType, ppval);
+        fFoundNode = TRUE;
+    }
+    else if(iIndexToPeek == (pLList->nCurNodes - 1))
+    {
+        vCopyValOut(pLList->pTail, pLList->valType, ppval);
+        fFoundNode = TRUE;
+    }
+    else
+    {
+        // Iterate through the list to the specified index
+        int itr;
+        pCurNode = pLList->pHead;
+        for(itr = 0; itr < iIndexToPeek; ++itr)
+        {
+            pCurNode = pCurNode->pright;
+        }
+
+        ASSERT(pCurNode != NULL);
+        vCopyValOut(pCurNode, pLList->valType, ppval);
+        fFoundNode = TRUE;
+    }
+
+    ReleaseMutex(pLList->hMuAccess);
+    return fFoundNode;
 
 error_return:
     if(fMutexLocked)

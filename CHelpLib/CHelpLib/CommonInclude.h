@@ -21,6 +21,7 @@ extern "C" {
 #include <string.h>
 #include <malloc.h>
 #include <errno.h>
+#include <sal.h>
 
 #include "Assert.h"
 #include "DbgHelpers.h"

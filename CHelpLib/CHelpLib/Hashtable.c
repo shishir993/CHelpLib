@@ -351,7 +351,7 @@ int exhandler(int excode, LPEXCEPTION_POINTERS exptrs)
 }
 
 
-BOOL fChlDsFindHT(CHL_HTABLE *phtable, void *pvkey, int keySize, __out void *pval, __out int *pvalsize)
+BOOL fChlDsFindHT(CHL_HTABLE *phtable, void *pvkey, int keySize, __in_opt void *pval, __in_opt int *pvalsize)
 {
     int index = 0;
     HT_NODE *phtFoundNode = NULL;
@@ -363,7 +363,6 @@ BOOL fChlDsFindHT(CHL_HTABLE *phtable, void *pvkey, int keySize, __out void *pva
 
     ASSERT(phtable);
     ASSERT(pvkey && keySize > 0);
-    ASSERT(pval);
 
     keytype = phtable->htKeyType;
 

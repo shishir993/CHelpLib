@@ -2,6 +2,7 @@
 
 #include "PerfTests.h"
 #include "TestLinkedList.h"
+#include "QueueTests.h"
 
 #define MAX_RAND_COUNT      9999
 #define MAX_TIME_TESTS      10
@@ -37,41 +38,30 @@ int main()
 {
     BOOL success = TRUE;
 
-    #if 0
     // hashtable tests
     OutputDebugString(L"Starting unit tests on CHelpLib.dll");
-    success = fTestHT_StrStr() & success;
-    success = fTestHT_NumStr() & success;
-    success = fTestStrings() & success;
 
-    success = fTestHT_NumStrRand() & success;
-    success = fTestHT_TableSizes();
-    #endif
+    //success = fTestHT_StrStr() & success;
+    //success = fTestHT_NumStr() & success;
+    //success = fTestStrings() & success;
 
-    success = fTestStrings() & success;
+    //success = fTestHT_NumStrRand() & success;
+    //success = fTestHT_TableSizes();
+    //success = fTestStrings() & success;
 
-    #if 0
-    OutputDebugString(L"Starting perf tests on CHelpLib.dll");
-    doPerfTests();
+    //OutputDebugString(L"Starting perf tests on CHelpLib.dll");
+    //doPerfTests();
+
     //doSysCallTimingTests();
     //rdtsc_Query();
-    #endif
+    //rdtscBusiness();
+    
+    //fTestLinkedList();
 
-    #if 0
-    rdtscBusiness();
-    #endif
-
-    #if 0
-        fTestLinkedList();
-    #endif
-
-    #if 0
-        fTestCreateFileWithSize();
-    #endif
-
-    #if 0
-        vTestFileMapping();
-    #endif
+    //fTestCreateFileWithSize();
+    //vTestFileMapping();
+    
+    success = success & SUCCEEDED(QueueRunTests());
 
     OutputDebugString(L"\nTests done. Exiting...");
     return !success;

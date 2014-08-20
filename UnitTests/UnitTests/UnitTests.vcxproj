@@ -87,12 +87,14 @@
     <ClCompile Include="Assert.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PerfTests.cpp" />
+    <ClCompile Include="QueueTests.cpp" />
     <ClCompile Include="TestLinkedList.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assert.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="PerfTests.h" />
+    <ClInclude Include="QueueTests.h" />
     <ClInclude Include="TestLinkedList.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

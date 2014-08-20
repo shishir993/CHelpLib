@@ -90,6 +90,7 @@
     <ClInclude Include="LinkedList.h" />
     <ClInclude Include="MemFunctions.h" />
     <ClInclude Include="ProcessFunctions.h" />
+    <ClInclude Include="Queue.h" />
     <ClInclude Include="StringFunctions.h" />
   </ItemGroup>
   <ItemGroup>
@@ -102,6 +103,7 @@
     <ClCompile Include="LinkedList.c" />
     <ClCompile Include="MemFunctions.c" />
     <ClCompile Include="ProcessFunctions.c" />
+    <ClCompile Include="Queue.c" />
     <ClCompile Include="StringFunctions.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
