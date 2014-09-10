@@ -1,9 +1,10 @@
 
 // MemFunctions.cpp
 // Contains functions that provide memory alloc/dealloc services
-// Shishir K Prasad (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      06/23/13 Initial version
+//      09/09/14 Refactor to store defs in individual headers.
 //
 
 #include "MemFunctions.h"

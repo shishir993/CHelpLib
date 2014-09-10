@@ -52,6 +52,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CHELPLIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
+      <TreatWarningAsError>false</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -79,9 +80,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Assert.h" />
-    <ClInclude Include="CHelpLibDll.h" />
     <ClInclude Include="CommonInclude.h" />
     <ClInclude Include="DbgHelpers.h" />
+    <ClInclude Include="Defines.h" />
     <ClInclude Include="General.h" />
     <ClInclude Include="GuiFunctions.h" />
     <ClInclude Include="Hashtable.h" />

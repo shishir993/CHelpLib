@@ -1,12 +1,13 @@
 // LinkedList.cpp
 // Contains functions that implement a linked list data structure
-// Shishir K Prasad (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      04/05/14 Initial version
 //      04/10/14 Changed to insert at end logic
 
 #include "LinkedList.h"
 #include "General.h"
+#include "MemFunctions.h"
 
 static void vCopyValOut(PLLNODE pnode, LL_VALTYPE valType, __out void **ppValOut);
 static BOOL fPopulateNode(PLLNODE pNodeToPopulate, LL_VALTYPE valType, void *pval, int valsize);
@@ -420,7 +421,8 @@ static void vCopyValOut(PLLNODE pnode, LL_VALTYPE valType, __out void **ppValOut
 
         case LL_VAL_PTR:
         {
-            *ppValOut = pnode->nodeval.pval;
+            memcpy(ppValOut, pnode->nodeval.pval, pnode->dwValSize);
+            //*ppValOut = pnode->nodeval.pval;
             break;
         }
 

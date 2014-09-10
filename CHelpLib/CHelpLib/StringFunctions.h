@@ -1,8 +1,9 @@
 // StringFunctions.h
 // Contains functions that provide string operations
-// Shishir K Prasad (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      08/10/13 Initial version
+//      09/09/14 Refactor to store defs in individual headers.
 //
 
 #ifndef _STRINGFUNCTIONS_H
@@ -13,6 +14,11 @@ extern "C" {
 #endif
 
 #include "CommonInclude.h"
+
+// -------------------------------------------
+// Functions exported
+
+DllExpImp WCHAR* pszChlSzGetFilenameFromPath(WCHAR *pwsFilepath, int numCharsInput);
 
 #ifdef __cplusplus
 }

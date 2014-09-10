@@ -1,7 +1,7 @@
 
 // GuiFunctions.cpp
 // Contains functions that provide help in Gui code
-// Shishir K Prasad (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      03/25/14 Initial version
 //

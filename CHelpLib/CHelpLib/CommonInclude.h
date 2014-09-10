@@ -1,7 +1,7 @@
 
 // CommonInclude.h
 // Contains common includes, defs and typedefs
-// Shishir K Prasad (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      06/23/13 Initial version
 //
@@ -25,10 +25,8 @@ extern "C" {
 
 #include "Assert.h"
 #include "DbgHelpers.h"
-#include "CHelpLibDll.h"
 #include "Helpers.h"
-
-#define HT_MUTEX_NAME   (TEXT("CHL_MUTEX_NAME"))
+#include "Defines.h"
 
 #ifdef __cplusplus
 }

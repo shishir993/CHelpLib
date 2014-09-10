@@ -1,7 +1,7 @@
 
 // General.c
 // Contains general helper functions
-// Shishir K Prasad (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      01/20/14 Initial version
 //

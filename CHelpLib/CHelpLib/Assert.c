@@ -1,7 +1,7 @@
 
 // Assert.c
 // Contains functions that provides the ASSERT() service
-// Shishir K Prasad (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      06/23/13 Initial version
 //

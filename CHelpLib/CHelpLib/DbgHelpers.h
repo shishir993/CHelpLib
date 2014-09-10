@@ -1,7 +1,7 @@
 
 // DbgHelpers.h
 // Defines and functions to help in debugging
-// Shishir K Prasad (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      06/23/13 Initial version
 //
