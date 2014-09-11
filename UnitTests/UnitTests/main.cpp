@@ -1,8 +1,11 @@
 
-
+#include "Common.h"
 #include "PerfTests.h"
 #include "TestLinkedList.h"
 #include "QueueTests.h"
+
+#include "StringFunctions.h"
+#include "IOFunctions.h"
 
 #define MAX_RAND_COUNT      9999
 #define MAX_TIME_TESTS      10
@@ -38,16 +41,16 @@ int main()
 {
     BOOL success = TRUE;
 
-    // hashtable tests
-    OutputDebugString(L"Starting unit tests on CHelpLib.dll");
+    OutputDebugString(L"Starting unit tests on CHelpLib");
 
-    //success = fTestHT_StrStr() & success;
-    //success = fTestHT_NumStr() & success;
-    //success = fTestStrings() & success;
+    // Test string functions
+    success = fTestStrings() & success;
 
-    //success = fTestHT_NumStrRand() & success;
-    //success = fTestHT_TableSizes();
-    //success = fTestStrings() & success;
+    // Test hash table
+    success = fTestHT_StrStr() & success;
+    success = fTestHT_NumStr() & success;
+    success = fTestHT_NumStrRand() & success;
+    success = fTestHT_TableSizes();
 
     //OutputDebugString(L"Starting perf tests on CHelpLib.dll");
     //doPerfTests();
@@ -56,12 +59,13 @@ int main()
     //rdtsc_Query();
     //rdtscBusiness();
     
-    //fTestLinkedList();
+    // Test linked list
+    fTestLinkedList();
 
     //fTestCreateFileWithSize();
     //vTestFileMapping();
     
-    success = success & SUCCEEDED(QueueRunTests());
+    //success = success & SUCCEEDED(QueueRunTests());
 
     OutputDebugString(L"\nTests done. Exiting...");
     return !success;
@@ -959,7 +963,6 @@ void vTestFileMapping()
     }
 
     MEMORY_BASIC_INFORMATION memBasic = {0};
-
     if(VirtualQuery(hView, &memBasic, sizeof(MEMORY_BASIC_INFORMATION)) == 0)
     {
         wprintf(L"FAILED: VirtualQuery %u\n", GetLastError());

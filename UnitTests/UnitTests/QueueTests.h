@@ -8,7 +8,6 @@
 
 #include <wchar.h>
 #include <Windows.h>
-#include "CHelpLibDll.h"
 
 HRESULT QueueRunTests();
 

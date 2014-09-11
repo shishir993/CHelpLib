@@ -2,6 +2,9 @@
 #include "Common.h"
 #include "TestLinkedList.h"
 
+#include "LinkedList.h"
+#include "MemFunctions.h"
+
 #define NUM_TESTS   2
 
 typedef struct _testStruct {
@@ -290,7 +293,7 @@ static BOOL fInsertRemoveFind()
     for(index = 0; index < numTestData; ++index)
     {
         wprintf(L"Inserting element %d\n", index);
-        if(!fChlDsInsertLL(pLList, ppTestStructs[index], sizeof(TESTSTRUCT)))
+        if(!fChlDsInsertLL(pLList, &(ppTestStructs[index]), sizeof(PTESTSTRUCT)))
         {
             wprintf(L"!!!! Could not insert element %d\n", index);
             goto test_failed;
@@ -317,7 +320,6 @@ static BOOL fInsertRemoveFind()
     }
 
     wprintf(L"MATCH retrieved struct\n");
-    vChlMmFree((void**)&pRetrievedTestData);
 
     // Find the first three
     wprintf(L"Finding after removing at end...\n");
@@ -339,7 +341,7 @@ static BOOL fInsertRemoveFind()
 
     // Add the fourth one again
     wprintf(L"Adding the last one again...\n");
-    if(!fChlDsInsertLL(pLList, ppTestStructs[numTestData-1], sizeof(TESTSTRUCT)))
+    if(!fChlDsInsertLL(pLList, &(ppTestStructs[numTestData-1]), sizeof(PTESTSTRUCT)))
     {
         wprintf(L"!!!! Could not re-insert element %d\n", numTestData-1);
         goto test_failed;
@@ -391,7 +393,6 @@ static BOOL fInsertRemoveFind()
     }
 
     wprintf(L"MATCH first retrieved\n");
-    vChlMmFree((void**)&pRetrievedTestData);
 
     // Find, everything except first and last
     for(index = 1; index < numTestData - 1; ++index)
@@ -458,7 +459,7 @@ static BOOL fInsertAndFind_Internal(PTESTSTRUCT *ppTestStructs, int nElems)
     wprintf(L"Inserting total of %d elements\n", nElems);
     for(index = 0; index < nElems; ++index)
     {
-        if(!fChlDsInsertLL(pLList, ppTestStructs[index], sizeof(TESTSTRUCT)))
+        if(!fChlDsInsertLL(pLList, &(ppTestStructs[index]), sizeof(PTESTSTRUCT)))
         {
             wprintf(L"!!!! Could not insert element %d\n", index);
             goto test_failed;

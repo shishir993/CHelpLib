@@ -2,6 +2,8 @@
 #include "Common.h"
 #include "TestLinkedList.h"
 
+#include "Queue.h"
+
 static char* apszTest[] = { "string1", "string2", "string3", "string4", "string5" };
 static int aiTest[] = { 1, 2, 3, 4, 50, 60, 700, 800, 1000, 2222 };
 

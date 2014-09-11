@@ -9,7 +9,6 @@
 #include <Windows.h>
 #include <math.h>
 #include "Assert.h"
-#include "CHelpLibDll.h"
 
 
 #endif // _UT_COMMON_H
