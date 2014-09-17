@@ -5,6 +5,7 @@
 // History
 //      06/23/13 Initial version
 //      09/09/14 Refactor to store defs in individual headers.
+//      09/12/14 Naming convention modifications
 //
 
 #ifndef _IOFUNCTIONS_H
@@ -20,8 +21,8 @@ extern "C" {
 // -------------------------------------------
 // Functions exported
 
-DllExpImp BOOL fChlIoReadLineFromStdin(__in DWORD dwBufSize, __out WCHAR *psBuffer);
-DllExpImp BOOL fChlIoCreateFileWithSize(__in PWCHAR pszFilepath, __in int iSizeBytes, __out PHANDLE phFile);
+DllExpImp HRESULT CHL_IoReadLineFromStdin(_Inout_z_bytecap_x_(dwBufSize) PWSTR pszBuffer, _In_ DWORD dwBufSize);
+DllExpImp HRESULT CHL_IoCreateFileWithSize(_Out_ PHANDLE phFile, _In_z_ PWCHAR pszFilepath, _In_ int iSizeBytes);
 
 
 #ifdef __cplusplus

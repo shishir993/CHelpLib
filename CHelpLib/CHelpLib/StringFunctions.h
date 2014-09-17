@@ -18,7 +18,7 @@ extern "C" {
 // -------------------------------------------
 // Functions exported
 
-DllExpImp WCHAR* pszChlSzGetFilenameFromPath(WCHAR *pwsFilepath, int numCharsInput);
+DllExpImp PCWSTR CHL_SzGetFilenameFromPath(_In_z_ PCWSTR pszFilepath, _In_ int numCharsInput);
 
 #ifdef __cplusplus
 }

@@ -4,6 +4,7 @@
 // Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      01/20/14 Initial version
+//      09/12/14 Naming convention modifications
 //
 
 #ifndef _GENERAL_H
@@ -18,15 +19,18 @@ extern "C" {
 // -------------------------------------------
 // Functions exported
 
-DllExpImp BOOL fChlGnIsOverflowINT(int a, int b);
-DllExpImp BOOL fChlGnIsOverflowUINT(unsigned int a, unsigned int b);
-DllExpImp BOOL fChlGnOwnMutex(HANDLE hMutex);
-DllExpImp BOOL fChlGnCreateMemMapOfFile(HANDLE hFile, DWORD dwReqProtection, __out PHANDLE phMapObj, __out PHANDLE phMapView);
+DllExpImp BOOL CHL_GnIsOverflowINT(_In_ int a, _In_ int b);
+DllExpImp BOOL CHL_GnIsOverflowUINT(_In_ UINT a, _In_ UINT b);
+DllExpImp HRESULT CHL_GnCreateMemMapOfFile(
+    _In_ HANDLE hFile, 
+    _In_ DWORD dwReqProtection, 
+    _Out_ PHANDLE phMapObj, 
+    _Out_ PHANDLE phMapView);
 
 // -------------------------------------------
 // Functions used only within this library
 
-BOOL fOwnMutex(HANDLE hMutex);
+HRESULT CHL_GnOwnMutex(_In_ HANDLE hMutex);
 
 #ifdef __cplusplus
 }

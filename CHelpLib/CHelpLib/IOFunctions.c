@@ -4,6 +4,7 @@
 // Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      06/23/13 Initial version
+//      09/12/14 Naming convention modifications
 //
 
 #include "IOFunctions.h"
@@ -15,15 +16,16 @@
 // psBuffer     : Pointer to buffer where input characters must be stored
 // dwBufSize    : Size in bytes, including null terminator.
 // 
-DllExpImp BOOL fChlIoReadLineFromStdin(__in DWORD dwBufSize, __out WCHAR *psBuffer)
+HRESULT CHL_IoReadLineFromStdin(_Inout_z_bytecap_x_(dwBufSize) PWSTR pszBuffer, _In_ DWORD dwBufSize)
 {
     WCHAR ch;
     DWORD dwReadChars = 0;
-
-    ASSERT(psBuffer);
-
+    
+    ASSERT(pszBuffer);
     if(dwBufSize <= 0)
-        return FALSE;
+    {
+        return E_INVALIDARG;
+    }
 
     while(dwReadChars < (dwBufSize-1))
     {
@@ -32,11 +34,11 @@ DllExpImp BOOL fChlIoReadLineFromStdin(__in DWORD dwBufSize, __out WCHAR *psBuff
         {
             break;
         }
-        psBuffer[dwReadChars] = ch;
+        pszBuffer[dwReadChars] = ch;
         ++dwReadChars;
     }
-    psBuffer[dwReadChars] = 0;
-    return TRUE;
+    pszBuffer[dwReadChars] = 0;
+    return S_OK;
 
 }// fChlIoReadLineFromStdin()
 
@@ -53,7 +55,7 @@ DllExpImp BOOL fChlIoReadLineFromStdin(__in DWORD dwBufSize, __out WCHAR *psBuff
 //                be set to a particular size or not.
 // phFile       : Pointer to HANDLE that will receive the handle to the file
 //
-BOOL fChlIoCreateFileWithSize(__in PWCHAR pszFilepath, __in int iSizeBytes, __out PHANDLE phFile)
+HRESULT CHL_IoCreateFileWithSize(_Out_ PHANDLE phFile, _In_z_ PWCHAR pszFilepath, _In_ int iSizeBytes)
 {
     HANDLE hFile = NULL;
 
@@ -62,22 +64,24 @@ BOOL fChlIoCreateFileWithSize(__in PWCHAR pszFilepath, __in int iSizeBytes, __ou
     DWORD dwBytesWritten = 0;
     DWORD dwError = ERROR_SUCCESS;
 
+    HRESULT hr = S_OK;
+
     // Parameter validation
-    if(!pszFilepath || iSizeBytes < 0 || !phFile)
+    if(!pszFilepath || !phFile)
     {
-        SetLastError(ERROR_BAD_ARGUMENTS);
-        return FALSE;
+        return E_INVALIDARG;
     }
 
     hFile = CreateFile(pszFilepath, GENERIC_READ|GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if(hFile == INVALID_HANDLE_VALUE)
     {
-        return FALSE;
+        return HRESULT_FROM_WIN32(GetLastError());
     }
 
     if(iSizeBytes > 0)
     {
-        if(!fChlMmAlloc((void**)&pbTemp, iSizeBytes, NULL))
+        hr = CHL_MmAlloc((void**)&pbTemp, iSizeBytes, NULL);
+        if(FAILED(hr))
         {
             goto error_return;
         }
@@ -85,18 +89,21 @@ BOOL fChlIoCreateFileWithSize(__in PWCHAR pszFilepath, __in int iSizeBytes, __ou
         // Write iSizeBytes of zeroes to file so that we get the desired file size
         if(!WriteFile(hFile, pbTemp, iSizeBytes, &dwBytesWritten, NULL))
         {
+            hr = HRESULT_FROM_WIN32(GetLastError());
             goto error_return;
         }
 
         if(dwBytesWritten != iSizeBytes)
         {
+            hr = E_FAIL;
             goto error_return;
         }
 
-        vChlMmFree((void**)&pbTemp);
+        CHL_MmFree((void**)&pbTemp);
 
         if(!SetEndOfFile(hFile))
         {
+            hr = HRESULT_FROM_WIN32(GetLastError());
             goto error_return;
         }
 
@@ -104,13 +111,13 @@ BOOL fChlIoCreateFileWithSize(__in PWCHAR pszFilepath, __in int iSizeBytes, __ou
         dwError = SetFilePointer(hFile, (LONG)-iSizeBytes, NULL, FILE_CURRENT);
         if(dwError == INVALID_SET_FILE_POINTER)
         {
+            hr = HRESULT_FROM_WIN32(GetLastError());
             goto error_return;
         }
     }
 
     *phFile = hFile;
-
-    return TRUE;
+    return hr;
 
 error_return:
     if(hFile)
@@ -121,8 +128,8 @@ error_return:
 
     if(pbTemp)
     {
-        vChlMmFree((void**)&pbTemp);
+        CHL_MmFree((void**)&pbTemp);
     }
 
-    return FALSE;
+    return hr;
 }

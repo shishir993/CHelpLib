@@ -12,7 +12,7 @@
 // Given the window handle, centers the window within the
 // parent window's client area.
 //
-BOOL fChlGuiCenterWindow(HWND hWnd)
+HRESULT CHL_GuiCenterWindow(_In_ HWND hWnd)
 {
     int x, y;
 	int iWidth, iHeight;
@@ -22,7 +22,9 @@ BOOL fChlGuiCenterWindow(HWND hWnd)
 
     // Make the window relative to its parent
     if( (hwndParent = GetParent(hWnd)) == NULL)
-		return FALSE;
+    {
+		return E_INVALIDARG;
+    }
 
     // todo: handle the case when hWnd is the main window, i.e., 
     // parent is NULL, in which case parent must be considered as the desktop itself
@@ -46,47 +48,57 @@ BOOL fChlGuiCenterWindow(HWND hWnd)
     if(y + iHeight > iScreenHeight) y = iScreenHeight - iHeight;
 
     MoveWindow(hWnd, x, y, iWidth, iHeight, FALSE);
-    return TRUE;
+    return S_OK;
 
 }// fChlGuiCenterWindow()
 
 // Given the window handle and the number of characters, returns the 
 // width and height in pixels that will be occupied by a string of that
 // consisting of those number of characters
-BOOL fChlGuiGetTextArea(HWND hWindow, int nCharsInText, __out int *pnPixelsWidth, __out int *pnPixelsHeight)
+HRESULT CHL_GuiGetTextArea(_In_ HWND hWindow, _In_ int nCharsInText, _Out_ int *pnPixelsWidth, _Out_ int *pnPixelsHeight)
 {
-    HDC hDC;
+    HDC hDC = NULL;
     TEXTMETRIC stTextMetric;
+
+    HRESULT hr = S_OK;
 
     // Parameter validation
     if(!ISVALID_HANDLE(hWindow) || nCharsInText < 0 || !pnPixelsWidth || !pnPixelsHeight)
     {
-        SetLastError(ERROR_BAD_ARGUMENTS);
-        goto error_return;
+        hr = E_INVALIDARG;
+        goto done;
     }
     
-    if(!(hDC = GetDC(hWindow)))
+    hDC = GetDC(hWindow);
+    if(hDC == NULL)
     {
-        goto error_return;
+        hr = E_FAIL;    // GetDC doesn't set last error
+        goto done;
     }
 
     // TODO: hDC is uninitialized so system (bitmap) font by default? Should I select the font into the DC first?
-
     if(!GetTextMetrics(hDC, &stTextMetric))
     {
-        goto error_return;
+        hr = E_FAIL;    // GetTextMetric doesn't set last error
+        goto done;
     }
 
     *pnPixelsWidth = stTextMetric.tmMaxCharWidth * nCharsInText;
     *pnPixelsHeight = stTextMetric.tmHeight + stTextMetric.tmExternalLeading;
 
-    return TRUE;
-
-error_return:
-    return FALSE;
+done:
+    if(hDC != NULL)
+    {
+        ReleaseDC(hWindow, hDC);
+    }
+    return hr;
 }
 
-BOOL fChlGuiInitListViewColumns(HWND hList, WCHAR *apszColumNames[], int nColumns, OPTIONAL int *paiColumnSizePercent)
+HRESULT CHL_GuiInitListViewColumns(
+    _In_ HWND hList, 
+    _In_ WCHAR *apszColumNames[], 
+    _In_ int nColumns, 
+    _In_opt_ int *paiColumnSizePercent)
 {
     int index;
     LVCOLUMN lvColumn = {0};
@@ -96,46 +108,48 @@ BOOL fChlGuiInitListViewColumns(HWND hList, WCHAR *apszColumNames[], int nColumn
     RECT rcList;
     LONG lListWidth;
 
+    HRESULT hr = S_OK;
+
     // Parameter validation
     if(!ISVALID_HANDLE(hList) || !apszColumNames || nColumns <= 0)
     {
-        SetLastError(ERROR_BAD_ARGUMENTS);
-        return FALSE;
+        hr = E_INVALIDARG;
+        goto done;
+    }
+
+    // Create memory to hold calculated column sizes
+    hr = CHL_MmAlloc((void**)&paiColumnSizes, sizeof(int) * nColumns, NULL);
+    if(FAILED(hr))
+    {
+        goto done;
     }
 
     // Calculate listview width
     if(!GetWindowRect(hList, &rcList))
     {
-        goto error_return;
-    }
-
-    lListWidth = rcList.right - rcList.left;
-
-    // Create memory to hold calculated column sizes
-    if(!fChlMmAlloc((void**)&paiColumnSizes, sizeof(int) * nColumns, NULL))
-    {
-        goto error_return;
+        hr = HRESULT_FROM_WIN32(GetLastError());
+        goto done;
     }
 
     // Calculate column sizes
+    lListWidth = rcList.right - rcList.left;
     if(!paiColumnSizePercent)
     {
         for(index = 0; index < nColumns; ++index)
         {
-            paiColumnSizes[index] = 0.5 * lListWidth;
+            paiColumnSizes[index] = (int)(0.5 * lListWidth);
         }
     }
     else
     {
         for(index = 0; index < nColumns; ++index)
         {
-            paiColumnSizes[index] = paiColumnSizePercent[index] / 100.0 * lListWidth;
+            paiColumnSizes[index] = (int)(paiColumnSizePercent[index] / 100.0 * lListWidth);
         }
     }
 
     // List view headers
     lvColumn.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-
     for(index = 0; index < nColumns; ++index)
     {
         lvColumn.pszText = apszColumNames[index];
@@ -143,15 +157,16 @@ BOOL fChlGuiInitListViewColumns(HWND hList, WCHAR *apszColumNames[], int nColumn
         SendMessage(hList, LVM_INSERTCOLUMN, index, (LPARAM)&lvColumn);
     }
 
-    vChlMmFree((void**)&paiColumnSizes);
-    return TRUE;
-
-error_return:
+done:
     IFPTR_FREE(paiColumnSizes);
-    return FALSE;
+    return hr;
 }
 
-BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems, LPARAM lParam)
+HRESULT CHL_GuiAddListViewRow(
+    _In_ HWND hList, 
+    _In_ WCHAR *apszItemText[], 
+    _In_ int nItems, 
+    _In_opt_ LPARAM lParam)
 {
     int index;
     int iInsertedAt;
@@ -159,11 +174,13 @@ BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems, LPARAM
 
     LVITEM lvItem;
 
+    HRESULT hr = S_OK;
+
     // Parameter validation
     if(!ISVALID_HANDLE(hList) || !apszItemText || nItems <= 0)
     {
-        SetLastError(ERROR_BAD_ARGUMENTS);
-        return FALSE;
+        hr = E_INVALIDARG;
+        goto done;
     }
 
     // First, get the current number of list items to use as item index
@@ -178,7 +195,8 @@ BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems, LPARAM
     lvItem.lParam = lParam;
 	if( (iInsertedAt = SendMessage(hList, LVM_INSERTITEM, 0, (LPARAM)&lvItem)) == -1 )
 	{
-		goto error_return;
+        hr = E_FAIL;
+		goto done;
 	}
 
     // Now, insert sub items
@@ -188,12 +206,10 @@ BOOL fChlGuiAddListViewRow(HWND hList, WCHAR *apszItemText[], int nItems, LPARAM
 		lvItem.pszText = apszItemText[index];
 		if( !SendMessage(hList, LVM_SETITEMTEXT, iInsertedAt, (LPARAM)&lvItem) )
 		{
-			goto error_return;
+			hr = E_FAIL;
 		}
     }
 
-    return TRUE;
-
-error_return:
-    return FALSE;
+done:
+    return hr;
 }

@@ -5,6 +5,7 @@
 // History
 //      04/05/14 Initial version
 //      09/09/14 Refactor to store defs in individual headers.
+//      09/12/14 Naming convention modifications
 //
 
 #ifndef _LINKEDLIST_H
@@ -34,7 +35,7 @@ union _nodeval {
     UINT uval;
     DWORD dwval;
     LONGLONG longlongval;
-    void *pval;
+    PVOID pval;
 };
 
 typedef struct _LlNode {
@@ -56,13 +57,24 @@ typedef struct _LinkedList {
 // -------------------------------------------
 // Functions exported
 
-DllExpImp BOOL fChlDsCreateLL(__out PCHL_LLIST *ppLList, LL_VALTYPE valType, OPTIONAL int nEstEntries);
-DllExpImp BOOL fChlDsInsertLL(PCHL_LLIST pLList, void *pval, int valsize);
-DllExpImp BOOL fChlDsRemoveLL(PCHL_LLIST pLList, void *pvValToFind, BOOL fStopOnFirstFind, BOOL (*pfnComparer)(void*, void*), __out OPTIONAL void **ppval);
-DllExpImp BOOL fChlDsRemoveAtLL(PCHL_LLIST pLList, int iIndexToRemove, __out OPTIONAL void **ppval);
-DllExpImp BOOL fChlDsPeekAtLL(PCHL_LLIST pLList, int iIndexToPeek, __out void **ppval);
-DllExpImp BOOL fChlDsFindLL(PCHL_LLIST pLList, __in void *pvValToFind, BOOL (*pfnComparer)(void*, void*), __out OPTIONAL void **ppval);
-DllExpImp BOOL fChlDsDestroyLL(PCHL_LLIST pLList);
+DllExpImp HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ LL_VALTYPE valType, _In_opt_ int nEstEntries);
+DllExpImp HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PVOID pval, _In_ int valsize);
+DllExpImp HRESULT CHL_DsRemoveLL(
+    _In_ PCHL_LLIST pLList, 
+    _In_ PVOID pvValToFind, 
+    _In_ BOOL fStopOnFirstFind, 
+    _In_ BOOL (*pfnComparer)(PVOID, PVOID), 
+    _Inout_opt_ PVOID *ppval);
+
+DllExpImp HRESULT CHL_DsRemoveAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToRemove, _Inout_opt_ PVOID *ppval);
+DllExpImp HRESULT CHL_DsPeekAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToPeek, _Inout_ PVOID *ppval);
+DllExpImp HRESULT CHL_DsFindLL(
+    _In_ PCHL_LLIST pLList, 
+    _In_ PVOID pvValToFind, 
+    _In_ BOOL (*pfnComparer)(PVOID, PVOID), 
+    _Inout_opt_ PVOID *ppval);
+
+DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList);
 
 #ifdef __cplusplus
 }

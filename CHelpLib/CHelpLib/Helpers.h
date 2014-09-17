@@ -17,7 +17,7 @@ extern "C" {
 // the pointer is not NULL
 #define IFPTR_SETVAL(ptr, val)  { if(ptr) *ptr = val; }
 
-#define IFPTR_FREE(ptr)         if(ptr) { vChlMmFree((void**)&ptr); }
+#define IFPTR_FREE(ptr)         if(ptr) { CHL_MmFree((void**)&ptr); }
 
 #define ISVALID_HANDLE(handle)  (handle != NULL && handle != INVALID_HANDLE_VALUE)
 

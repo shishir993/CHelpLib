@@ -5,6 +5,7 @@
 // History
 //      06/23/13 Initial version
 //      09/09/14 Refactor to store defs in individual headers.
+//      09/12/14 Naming convention modifications
 //
 
 #ifndef _MEMFUNCTIONS_H
@@ -23,8 +24,8 @@ extern "C" {
 // -------------------------------------------
 // Functions exported
 
-DllExpImp BOOL fChlMmAlloc(__out void **pvAddr, __in size_t uSizeBytes, OPTIONAL DWORD *pdwError);
-DllExpImp void vChlMmFree(__in void **pvToFree);
+DllExpImp HRESULT CHL_MmAlloc(_Out_cap_(uSizeBytes) PVOID *ppvAddr, _In_ size_t uSizeBytes, _In_opt_ PDWORD pdwError);
+DllExpImp void CHL_MmFree(_In_ PVOID *ppvToFree);
 
 #ifdef __cplusplus
 }

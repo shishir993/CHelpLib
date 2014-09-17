@@ -5,6 +5,7 @@
 // History
 //      06/23/13 Initial version
 //      09/09/14 Refactor to store defs in individual headers.
+//      09/12/14 Naming convention modifications
 //
 
 #include "MemFunctions.h"
@@ -13,40 +14,39 @@
 // Allocates the requested size in bytes of memory.
 // Allocated area is initialized to all zeroes.
 // 
-DllExpImp BOOL fChlMmAlloc(__out void **pvAddr, __in size_t uSizeBytes, OPTIONAL DWORD *pdwError)
+HRESULT CHL_MmAlloc(_Out_cap_(uSizeBytes) PVOID *ppvAddr, _In_ size_t uSizeBytes, _In_opt_ PDWORD pdwError)
 {
     void *pv = NULL;
 
-    ASSERT(pvAddr);
+    ASSERT(ppvAddr);
     ASSERT(uSizeBytes > 0);
 
     if((pv = malloc(uSizeBytes)) == NULL)
+    {
         goto error_return;
+    }
     
     ZeroMemory(pv, uSizeBytes);
 
-    *pvAddr = pv;
+    *ppvAddr = pv;
     IFPTR_SETVAL(pdwError, 0);
-    return TRUE;
+    return S_OK;
 
 error_return:
-    *pvAddr = NULL;
+    *ppvAddr = NULL;
     IFPTR_SETVAL(pdwError, errno);
-
-    // TODO: don't mask the errno value here
-    SetLastError(CHLE_MEM_GEN);
-    return FALSE;
-}// fChlMmAlloc()
+    return E_OUTOFMEMORY;
+}
 
 
-// vChlMmFree()
+// CHL_MmFree()
 // Deallocated memory pointed to by pvToFree and sets the provided pointer
 // to NULL to prevent accessing free'd locations.
 // 
-DllExpImp void vChlMmFree(__in void **pvToFree)
+void CHL_MmFree(_In_ PVOID *ppvToFree)
 {
-    ASSERT(pvToFree && *pvToFree);
-    free(*pvToFree);
-    *pvToFree = NULL;
+    ASSERT(ppvToFree && *ppvToFree);
+    free(*ppvToFree);
+    *ppvToFree = NULL;
     return;
 }

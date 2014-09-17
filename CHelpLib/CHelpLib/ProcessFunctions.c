@@ -4,6 +4,7 @@
 // Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      03/25/14 Initial version
+//      09/12/14 Naming convention modifications
 //
 
 #include "ProcessFunctions.h"
@@ -11,107 +12,107 @@
 // GetProcNameFromID()
 // Given a process ID, returns the name of the executable
 // 
-BOOL fChlPsGetProcNameFromID(DWORD pid, WCHAR *pwsProcName, DWORD dwBufSize)
+HRESULT CHL_PsGetProcNameFromID(_In_ DWORD pid, _Inout_z_ WCHAR *pwsProcName, _In_ DWORD dwBufSize)
 {
     HANDLE hProcess = NULL;
     HMODULE ahModules[512];
     DWORD dwNeeded = 0;
+    HRESULT hr = S_OK;
 
     ASSERT(dwBufSize > 5);    // 3(extension) + 1(.) + 1(imagename atleast one char)
 
     if(pid == 0)
     {
-        return FALSE;
+        return E_INVALIDARG;
     }
 
     if((hProcess = OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ, FALSE, pid)) == NULL)
     {
-        return FALSE;
+        return HRESULT_FROM_WIN32(GetLastError());
     }
 
     if(!EnumProcessModules(hProcess, ahModules, sizeof(ahModules), &dwNeeded))
     {
-        goto error_return;
+        hr = HRESULT_FROM_WIN32(GetLastError());
+        goto done;
     }
 
     //logdbg("#Modules = %d", dwNeeded/sizeof(HMODULE));
     if(!GetModuleBaseName(hProcess, ahModules[0], pwsProcName, dwBufSize))
     {
-        goto error_return;
+        hr = HRESULT_FROM_WIN32(GetLastError());
     }
 
+done:
     CloseHandle(hProcess);
-    return TRUE;
-
-error_return:
-    CloseHandle(hProcess);
-    return FALSE;
+    return hr;
 
 }// GetProcNameFromID()
 
 // Given handle to a map view of a file, return pointer to the IMAGE_NT_HEADERS structure
 //
-BOOL fChlPsGetNtHeaders(HANDLE hMapView, __out PIMAGE_NT_HEADERS *ppstNtHeaders)
+HRESULT CHL_PsGetNtHeaders(_In_ HANDLE hMapView, _Out_ PIMAGE_NT_HEADERS *ppstNtHeaders)
 {
     PIMAGE_DOS_HEADER pDOSHeader = NULL;
 
-    // Argument validation
+    HRESULT hr = S_OK;
     if(!ISVALID_HANDLE(hMapView) || !ppstNtHeaders)
     {
-        SetLastError(ERROR_BAD_ARGUMENTS);
-        return FALSE;
+        hr = E_INVALIDARG;
     }
-
-    pDOSHeader = (PIMAGE_DOS_HEADER)hMapView;
+    else
+    {
+        pDOSHeader = (PIMAGE_DOS_HEADER)hMapView;
     
-    // verify "MZ" in the DOS header
-	if( ! (pDOSHeader->e_magic == IMAGE_DOS_SIGNATURE) )
-	{
-		SetLastError(CHLE_PROC_DOSHEADER);
-        return FALSE;
-	}
-
-    *ppstNtHeaders = (PIMAGE_NT_HEADERS)((BYTE*)hMapView + pDOSHeader->e_lfanew);
-    return TRUE;
+        // verify "MZ" in the DOS header
+	    if(pDOSHeader->e_magic == IMAGE_DOS_SIGNATURE)
+	    {
+            *ppstNtHeaders = (PIMAGE_NT_HEADERS)((BYTE*)hMapView + pDOSHeader->e_lfanew);
+	    }
+        else
+        {
+            hr = E_UNEXPECTED;
+        }
+    }
+    return hr;
 }
 
 // Get a byte pointer to the start of code in a executable file(memory mapped)
 //
-BOOL fChlPsGetPtrToCode(
-    DWORD dwFileBase, 
-    PIMAGE_NT_HEADERS pNTHeaders, 
-    __out PDWORD pdwCodePtr, 
-    __out PDWORD pdwSizeOfData,
-    __out PDWORD pdwCodeSecVirtAddr)
+HRESULT CHL_PsGetPtrToCode(
+    _In_ DWORD dwFileBase, 
+    _In_ PIMAGE_NT_HEADERS pNTHeaders, 
+    _Out_ PDWORD pdwCodePtr, 
+    _Out_ PDWORD pdwSizeOfData,
+    _Out_ PDWORD pdwCodeSecVirtAddr)
 {
 
 	PIMAGE_SECTION_HEADER pImgSecHeader = NULL;
 	DWORD dwSecChars = 0;
 
-    // Argument validation
+    HRESULT hr = S_OK;
     if(!pNTHeaders || !pdwCodePtr)
     {
-        SetLastError(ERROR_BAD_ARGUMENTS);
-        return FALSE;
+        hr = E_INVALIDARG;
+        goto done;
     }
 
 	// Get the .text section's header using AddressOfEntryPoint as the RVA
-	if( !fChlPsGetEnclosingSectionHeader(
+    hr = CHL_PsGetEnclosingSectionHeader(
             pNTHeaders->OptionalHeader.AddressOfEntryPoint,
 			pNTHeaders, 
-            &pImgSecHeader))
+            &pImgSecHeader);
+	if(FAILED(hr))
 	{
-		SetLastError(CHLE_PROC_TEXTSECHDR);
-		return FALSE;
+		goto done;
 	}
 
-	dwSecChars = pImgSecHeader->Characteristics;
-
 	// test if the retrieved section contains code and is executable
+    dwSecChars = pImgSecHeader->Characteristics;
 	if( ! ((dwSecChars & IMAGE_SCN_CNT_CODE) && (dwSecChars & IMAGE_SCN_MEM_EXECUTE)) )
 	{
-		SetLastError(CHLE_PROC_NOEXEC);
-		return FALSE;
+		hr = E_UNEXPECTED;
+		goto done;
 	}
 
 	*pdwCodePtr = dwFileBase + pImgSecHeader->PointerToRawData;
@@ -136,45 +137,47 @@ BOOL fChlPsGetPtrToCode(
         *pdwCodeSecVirtAddr = pNTHeaders->OptionalHeader.ImageBase + pImgSecHeader->VirtualAddress;
     }
 
-	return TRUE;
-
+done:
+	return hr;
 }
 
 
-/* GetEnclosingSectionHeader()
- * ** From Matt Pietrek's PEDUMP.exe **
- * Given an RVA, look up the section header that encloses it and return a
- * pointer to its IMAGE_SECTION_HEADER.
- *
- * Args:
- *		
- *			
- * RetVal:
- *	
- */
-BOOL fChlPsGetEnclosingSectionHeader(DWORD rva, PIMAGE_NT_HEADERS pNTHeader, __out PIMAGE_SECTION_HEADER *ppstSecHeader)
+// CHL_PsGetEnclosingSectionHeader()
+// ** From Matt Pietrek's PEDUMP.exe **
+// Given an RVA, look up the section header that encloses it and return a
+// pointer to its IMAGE_SECTION_HEADER.
+//
+// Args:
+//		
+//			
+// RetVal:
+//	
+//
+HRESULT CHL_PsGetEnclosingSectionHeader(_In_ DWORD rva, _In_ PIMAGE_NT_HEADERS pNTHeader, _Out_ PIMAGE_SECTION_HEADER *ppstSecHeader)
 {
     int index;
     PIMAGE_SECTION_HEADER pSection = NULL;
     
+    HRESULT hr = S_OK;
     if(!pNTHeader || !ppstSecHeader)
     {
-        SetLastError(ERROR_BAD_ARGUMENTS);
-        return FALSE;
+        hr = E_INVALIDARG;
     }
-
-    pSection = IMAGE_FIRST_SECTION(pNTHeader);
-    
-    for ( index = 0; index < pNTHeader->FileHeader.NumberOfSections; ++index, pSection++ )
+    else
     {
-        // Is the RVA within this section?
-        if ( (rva >= pSection->VirtualAddress) && 
-             (rva < (pSection->VirtualAddress + pSection->Misc.VirtualSize)))
+        pSection = IMAGE_FIRST_SECTION(pNTHeader);
+        hr = E_NOT_SET; // Start with this, set to S_OK if found
+        for ( index = 0; index < pNTHeader->FileHeader.NumberOfSections; ++index, pSection++ )
         {
-            *ppstSecHeader = pSection;
-            return TRUE;
+            // Is the RVA within this section?
+            if ( (rva >= pSection->VirtualAddress) && 
+                 (rva < (pSection->VirtualAddress + pSection->Misc.VirtualSize)))
+            {
+                *ppstSecHeader = pSection;
+                hr = S_OK;
+                break;
+            }
         }
     }
-    
-    return FALSE;
+    return hr;
 }

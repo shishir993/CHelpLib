@@ -4,17 +4,18 @@
 // Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      01/20/14 Initial version
+//      09/12/14 Naming convention modifications
 //
 
 #include "General.h"
 
 #define MAPVIEW_NAME    L"Chl_FileMapViewName"
 
-// fChlGnIsOverflowINT()
+// CHL_ChlGnIsOverflowINT()
 // Given two integers, returns TRUE if adding them results
 // in overflow, FALSE otherwise.
 //
-BOOL fChlGnIsOverflowINT(int a, int b)
+BOOL CHL_GnIsOverflowINT(_In_ int a, _In_ int b)
 {
     __asm
     {
@@ -30,11 +31,11 @@ ret_overflow:
     return TRUE;
 }
 
-// fChlGnIsOverflowUINT()
+// CHL_ChlGnIsOverflowUINT()
 // Given two unsigned integers, returns TRUE if 
 // adding them results in overflow, FALSE otherwise.
 //
-BOOL fChlGnIsOverflowUINT(unsigned int a, unsigned int b)
+BOOL CHL_GnIsOverflowUINT(_In_ UINT a, _In_ UINT b)
 {
     __asm 
     {
@@ -50,46 +51,14 @@ ret_overflow:
     return TRUE;
 }
 
-// Try to get ownership of mutex. This function tries to get the mutex
-// with 10 retries with a 500ms interval between each retry.
-//
-BOOL fChlGnOwnMutex(HANDLE hMutex)
-{
-    int nTries = 0;
-
-    ASSERT(hMutex && hMutex != INVALID_HANDLE_VALUE);
-
-    while(nTries < 10)
-    {
-        switch(WaitForSingleObject(hMutex, 500))
-        {
-            case WAIT_OBJECT_0:
-                goto got_it;
-
-            case WAIT_ABANDONED: // todo
-                return FALSE;
-
-            case WAIT_TIMEOUT:
-            case WAIT_FAILED:
-                break;
-        }
-        ++nTries;
-    }
-
-    if(nTries == 10)
-    {
-        SetLastError(CHLE_MUTEX_TIMEOUT);
-        return FALSE;
-    }
-
-got_it:
-    return TRUE;
-}
-
 // Create a memory mapping given a handle to a file and return
 // return the handle to the memory mapped area.
 // 
-BOOL fChlGnCreateMemMapOfFile(HANDLE hFile,  DWORD dwReqProtection, __out PHANDLE phMapObj, __out PHANDLE phMapView)
+HRESULT CHL_GnCreateMemMapOfFile(
+    _In_ HANDLE hFile, 
+    _In_ DWORD dwReqProtection, 
+    _Out_ PHANDLE phMapObj, 
+    _Out_ PHANDLE phMapView)
 {
     DWORD dwRetVal = 0;
 	DWORD dwFileSize = 0;
@@ -98,24 +67,24 @@ BOOL fChlGnCreateMemMapOfFile(HANDLE hFile,  DWORD dwReqProtection, __out PHANDL
     HANDLE hFileMapView = NULL;
 
     // Validate arguments
+    HRESULT hr = S_OK;
     if(!ISVALID_HANDLE(hFile) || !phMapObj || !phMapView)
     {
-        SetLastError(ERROR_BAD_ARGUMENTS);
+        hr = E_INVALIDARG;
         goto error_return;
     }
 
     DBG_UNREFERENCED_PARAMETER(dwReqProtection);
-
 	if( (dwRetVal = GetFileSize(hFile, &dwFileSize)) == INVALID_FILE_SIZE )
 	{
+        hr = HRESULT_FROM_WIN32(GetLastError());
 		goto error_return;
 	}
 
     // dwRetVal is filesize LOW word and dwFileSize will have HIGH word
-
 	if(dwRetVal == 0 && dwFileSize == 0)
 	{
-        SetLastError(CHLE_EMPTY_FILE);
+        hr = HRESULT_FROM_WIN32(ERROR_EMPTY);
 		goto error_return;
 	}
 
@@ -123,6 +92,7 @@ BOOL fChlGnCreateMemMapOfFile(HANDLE hFile,  DWORD dwReqProtection, __out PHANDL
 	// that is, create the file mapping object
 	if( (hFileMapObj = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, MAPVIEW_NAME)) == NULL )
 	{
+        hr = HRESULT_FROM_WIN32(ERROR_EMPTY);
 		goto error_return;
 	}
 
@@ -131,21 +101,54 @@ BOOL fChlGnCreateMemMapOfFile(HANDLE hFile,  DWORD dwReqProtection, __out PHANDL
 	// map this file mapping object into our address space
 	if( (hFileMapView = MapViewOfFile(hFileMapObj, FILE_MAP_READ, 0, 0, 0)) == NULL )
 	{
+        hr = HRESULT_FROM_WIN32(ERROR_EMPTY);
 		goto error_return;
 	}
 
     *phMapObj = hFileMapObj;
     *phMapView = hFileMapView;
-
-    return TRUE;
+    return hr;
 
 error_return:
     // DO NOT close handle hFile because it was given to us by the caller
-
     if(ISVALID_HANDLE(hFileMapObj))
     {
         CloseHandle(hFileMapObj);
     }
+    return hr;
+}
 
-    return FALSE;
+// Try to get ownership of mutex. This function tries to get the mutex
+// with 10 retries with a 500ms interval between each retry.
+//
+HRESULT CHL_GnOwnMutex(HANDLE hMutex)
+{
+    int nTries = 0;
+    HRESULT hr = S_OK;
+
+    ASSERT(hMutex && hMutex != INVALID_HANDLE_VALUE);
+    while(nTries < 10)
+    {
+        switch(WaitForSingleObject(hMutex, 500))
+        {
+            case WAIT_OBJECT_0:
+                goto got_it;
+
+            case WAIT_ABANDONED:
+                hr = HRESULT_FROM_WIN32(ERROR_ABANDONED_WAIT_0);
+                goto got_it;
+
+            case WAIT_TIMEOUT:
+                hr = HRESULT_FROM_WIN32(ERROR_TIMEOUT);
+                break;
+
+            case WAIT_FAILED:
+                hr = HRESULT_FROM_WIN32(GetLastError());
+                break;
+        }
+        ++nTries;
+    }
+
+got_it:
+    return hr;
 }

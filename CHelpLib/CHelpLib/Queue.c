@@ -1,7 +1,7 @@
 
 #include "Queue.h"
 
-HRESULT CHL_QueueCreate(_Out_ PCHL_QUEUE *ppQueueObj, _In_ CHL_VALTYPE valType, _In_opt_ int nEstimatedItems)
+HRESULT CHL_DsCreateQ(_Out_ PCHL_QUEUE *ppQueueObj, _In_ CHL_VALTYPE valType, _In_opt_ int nEstimatedItems)
 {
     HRESULT hr = S_OK;
     PCHL_QUEUE pq = NULL;
@@ -31,18 +31,17 @@ HRESULT CHL_QueueCreate(_Out_ PCHL_QUEUE *ppQueueObj, _In_ CHL_VALTYPE valType, 
     }
 
     // Create the linked list
-    if(!fChlDsCreateLL(&pq->pList, valTypeLL, nEstimatedItems))
+    hr = CHL_DsCreateLL(&pq->pList, valTypeLL, nEstimatedItems);
+    if(FAILED(hr))
     {
-        // TODO: Update this when other functions are changed to use HRESULT
-        hr = E_FAIL;
         goto done;
     }
 
-    pq->Destroy = CHL_QueueDestroy;
-    pq->Insert = CHL_QueueInsert;
-    pq->Delete = CHL_QueueDelete;
-    pq->Find = CHL_QueueFind;
-    pq->Peek = CHL_QueuePeek;
+    pq->Destroy = CHL_DsDestroyQ;
+    pq->Insert = CHL_DsInsertQ;
+    pq->Delete = CHL_DsDeleteQ;
+    pq->Find = CHL_DsFindQ;
+    pq->Peek = CHL_DsPeekQ;
 
 done:
     if(SUCCEEDED(hr))
@@ -57,68 +56,60 @@ done:
         }
         *ppQueueObj = NULL;
     }
-
     return hr;
 }
 
-HRESULT CHL_QueueDestroy(_In_ PCHL_QUEUE pQueueObj)
+HRESULT CHL_DsDestroyQ(_In_ PCHL_QUEUE pQueueObj)
 {
     HRESULT hr = S_OK;
 
     ASSERT(pQueueObj);
     if(pQueueObj->pList)
     {
-        if(!fChlDsDestroyLL(pQueueObj->pList))
+        hr = CHL_DsDestroyLL(pQueueObj->pList);
+        if(FAILED(hr))
         {
             logwarn("Failed to destroy the list(queue).");
         }
-
         free(pQueueObj);
     }
     else
     {
         hr = E_NOT_VALID_STATE;
     }
-
     return hr;
 }
 
-HRESULT CHL_QueueInsert(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_ int nValSize)
+HRESULT CHL_DsInsertQ(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_ int nValSize)
 {
     HRESULT hr = S_OK;
-
     ASSERT(pQueueObj && pQueueObj->pList);
-    if(!fChlDsInsertLL(pQueueObj->pList, pvValue, nValSize))
-    {
-        hr = E_FAIL;
-    }
-    else
+
+    hr = CHL_DsInsertLL(pQueueObj->pList, pvValue, nValSize);
+    if(SUCCEEDED(hr))
     {
         ++(pQueueObj->nCurItems);
     }
     return hr;
 }
 
-HRESULT CHL_QueueDelete(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue)
+HRESULT CHL_DsDeleteQ(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue)
 {
     HRESULT hr = S_OK;
 
     ASSERT(pQueueObj && pQueueObj->pList);
     ASSERT(ppvValue);
+
+    *ppvValue = NULL;
     if(pQueueObj->nCurItems <= 0)
     {
         hr = E_NOT_SET;
-        *ppvValue = NULL;
     }
     else
     {
         // Linked list always inserts at the tail, so the first item is the one to be deleted
-        if(!fChlDsRemoveAtLL(pQueueObj->pList, 0, ppvValue))
-        {
-            hr = E_FAIL;
-            *ppvValue = NULL;
-        }
-        else
+        hr = CHL_DsRemoveAtLL(pQueueObj->pList, 0, ppvValue);
+        if(SUCCEEDED(hr))
         {
             --(pQueueObj->nCurItems);
         }
@@ -126,28 +117,36 @@ HRESULT CHL_QueueDelete(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue)
     return hr;
 }
 
-HRESULT CHL_QueuePeek(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue)
+HRESULT CHL_DsPeekQ(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue)
 {
     HRESULT hr = S_OK;
-
     ASSERT(pQueueObj && pQueueObj->pList);
     ASSERT(ppvValue);
+
     // Linked list always inserts at the tail, so the first item is the one to be peek'd
-    if(pQueueObj->nCurItems <= 0 || !fChlDsPeekAtLL(pQueueObj->pList, 0, ppvValue))
+    if(pQueueObj->nCurItems > 0)
     {
-        hr = E_FAIL;
+        hr = CHL_DsPeekAtLL(pQueueObj->pList, 0, ppvValue);
+    }
+    else
+    {
+        hr = E_NOT_SET;
         *ppvValue = NULL;
     }
     return hr;
 }
 
-HRESULT CHL_QueueFind(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_opt_ BOOL (*pfnComparer)(void*, void*))
+HRESULT CHL_DsFindQ(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_opt_ BOOL (*pfnComparer)(void*, void*))
 {
     HRESULT hr = S_OK;
-
     ASSERT(pQueueObj && pQueueObj->pList);
     ASSERT(pvValue);
-    if(pQueueObj->nCurItems <= 0 || !fChlDsFindLL(pQueueObj->pList, pvValue, pfnComparer, NULL))
+
+    if(pQueueObj->nCurItems > 0)
+    {
+        hr = CHL_DsFindLL(pQueueObj->pList, pvValue, pfnComparer, NULL);
+    }
+    else
     {
         hr = E_NOT_SET;
     }

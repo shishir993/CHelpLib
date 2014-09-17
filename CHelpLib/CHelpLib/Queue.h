@@ -35,12 +35,12 @@ typedef struct _Queue
 // -------------------------------------------
 // Functions exported
 
-DllExpImp HRESULT CHL_QueueCreate(_Out_ PCHL_QUEUE *ppQueueObj, _In_ CHL_VALTYPE valType, _In_opt_ int nEstimatedItems);
-DllExpImp HRESULT CHL_QueueDestroy(_In_ PCHL_QUEUE pQueueObj);
-DllExpImp HRESULT CHL_QueueInsert(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_ int nValSize);
-DllExpImp HRESULT CHL_QueueDelete(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue);
-DllExpImp HRESULT CHL_QueuePeek(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue);
-DllExpImp HRESULT CHL_QueueFind(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_opt_ BOOL (*pfnComparer)(void*, void*));
+DllExpImp HRESULT CHL_DsCreateQ(_Out_ PCHL_QUEUE *ppQueueObj, _In_ CHL_VALTYPE valType, _In_opt_ int nEstimatedItems);
+DllExpImp HRESULT CHL_DsDestroyQ(_In_ PCHL_QUEUE pQueueObj);
+DllExpImp HRESULT CHL_DsInsertQ(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_ int nValSize);
+DllExpImp HRESULT CHL_DsDeleteQ(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue);
+DllExpImp HRESULT CHL_DsPeekQ(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue);
+DllExpImp HRESULT CHL_DsFindQ(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_opt_ BOOL (*pfnComparer)(void*, void*));
 
 #ifdef __cplusplus
 }

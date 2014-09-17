@@ -4,6 +4,8 @@
 // History
 //      Unknown history!
 //      09/09/14 Refactor to store defs in individual headers.
+//      09/12/14 Naming convention modifications
+//
 
 #ifndef _HASHTABLE_H
 #define _HASHTABLE_H
@@ -70,20 +72,42 @@ typedef struct _hashtableIterator {
 //      fValInHeapMem: Set this to true if the value(void type) is allocated memory on the heap
 //                     so that it is freed whenever an table entry is removed or when table is destroyed.
 // 
-DllExpImp BOOL fChlDsCreateHT(CHL_HTABLE **pHTableOut, int nEstEntries, int keyType, int valType, BOOL fValInHeapMem);
-DllExpImp BOOL fChlDsDestroyHT(CHL_HTABLE *phtable);
+DllExpImp HRESULT CHL_DsCreateHT(
+    _Inout_ CHL_HTABLE **pHTableOut, 
+    _In_ int nEstEntries, 
+    _In_ int keyType, 
+    _In_ int valType, 
+    _In_opt_ BOOL fValInHeapMem);
 
-DllExpImp BOOL fChlDsInsertHT (CHL_HTABLE *phtable, void *pvkey, int keySize, void *pval, int valSize);
-DllExpImp BOOL fChlDsFindHT   (CHL_HTABLE *phtable, void *pvkey, int keySize, __in_opt void *pval, __in_opt int *pvalsize);
-DllExpImp BOOL fChlDsRemoveHT (CHL_HTABLE *phtable, void *pvkey, int keySize);
+DllExpImp HRESULT CHL_DsDestroyHT(_In_ CHL_HTABLE *phtable);
 
-DllExpImp BOOL fChlDsInitIteratorHT(CHL_HT_ITERATOR *pItr);
-DllExpImp BOOL fChlDsGetNextHT(CHL_HTABLE *phtable, CHL_HT_ITERATOR *pItr, 
-                            __out void *pkey, __out int *pkeysize,
-                            __out void *pval, __out int *pvalsize);
+DllExpImp HRESULT CHL_DsInsertHT(
+    _In_ CHL_HTABLE *phtable, 
+    _In_ PVOID const pvkey, 
+    _In_ int keySize, 
+    _In_ PVOID pval, 
+    _In_ int valSize);
 
-DllExpImp int  iChlDsGetNearestTableSizeIndex(int maxNumberOfEntries);
-DllExpImp void vChlDsDumpHT(CHL_HTABLE *phtable);
+DllExpImp HRESULT CHL_DsFindHT(
+    _In_ CHL_HTABLE *phtable, 
+    _In_ PVOID const pvkey, 
+    _In_ int keySize, 
+    _Inout_opt_ PVOID pval, 
+    _Inout_opt_ PINT pvalsize);
+
+DllExpImp HRESULT CHL_DsRemoveHT(_In_ CHL_HTABLE *phtable, _In_ PVOID const pvkey, _In_ int keySize);
+
+DllExpImp HRESULT CHL_DsInitIteratorHT(_In_ CHL_HT_ITERATOR *pItr);
+DllExpImp HRESULT CHL_DsGetNextHT(
+    _In_ CHL_HTABLE *phtable, 
+    _In_ CHL_HT_ITERATOR *pItr, 
+    _Inout_opt_ PVOID const pkey, 
+    _Inout_opt_ PINT pkeysize,
+    _Inout_opt_ PVOID pval, 
+    _Inout_opt_ PINT pvalsize);
+
+DllExpImp int CHL_DsGetNearestSizeIndexHT(_In_ int maxNumberOfEntries);
+DllExpImp void CHL_DsDumpHT(_In_ CHL_HTABLE *phtable);
 
 #ifdef __cplusplus
 }

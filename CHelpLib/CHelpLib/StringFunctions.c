@@ -3,27 +3,30 @@
 // Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      08/10/13 Initial version
+//      09/09/14 Refactor to store defs in individual headers.
 //
 
 #include "StringFunctions.h"
 
-WCHAR* pszChlSzGetFilenameFromPath(WCHAR *pwsFilepath, int inputLen)
+PCWSTR CHL_SzGetFilenameFromPath(_In_z_ PCWSTR pszFilepath, _In_ int inputLen)
 {
-    WCHAR *pws = NULL;
+    PCWSTR psz = NULL;
 
-    if(!pwsFilepath) return NULL;
-    if(inputLen <= 1) return NULL;
+    if(!pszFilepath || (inputLen <= 1))
+    {
+        return NULL;
+    }
 
-    pws = pwsFilepath + inputLen - 1;
+    psz = pszFilepath + inputLen - 1;
 
     // Go in reverse until we find a '\' or we reach the 
     // beginning of the string
-    while(*(--pws) != '\\' && pws > pwsFilepath);
+    while(*(--psz) != '\\' && psz > pszFilepath);
 
-    if(pws <= pwsFilepath)
-        pws = pwsFilepath;
+    if(psz <= pszFilepath)
+        psz = pszFilepath;
     else
-        pws += 1;
+        psz += 1;
 
-    return pws;
+    return psz;
 }
