@@ -30,7 +30,7 @@ static HRESULT _TestStrings()
 {
     PCHL_QUEUE pq;
     HRESULT hr = S_OK;
-    if(FAILED(CHL_QueueCreate(&pq, CHL_VT_STRING, ARRAYSIZE(apszTest))))
+    if(FAILED(CHL_DsCreateQ(&pq, CHL_VT_STRING, ARRAYSIZE(apszTest))))
     {
         printf("Failed to create string Queue\n");
         hr = E_FAIL;
@@ -40,7 +40,7 @@ static HRESULT _TestStrings()
     // Insert all
     for(int i = 0; i < ARRAYSIZE(apszTest); ++i)
     {
-        if(FAILED(pq->Insert(pq, (PVOID)apszTest[i], strlen(apszTest[i]) + 1)))
+        if(FAILED(pq->Insert(pq, (PVOID)&apszTest[i], sizeof PWCHAR)))
         {
             printf("Failed to insert %d:%s\n", i, apszTest[i]);
             hr = E_FAIL;
@@ -121,7 +121,7 @@ static HRESULT _TestIntegers()
 {
     PCHL_QUEUE pq;
     HRESULT hr = S_OK;
-    if(FAILED(CHL_QueueCreate(&pq, CHL_VT_INT32, ARRAYSIZE(aiTest))))
+    if(FAILED(CHL_DsCreateQ(&pq, CHL_VT_INT32, ARRAYSIZE(aiTest))))
     {
         printf("Failed to create int Queue\n");
         hr = E_FAIL;

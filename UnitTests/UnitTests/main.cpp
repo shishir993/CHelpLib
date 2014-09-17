@@ -62,10 +62,10 @@ int main()
     // Test linked list
     fTestLinkedList();
 
-    //fTestCreateFileWithSize();
-    //vTestFileMapping();
+    fTestCreateFileWithSize();
+    vTestFileMapping();
     
-    //success = success & SUCCEEDED(QueueRunTests());
+    success = success & SUCCEEDED(QueueRunTests());
 
     OutputDebugString(L"\nTests done. Exiting...");
     return !success;
@@ -78,7 +78,7 @@ BOOL fTestHT_TableSizes()
     int entriesToCheck[] = { 50000, 100000, 700000, 1<<23, 1<<24 };
 
     for(int i = 0; i < _countof(entriesToCheck); ++i)
-        wprintf(L"%10d %d\n", entriesToCheck[i], iChlDsGetNearestTableSizeIndex(entriesToCheck[i]));
+        wprintf(L"%10d %d\n", entriesToCheck[i], CHL_DsGetNearestSizeIndexHT(entriesToCheck[i]));
 
     return TRUE;
 }
@@ -92,17 +92,17 @@ BOOL fTestHT_StrStr()
     int nItemsInserted = 0;
 
     // Create a str:str htable
-    if(!fChlDsCreateHT(&phtable, 3, HT_KEY_STR, HT_VAL_STR, FALSE))
+    if(FAILED(CHL_DsCreateHT(&phtable, 3, HT_KEY_STR, HT_VAL_STR, FALSE)))
         return FALSE;
 
     // Insert abcd:"hello,there"
     char *pch = "hello, there";
-    if(!fChlDsInsertHT(phtable, "key", 3, pch, strlen(pch)+1))
+    if(FAILED(CHL_DsInsertHT(phtable, "key", 3, pch, strlen(pch)+1)))
         printf("Insert key:%s failed\n", "key", pch);
     ++nItemsInserted;
 
     // find it
-    if(!fChlDsFindHT(phtable, "key", 3, &pch, &outValSize))
+    if(FAILED(CHL_DsFindHT(phtable, "key", 3, &pch, &outValSize)))
         printf("Find key failed\n");
     else
     {
@@ -116,17 +116,17 @@ BOOL fTestHT_StrStr()
     
     // insert the same thing again
     pch = "hello, there";
-    if(!fChlDsInsertHT(phtable, "key", 3, pch, strlen(pch)+1))
+    if(FAILED(CHL_DsInsertHT(phtable, "key", 3, pch, strlen(pch)+1)))
         printf("Insert key:%s failed\n", "key", pch);
 
     // insert another dgadsf:"did the first test pass?"
     pch = "did the first test pass?";
-    if(!fChlDsInsertHT(phtable, "dgadsf", 6, pch, strlen(pch)+1))
+    if(FAILED(CHL_DsInsertHT(phtable, "dgadsf", 6, pch, strlen(pch)+1)))
         printf("Insert key:%s failed\n", "dgadsf", pch);
     ++nItemsInserted;
 
     // find the first item
-    if(!fChlDsFindHT(phtable, "key", 3, &pch, &outValSize))
+    if(FAILED(CHL_DsFindHT(phtable, "key", 3, &pch, &outValSize)))
         printf("Find key failed\n");
     else
     {
@@ -139,12 +139,12 @@ BOOL fTestHT_StrStr()
     }
 
     // remove the first item
-    if(!fChlDsRemoveHT(phtable, "key", 3))
+    if(FAILED(CHL_DsRemoveHT(phtable, "key", 3)))
         printf("Remove key failed\n");
     --nItemsInserted;
 
     // find it: fail to find
-    if(!fChlDsFindHT(phtable, "key", 3, &pch, &outValSize))
+    if(FAILED(CHL_DsFindHT(phtable, "key", 3, &pch, &outValSize)))
         printf("Find key PASSED\n");
     else
     {
@@ -152,23 +152,24 @@ BOOL fTestHT_StrStr()
     }
 
     // insert everything using test keys and strings
-    for(int keys = 0, vals = 0; vals < _countof(testStrings); ++vals)
+    for(int keys = 0, vals = 0; vals < _countof(testStrings); ++vals, ++keys)
     {
-        if(!fChlDsInsertHT(phtable, testKeys[keys], strlen(testKeys[keys]), 
-            testStrings[vals], strlen(testStrings[vals])+1))
+        if(FAILED(CHL_DsInsertHT(phtable, testKeys[keys], strlen(testKeys[keys]), 
+            testStrings[vals], strlen(testStrings[vals])+1)))
         {
             printf("Failed to insert %s:%s\n", testKeys[keys], testStrings[vals]);
         }
         else
+        {
             ++nItemsInserted;
-
-        keys = (keys + 1) % (_countof(testKeys));
+            printf("Inserted %s:%s\n", testKeys[keys], testStrings[vals]);
+        }
     }
 
     // find everything
     for(int keys = 0; keys < _countof(testKeys); ++keys)
     {
-        if(!fChlDsFindHT(phtable, testKeys[keys], strlen(testKeys[keys]), &pch, &outValSize))
+        if(FAILED(CHL_DsFindHT(phtable, testKeys[keys], strlen(testKeys[keys]), &pch, &outValSize)))
             printf("Failed to find val for key %s\n", testKeys[keys]);
         else
         {
@@ -182,8 +183,8 @@ BOOL fTestHT_StrStr()
     int keysize, valsize, nfound = 0;
 
     printf("Iterating through hashtable items... *******************\n");
-    fChlDsInitIteratorHT(&itr);
-    while(fChlDsGetNextHT(phtable, &itr, &pskey, &keysize, &psval, &valsize))
+    CHL_DsInitIteratorHT(&itr);
+    while(SUCCEEDED(CHL_DsGetNextHT(phtable, &itr, &pskey, &keysize, &psval, &valsize)))
     {
         int i = 0;
         printf("KEY:%d:", keysize);
@@ -201,25 +202,23 @@ BOOL fTestHT_StrStr()
     if(nfound != nItemsInserted)
         printf("FAILED interation test...");
 
-    if(fChlDsFindHT(phtable, "notthere", 8, &pch, &outValSize))
+    if(SUCCEEDED(CHL_DsFindHT(phtable, "notthere", 8, &pch, &outValSize)))
         printf("FAILED: Finding a non-inserted key\n");
 
     // remove some and dump table
-    if(!fChlDsRemoveHT(phtable, "dgadsf", 6))
+    if(FAILED(CHL_DsRemoveHT(phtable, "dgadsf", 6)))
         printf("Failed to remove dgadsf\n");
 
-    if(!fChlDsRemoveHT(phtable, testKeys[2], strlen(testKeys[2])))
+    if(FAILED(CHL_DsRemoveHT(phtable, testKeys[2], strlen(testKeys[2]))))
         printf("Failed to remove testKeys[2]\n");
 
-    if(!fChlDsRemoveHT(phtable, testKeys[4], strlen(testKeys[4])))
+    if(FAILED(CHL_DsRemoveHT(phtable, testKeys[4], strlen(testKeys[4]))))
         printf("Failed to remove testKeys[2]\n");
 
-    vChlDsDumpHT(phtable);
-
-    fChlDsDestroyHT(phtable);
+    CHL_DsDumpHT(phtable);
+    CHL_DsDestroyHT(phtable);
 
     OutputDebugString(L"Finished first test");
-
     return TRUE;    
 }
 
@@ -232,19 +231,19 @@ BOOL fTestHT_NumStr()
     int nItemsInserted = 0;
 
     // Create a str:str htable
-    if(!fChlDsCreateHT(&phtable, 3, HT_KEY_DWORD, HT_VAL_STR, FALSE))
+    if(FAILED(CHL_DsCreateHT(&phtable, 3, HT_KEY_DWORD, HT_VAL_STR, FALSE)))
         return FALSE;
 
     // Insert abcd:"hello,there"
     DWORD key = 2131;
     char *pch = "hello, there";
-    if(!fChlDsInsertHT(phtable, &key, sizeof(DWORD), pch, strlen(pch)+1))
+    if(FAILED(CHL_DsInsertHT(phtable, &key, sizeof(DWORD), pch, strlen(pch)+1)))
         printf("Insert %u:%s failed\n", key, pch);
     ++nItemsInserted;
 
     // find it
     pch = NULL;
-    if(!fChlDsFindHT(phtable, &key, sizeof(DWORD), &pch, &outValSize))
+    if(FAILED(CHL_DsFindHT(phtable, &key, sizeof(DWORD), &pch, &outValSize)))
         printf("Find key failed\n");
     else
     {
@@ -259,20 +258,20 @@ BOOL fTestHT_NumStr()
     // insert the same thing again
     key = 2131;
     pch = "hello, there";
-    if(!fChlDsInsertHT(phtable, &key, sizeof(DWORD), pch, strlen(pch)+1))
+    if(FAILED(CHL_DsInsertHT(phtable, &key, sizeof(DWORD), pch, strlen(pch)+1)))
         printf("Insert %u:%s failed\n", key, pch);
 
     // insert another dgadsf:"did the first test pass?"
     key = 22231;
     pch = "did the first test pass?";
-    if(!fChlDsInsertHT(phtable, &key, sizeof(DWORD), pch, strlen(pch)+1))
+    if(FAILED(CHL_DsInsertHT(phtable, &key, sizeof(DWORD), pch, strlen(pch)+1)))
         printf("Insert %u:%s failed\n", key, pch);
     ++nItemsInserted;
 
     // find the first item
     key = 2131;
     pch = NULL;
-    if(!fChlDsFindHT(phtable, &key, sizeof(DWORD), &pch, &outValSize))
+    if(FAILED(CHL_DsFindHT(phtable, &key, sizeof(DWORD), &pch, &outValSize)))
         printf("Find key failed\n");
     else
     {
@@ -286,12 +285,12 @@ BOOL fTestHT_NumStr()
 
     // remove the first item
     key = 2131;
-    if(!fChlDsRemoveHT(phtable, &key, sizeof(DWORD)))
+    if(FAILED(CHL_DsRemoveHT(phtable, &key, sizeof(DWORD))))
         printf("Remove key failed\n");
     --nItemsInserted;
 
     // find it: fail to find
-    if(!fChlDsFindHT(phtable, &key, sizeof(DWORD), &pch, &outValSize))
+    if(FAILED(CHL_DsFindHT(phtable, &key, sizeof(DWORD), &pch, &outValSize)))
         printf("Find key PASSED\n");
     else
     {
@@ -301,8 +300,8 @@ BOOL fTestHT_NumStr()
     // insert everything using test keys and strings
     for(int keys = 0, vals = 0; vals < _countof(testStrings); ++keys, ++vals)
     {
-        if(!fChlDsInsertHT(phtable, &(testKeysNum[keys]), sizeof(DWORD), 
-            testStrings[vals], strlen(testStrings[vals])+1))
+        if(FAILED(CHL_DsInsertHT(phtable, &(testKeysNum[keys]), sizeof(DWORD), 
+            testStrings[vals], strlen(testStrings[vals])+1)))
         {
             printf("Failed to insert %u:%s\n", testKeysNum[keys], testStrings[vals]);
         }
@@ -314,7 +313,7 @@ BOOL fTestHT_NumStr()
     for(int keys = 0; keys < _countof(testKeys); ++keys)
     {
         pch = NULL;
-        if(!fChlDsFindHT(phtable, &(testKeysNum[keys]), sizeof(DWORD), &pch, &outValSize))
+        if(FAILED(CHL_DsFindHT(phtable, &(testKeysNum[keys]), sizeof(DWORD), &pch, &outValSize)))
             printf("Failed to find val for key %u\n", testKeysNum[keys]);
         else
         {
@@ -329,8 +328,8 @@ BOOL fTestHT_NumStr()
     int keysize, valsize, nfound = 0;
 
     printf("Iterating through hashtable items... *******************\n");
-    fChlDsInitIteratorHT(&itr);
-    while(fChlDsGetNextHT(phtable, &itr, &dwkey, &keysize, &psval, &valsize))
+    CHL_DsInitIteratorHT(&itr);
+    while(SUCCEEDED(CHL_DsGetNextHT(phtable, &itr, &dwkey, &keysize, &psval, &valsize)))
     {
         int i = 0;
         printf("KEY:%d:%d\n", keysize, dwkey);
@@ -347,23 +346,23 @@ BOOL fTestHT_NumStr()
         printf("FAILED interation test...");
 
     key = 0xdead;
-    if(fChlDsFindHT(phtable, &key, sizeof(DWORD), &pch, &outValSize))
+    if(SUCCEEDED(CHL_DsFindHT(phtable, &key, sizeof(DWORD), &pch, &outValSize)))
         printf("FAILED: Finding a non-inserted key\n");
 
     // remove some and dump table
     key = 22231;
-    if(!fChlDsRemoveHT(phtable, &key, sizeof(DWORD)))
+    if(FAILED(CHL_DsRemoveHT(phtable, &key, sizeof(DWORD))))
         printf("Failed to remove dgadsf\n");
 
-    if(!fChlDsRemoveHT(phtable, &testKeysNum[2], sizeof(DWORD)))
+    if(FAILED(CHL_DsRemoveHT(phtable, &testKeysNum[2], sizeof(DWORD))))
         printf("Failed to remove testKeysNum[2]\n");
 
-    if(!fChlDsRemoveHT(phtable, &testKeysNum[4], sizeof(DWORD)))
+    if(FAILED(CHL_DsRemoveHT(phtable, &testKeysNum[4], sizeof(DWORD))))
         printf("Failed to remove testKeysNum[4]\n");
 
-    vChlDsDumpHT(phtable);
+    CHL_DsDumpHT(phtable);
+    CHL_DsDestroyHT(phtable);
 
-    fChlDsDestroyHT(phtable);
     OutputDebugString(L"Finished second test");
     return TRUE;    
 }
@@ -379,16 +378,16 @@ BOOL fTestStrings()
         L"S:\\MyBriefcase\\Coding\\C\\Remote Monitoring - Internship at RFL\\RM\\Code\\Remote Monitoring - To RFL\\Source Code\\ServerRM\\ServerRM\\ScanIPAddresses.cpp",
         L"ServerRM.vcproj.SHISHIR-0C6645C.Shishir.user" };
 
-    WCHAR *pws = NULL;
+    PCWSTR pws = NULL;
 
-    if(pszChlSzGetFilenameFromPath(NULL, 412))
+    if(CHL_SzGetFilenameFromPath(NULL, 412))
     {
         fError = TRUE;
         wprintf(L"FAILED: Returned something for NULL!\n");
     }
 
     // STRING 0
-    pws = pszChlSzGetFilenameFromPath(awsTestStrings[0], wcsnlen_s(awsTestStrings[0], _countof(awsTestStrings[0]))+1);
+    pws = CHL_SzGetFilenameFromPath(awsTestStrings[0], wcsnlen_s(awsTestStrings[0], _countof(awsTestStrings[0]))+1);
     if(pws)
     {
         fError = TRUE;
@@ -396,7 +395,7 @@ BOOL fTestStrings()
     }
 
     // STRING 1
-    pws = pszChlSzGetFilenameFromPath(awsTestStrings[1], wcsnlen_s(awsTestStrings[1], _countof(awsTestStrings[1]))+1);
+    pws = CHL_SzGetFilenameFromPath(awsTestStrings[1], wcsnlen_s(awsTestStrings[1], _countof(awsTestStrings[1]))+1);
     if(!pws)
     {
         fError = TRUE;
@@ -408,7 +407,7 @@ BOOL fTestStrings()
     }
 
     // STRING 2
-    pws = pszChlSzGetFilenameFromPath(awsTestStrings[2], wcsnlen_s(awsTestStrings[2], _countof(awsTestStrings[2]))+1);
+    pws = CHL_SzGetFilenameFromPath(awsTestStrings[2], wcsnlen_s(awsTestStrings[2], _countof(awsTestStrings[2]))+1);
     if(!pws)
     {
         fError = TRUE;
@@ -420,7 +419,7 @@ BOOL fTestStrings()
     }
 
     // STRING 3
-    pws = pszChlSzGetFilenameFromPath(awsTestStrings[3], wcsnlen_s(awsTestStrings[3], _countof(awsTestStrings[3]))+1);
+    pws = CHL_SzGetFilenameFromPath(awsTestStrings[3], wcsnlen_s(awsTestStrings[3], _countof(awsTestStrings[3]))+1);
     if(!pws)
     {
         fError = TRUE;
@@ -432,7 +431,7 @@ BOOL fTestStrings()
     }
 
     // STRING 4
-    pws = pszChlSzGetFilenameFromPath(awsTestStrings[4], wcsnlen_s(awsTestStrings[4], _countof(awsTestStrings[4]))+1);
+    pws = CHL_SzGetFilenameFromPath(awsTestStrings[4], wcsnlen_s(awsTestStrings[4], _countof(awsTestStrings[4]))+1);
     if(!pws)
     {
         fError = TRUE;
@@ -444,7 +443,7 @@ BOOL fTestStrings()
     }
 
     // STRING 5
-    pws = pszChlSzGetFilenameFromPath(awsTestStrings[5], wcsnlen_s(awsTestStrings[5], _countof(awsTestStrings[5]))+1);
+    pws = CHL_SzGetFilenameFromPath(awsTestStrings[5], wcsnlen_s(awsTestStrings[5], _countof(awsTestStrings[5]))+1);
     if(!pws)
     {
         fError = TRUE;
@@ -456,7 +455,7 @@ BOOL fTestStrings()
     }
 
     // STRING 6
-    pws = pszChlSzGetFilenameFromPath(awsTestStrings[6], wcsnlen_s(awsTestStrings[6], _countof(awsTestStrings[6]))+1);
+    pws = CHL_SzGetFilenameFromPath(awsTestStrings[6], wcsnlen_s(awsTestStrings[6], _countof(awsTestStrings[6]))+1);
     if(!pws)
     {
         fError = TRUE;
@@ -505,7 +504,7 @@ BOOL fTestHT_NumStrRand()
 
     __try
     {
-        if(!fChlDsCreateHT(&phtable, 2, HT_KEY_DWORD, HT_VAL_DWORD, FALSE))
+        if(FAILED(CHL_DsCreateHT(&phtable, 2, HT_KEY_DWORD, HT_VAL_DWORD, FALSE)))
         {
             fSuccess = FALSE;
             wprintf(L"Failed to create hash table\n");
@@ -515,7 +514,7 @@ BOOL fTestHT_NumStrRand()
         // insert all keys
         for(int i = 0; i < MAX_RAND_COUNT; ++i)
         {
-            if(!fChlDsInsertHT(phtable, &stRandKeyVals[i].dwkey, sizeof(DWORD), &stRandKeyVals[i].dwval, sizeof(DWORD)))
+            if(FAILED(CHL_DsInsertHT(phtable, &stRandKeyVals[i].dwkey, sizeof(DWORD), &stRandKeyVals[i].dwval, sizeof(DWORD))))
             {
                 wprintf(L"Unable to insert %u:%d\n", stRandKeyVals[i], i);
                 fSuccess = FALSE;
@@ -525,7 +524,7 @@ BOOL fTestHT_NumStrRand()
         }
 
         // find all keys
-        fChlDsInitIteratorHT(&itr);
+        CHL_DsInitIteratorHT(&itr);
         DWORD dwkey;
         DWORD dwval;
         int keysize, valsize;
@@ -534,7 +533,7 @@ BOOL fTestHT_NumStrRand()
         wprintf(L"Contents of hashtable now... *********************\n\n");
 
         int numfound = 0;
-        while(fChlDsGetNextHT(phtable, &itr, &dwkey, &keysize, &dwval, &valsize))
+        while(SUCCEEDED(CHL_DsGetNextHT(phtable, &itr, &dwkey, &keysize, &dwval, &valsize)))
         {
             if(numfound >= MAX_RAND_COUNT)
             {
@@ -572,7 +571,7 @@ BOOL fTestHT_NumStrRand()
         wprintf(L"Finding all values in reverse now... ***************\n\n");
         for(int i = MAX_RAND_COUNT-1; i >= 0; --i)
         {
-            if(!fChlDsFindHT(phtable, &stRandKeyVals[i].dwkey, sizeof(DWORD), &foundval, &valsize))
+            if(FAILED(CHL_DsFindHT(phtable, &stRandKeyVals[i].dwkey, sizeof(DWORD), &foundval, &valsize)))
             {
                 ++numnotfound;
                 wprintf(L"Not found: %u : %u\n", stRandKeyVals[i].dwkey, stRandKeyVals[i].dwval);
@@ -600,7 +599,7 @@ BOOL fTestHT_NumStrRand()
     }
     __finally
     {
-        if(phtable && !fChlDsDestroyHT(phtable))
+        if(phtable && FAILED(CHL_DsDestroyHT(phtable)))
             wprintf(L"Failed to destroy hash table\n");
         phtable = NULL;
     }
@@ -851,7 +850,7 @@ BOOL fTestCreateFileWithSize()
 
     for(index = 0; index < nSampleCounts; ++index)
     {
-        if(!fChlIoCreateFileWithSize(aszFilenames[index], aiFileSizes[index], &hFile))
+        if(FAILED(CHL_IoCreateFileWithSize(&hFile, aszFilenames[index], aiFileSizes[index])))
         {
             fRetVal = FALSE;
             wprintf(L"FAILED: Create %s %d. Error = %u\n", aszFilenames[index], aiFileSizes[index], GetLastError());
@@ -922,7 +921,7 @@ void vTestFileMapping()
 
     BYTE abData[4097];
 
-    if(!fChlIoCreateFileWithSize(L"file1.tmp", iSize, &hFile))
+    if(FAILED(CHL_IoCreateFileWithSize(&hFile, L"file1.tmp", iSize)))
     {
         wprintf(L"FAILED: Create. Error = %u\n", GetLastError());
         return;
