@@ -17,37 +17,15 @@ extern "C" {
 #include "CommonInclude.h"
 #include "MemFunctions.h"
 
-// hashtable key types
-#define HT_KEY_STR      10
-#define HT_KEY_DWORD    11
-
-// hashtable value types
-#define HT_VAL_DWORD    12
-#define HT_VAL_PTR      13
-#define HT_VAL_STR      14
-
-typedef int HT_KEYTYPE;
-typedef int HT_VALTYPE;
-
 // hashtable node
 typedef struct _hashTableNode {
     //BOOL fOccupied;     // FALSE = not occupied
-    union _key key;
-    union _val val;
-    int keysize;
-    int valsize;
+    CHL_key chlKey;
+    CHL_val chlVal;
+    int iKeySize;
+    int iValSize;
     struct _hashTableNode *pnext;
 }HT_NODE;
-
-// hashtable itself
-typedef struct _hashtable {
-    HT_KEYTYPE htKeyType;
-    HT_VALTYPE htValType;
-    BOOL fValIsInHeap;
-    HT_NODE **phtNodes;
-    int nTableSize;
-    HANDLE hMuAccess;
-}CHL_HTABLE;
 
 // Structure that defines the iterator for the hashtable
 // Callers can use this to iterate through the hashtable
@@ -57,6 +35,49 @@ typedef struct _hashtableIterator {
     int nCurIndex;              // current position in the main bucket
     HT_NODE *phtCurNodeInList;  // current position in the sibling list
 }CHL_HT_ITERATOR;
+
+// hashtable itself
+typedef struct _hashtable {
+    CHL_KEYTYPE keyType;
+    CHL_VALTYPE valType;
+    BOOL fValIsInHeap;
+    HT_NODE **phtNodes;
+    int nTableSize;
+    HANDLE hMuAccess;
+
+    // Access methods
+    HRESULT (*Destroy)(struct _hashtable* phtable);
+
+    HRESULT (*Insert)(
+        struct _hashtable* phtable, 
+        PVOID const pvkey, 
+        int keySize, 
+        PVOID pvVal, 
+        int iValSize);
+
+    HRESULT (*Find)(
+        struct _hashtable* phtable, 
+        PVOID const pvkey, 
+        int keySize, 
+        PVOID pvVal, 
+        PINT pvalsize,
+        BOOL fGetPointerOnly);
+
+    HRESULT (*Remove)(struct _hashtable* phtable, PVOID const pvkey, int keySize);
+
+    HRESULT (*InitIterator)(CHL_HT_ITERATOR *pItr);
+    HRESULT (*GetNext)(
+        struct _hashtable* phtable, 
+        CHL_HT_ITERATOR *pItr, 
+        PVOID const pvKey, 
+        PINT pkeysize,
+        PVOID pvVal, 
+        PINT pvalsize,
+        BOOL fGetPointerOnly);
+
+    void (*Dump)(struct _hashtable* phtable);
+
+}CHL_HTABLE, *PCHL_HTABLE;
 
 // -------------------------------------------
 // Functions exported
@@ -75,8 +96,8 @@ typedef struct _hashtableIterator {
 DllExpImp HRESULT CHL_DsCreateHT(
     _Inout_ CHL_HTABLE **pHTableOut, 
     _In_ int nEstEntries, 
-    _In_ int keyType, 
-    _In_ int valType, 
+    _In_ CHL_KEYTYPE keyType, 
+    _In_ CHL_VALTYPE valType, 
     _In_opt_ BOOL fValInHeapMem);
 
 DllExpImp HRESULT CHL_DsDestroyHT(_In_ CHL_HTABLE *phtable);
@@ -85,15 +106,16 @@ DllExpImp HRESULT CHL_DsInsertHT(
     _In_ CHL_HTABLE *phtable, 
     _In_ PVOID const pvkey, 
     _In_ int keySize, 
-    _In_ PVOID pval, 
-    _In_ int valSize);
+    _In_ PVOID pvVal, 
+    _In_ int iValSize);
 
 DllExpImp HRESULT CHL_DsFindHT(
     _In_ CHL_HTABLE *phtable, 
     _In_ PVOID const pvkey, 
     _In_ int keySize, 
-    _Inout_opt_ PVOID pval, 
-    _Inout_opt_ PINT pvalsize);
+    _Inout_opt_ PVOID pvVal, 
+    _Inout_opt_ PINT pvalsize,
+    _In_opt_ BOOL fGetPointerOnly);
 
 DllExpImp HRESULT CHL_DsRemoveHT(_In_ CHL_HTABLE *phtable, _In_ PVOID const pvkey, _In_ int keySize);
 
@@ -101,10 +123,11 @@ DllExpImp HRESULT CHL_DsInitIteratorHT(_In_ CHL_HT_ITERATOR *pItr);
 DllExpImp HRESULT CHL_DsGetNextHT(
     _In_ CHL_HTABLE *phtable, 
     _In_ CHL_HT_ITERATOR *pItr, 
-    _Inout_opt_ PVOID const pkey, 
+    _Inout_opt_ PVOID const pvKey, 
     _Inout_opt_ PINT pkeysize,
-    _Inout_opt_ PVOID pval, 
-    _Inout_opt_ PINT pvalsize);
+    _Inout_opt_ PVOID pvVal, 
+    _Inout_opt_ PINT pvalsize,
+    _In_opt_ BOOL fGetPointerOnly);
 
 DllExpImp int CHL_DsGetNearestSizeIndexHT(_In_ int maxNumberOfEntries);
 DllExpImp void CHL_DsDumpHT(_In_ CHL_HTABLE *phtable);

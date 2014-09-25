@@ -21,25 +21,8 @@ extern "C" {
 #define CHLE_LLIST_EINVAL   17100
 #define CHLE_LLIST_VALTYPE  17101
 
-// LinkedList value types
-#define LL_VAL_BYTE     20
-#define LL_VAL_UINT     21
-#define LL_VAL_DWORD    22
-#define LL_VAL_LONGLONG 23
-#define LL_VAL_PTR      24
-
-typedef int LL_VALTYPE;
-
-union _nodeval {
-    BYTE bval;
-    UINT uval;
-    DWORD dwval;
-    LONGLONG longlongval;
-    PVOID pval;
-};
-
 typedef struct _LlNode {
-    union _nodeval nodeval;
+    CHL_val chlVal;
     DWORD dwValSize;
     struct _LlNode *pleft;
     struct _LlNode *pright;
@@ -48,31 +31,88 @@ typedef struct _LlNode {
 typedef struct _LinkedList {
     int nCurNodes;
     int nMaxNodes;
-    LL_VALTYPE valType;
+    CHL_VALTYPE valType;
     PLLNODE pHead;
     PLLNODE pTail;
     HANDLE hMuAccess;
+
+    // Access methods
+    HRESULT (*Insert)(struct _LinkedList* pLList, PVOID pvVal, int iValSize);
+
+    HRESULT (*Remove)(
+        struct _LinkedList* pLList, 
+        PVOID pvValToFind, 
+        BOOL fStopOnFirstFind, 
+        BOOL (*pfnComparer)(PVOID, PVOID), 
+        PVOID pvVal, 
+        BOOL fGetPointerOnly);
+
+    HRESULT (*RemoveAt)(
+        struct _LinkedList* pLList, 
+        int iIndexToRemove, 
+        PVOID pvVal, 
+        BOOL fGetPointerOnly);
+
+    HRESULT (*Peek)(
+        struct _LinkedList* pLList, 
+        int iIndexToPeek, 
+        _Inout_ PVOID pvVal, 
+        BOOL fGetPointerOnly);
+
+    HRESULT (*Find)(
+        struct _LinkedList* pLList, 
+        PVOID pvValToFind, 
+        BOOL (*pfnComparer)(PVOID, PVOID), 
+        PVOID pvValOut, 
+        BOOL fGetPointerOnly);
+
+    HRESULT (*Destroy)(struct _LinkedList* pLList);
+
 }CHL_LLIST, *PCHL_LLIST;
 
 // -------------------------------------------
 // Functions exported
 
-DllExpImp HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ LL_VALTYPE valType, _In_opt_ int nEstEntries);
-DllExpImp HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PVOID pval, _In_ int valsize);
+DllExpImp HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_opt_ int nEstEntries);
+
+// CHL_DsInsertLL()
+// Inserts an element into the linked list. Always inserts at the tail.
+// Insertion is an O(1) operation.
+//      pLList: Pointer to a linked list object that was returned by a successful call
+//              to CHL_DsCreateLL.
+//      pvVal: The value or pointer to the value to be stored. All intrinsic are passed by 
+//              value(like: CHL_DsInsertLL(pListObj, (PVOID)intValue, 0). All other complex
+//              types are passed by reference(their address) and they are stored in the heap.
+//      iValSize: Size in bytes of the value. Optional for intrinsic types, mandatory for others.
+//
+DllExpImp HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PVOID pvVal, _In_opt_ int iValSize);
+
 DllExpImp HRESULT CHL_DsRemoveLL(
     _In_ PCHL_LLIST pLList, 
     _In_ PVOID pvValToFind, 
     _In_ BOOL fStopOnFirstFind, 
     _In_ BOOL (*pfnComparer)(PVOID, PVOID), 
-    _Inout_opt_ PVOID *ppval);
+    _Inout_opt_ PVOID pvVal, 
+    _In_opt_ BOOL fGetPointerOnly);
 
-DllExpImp HRESULT CHL_DsRemoveAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToRemove, _Inout_opt_ PVOID *ppval);
-DllExpImp HRESULT CHL_DsPeekAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToPeek, _Inout_ PVOID *ppval);
+DllExpImp HRESULT CHL_DsRemoveAtLL(
+    _In_ PCHL_LLIST pLList, 
+    _In_ int iIndexToRemove, 
+    _Inout_opt_ PVOID pvVal, 
+    _In_opt_ BOOL fGetPointerOnly);
+
+DllExpImp HRESULT CHL_DsPeekAtLL(
+    _In_ PCHL_LLIST pLList, 
+    _In_ int iIndexToPeek, 
+    _Inout_ PVOID pvVal, 
+    _In_opt_ BOOL fGetPointerOnly);
+
 DllExpImp HRESULT CHL_DsFindLL(
     _In_ PCHL_LLIST pLList, 
     _In_ PVOID pvValToFind, 
     _In_ BOOL (*pfnComparer)(PVOID, PVOID), 
-    _Inout_opt_ PVOID *ppval);
+    _Inout_opt_ PVOID pvValOut, 
+    _In_opt_ BOOL fGetPointerOnly);
 
 DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList);
 

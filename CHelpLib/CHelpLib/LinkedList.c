@@ -11,13 +11,14 @@
 #include "General.h"
 #include "MemFunctions.h"
 
-static void _CopyValOut(PLLNODE pnode, LL_VALTYPE valType, _Out_ PVOID *ppValOut);
-static HRESULT _PopulateNode(PLLNODE pNodeToPopulate, LL_VALTYPE valType, PVOID pval, int valsize);
+#define MUTEX_NAME_LL   (TEXT("CHL_MUTEX_LL"))
+
+// Local functions
 static void _InsertNode(PCHL_LLIST pLList, PLLNODE pNodeToInsert);
 static void _UnlinkNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove);
-static void _FreeNodeMem(PLLNODE pnode, LL_VALTYPE valType, BOOL fFreeValMem);
+static void _FreeNodeMem(PLLNODE pnode, CHL_VALTYPE valType, BOOL fFreeValMem);
 
-HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ LL_VALTYPE valType, _In_opt_ int nEstEntries)
+HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_opt_ int nEstEntries)
 {
     unsigned int uiRand;
     WCHAR wsMutexName[32];
@@ -27,7 +28,8 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ LL_VALTYPE valType, _In_o
     HRESULT hr = S_OK;
 
     // validate parameters
-    if(!ppLList)
+    if(!ppLList || 
+        !((valType > CHL_VT_START) && (valType < CHL_VT_END)))
     {
         hr = E_INVALIDARG;
         goto error_return;
@@ -40,12 +42,12 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ LL_VALTYPE valType, _In_o
         hr = E_FAIL;
         goto error_return;
     }
-
-    swprintf_s(wsMutexName, _countof(wsMutexName), L"%s_%08X", HT_MUTEX_NAME, uiRand);
+    swprintf_s(wsMutexName, _countof(wsMutexName), L"%s_%08X", MUTEX_NAME_LL, uiRand);
 
     hr = CHL_MmAlloc((PVOID*)&pListLocal, sizeof(CHL_LLIST), NULL);
     if(FAILED(hr))
     {
+        // pListLocal will be NULL on error
         goto error_return;
     }
 
@@ -59,6 +61,13 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ LL_VALTYPE valType, _In_o
         goto error_return;
     }
 
+    pListLocal->Insert = CHL_DsInsertLL;
+    pListLocal->Remove = CHL_DsRemoveLL;
+    pListLocal->RemoveAt = CHL_DsRemoveAtLL;
+    pListLocal->Peek = CHL_DsPeekAtLL;
+    pListLocal->Find = CHL_DsFindLL;
+    pListLocal->Destroy = CHL_DsDestroyLL;
+
     *ppLList = pListLocal;
     return hr;
 
@@ -70,31 +79,31 @@ error_return:
     return hr;
 }
 
-HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PVOID pval, _In_ int valsize)
+HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PVOID pvVal, _In_opt_ int iValSize)
 {
-    PVOID pvValInNode = NULL;
-    PLLNODE pnewnode = NULL;
+    PLLNODE pNewNode = NULL;
 
     BOOL fMutexLocked = FALSE;
 
     HRESULT hr = S_OK;
 
     // Parameter validation
-    if(!pLList || !pval || valsize <= 0)
+    if(!pLList || !pvVal || iValSize <= 0)
     {
         hr = E_INVALIDARG;
         goto error_return;
     }
 
     // Create new node
-    hr = CHL_MmAlloc((PVOID*)&pnewnode, sizeof(LLNODE), NULL);
+    hr = CHL_MmAlloc((PVOID*)&pNewNode, sizeof(LLNODE), NULL);
     if(FAILED(hr))
     {
         goto error_return;
     }
 
     // Populate value into new node
-    hr = _PopulateNode(pnewnode, pLList->valType, pval, valsize);
+    pNewNode->dwValSize = iValSize;
+    hr = _CopyValIn(&pNewNode->chlVal, pLList->valType, pvVal, iValSize);
     if(FAILED(hr))
     {
         goto error_return;
@@ -108,26 +117,21 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PVOID pval, _In_ int valsize
 
     fMutexLocked = TRUE;
 
-    _InsertNode(pLList, pnewnode);
+    _InsertNode(pLList, pNewNode);
     ++(pLList->nCurNodes);
 
     ReleaseMutex(pLList->hMuAccess);
     return hr;
 
 error_return:
-    if(pvValInNode)
+    if(pNewNode)
     {
-        CHL_MmFree((PVOID*)&pvValInNode);
+        CHL_MmFree((PVOID*)&pNewNode);
     }
 
-    if(pnewnode)
+    if(fMutexLocked && !ReleaseMutex(pLList->hMuAccess))
     {
-        CHL_MmFree((PVOID*)&pnewnode);
-    }
-
-    if(fMutexLocked)
-    {
-        ReleaseMutex(pLList->hMuAccess);
+        logerr("%s(): error_return mutex unlock", __FUNCTION__);
     }
     return hr;
 }
@@ -137,16 +141,17 @@ HRESULT CHL_DsRemoveLL(
     _In_ PVOID pvValToFind, 
     _In_ BOOL fStopOnFirstFind, 
     _In_ BOOL (*pfnComparer)(PVOID, PVOID), 
-    _Inout_opt_ PVOID *ppval)
+    _Inout_opt_ PVOID pvValOut,
+    _In_opt_ BOOL fGetPointerOnly)
 {
     PLLNODE pCurNode = NULL;
     PVOID pvCurVal = NULL;
-    LL_VALTYPE valType = pLList->valType;
+    CHL_VALTYPE valType = pLList->valType;
 
     BOOL fMutexLocked = FALSE;
 
     HRESULT hr = S_OK;
-    if(!pLList || !pvValToFind || !pfnComparer)
+    if(!pLList || !pfnComparer)
     {
         hr = E_INVALIDARG;
         goto error_return;
@@ -165,26 +170,29 @@ HRESULT CHL_DsRemoveLL(
     hr = E_NOT_SET;
     while(pCurNode)
     {
-        _CopyValOut(pCurNode, valType, &pvCurVal);
+        _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, TRUE);
         if( pfnComparer(pvValToFind, pvCurVal) )
         {
             hr = S_OK;
 
             _UnlinkNode(pLList, pCurNode);
             
-            if(ppval)
+            if(pvValOut)
             {
-                *ppval = pvCurVal;
+                hr = _CopyValOut(&pCurNode->chlVal, valType, pvValOut, fGetPointerOnly);
+                if(SUCCEEDED(hr))
+                {
+                    --(pLList->nCurNodes);
 
-                // DO NOT free value memory since we are returning it
-                _FreeNodeMem(pCurNode, valType, FALSE);
+                    // DO NOT free value memory since we are returning it
+                    _FreeNodeMem(pCurNode, valType, FALSE);
+                }
             }
             else
             {
+                --(pLList->nCurNodes);
                 _FreeNodeMem(pCurNode, valType, TRUE);
             }
-
-            --(pLList->nCurNodes);
 
             if(fStopOnFirstFind)
             {
@@ -199,14 +207,18 @@ HRESULT CHL_DsRemoveLL(
     return hr;
 
 error_return:
-    if(fMutexLocked)
+    if(fMutexLocked && !ReleaseMutex(pLList->hMuAccess))
     {
-        ReleaseMutex(pLList->hMuAccess);    
+        logerr("%s(): error_return mutex unlock", __FUNCTION__);
     }
     return hr;
 }
 
-HRESULT CHL_DsRemoveAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToRemove, _Inout_opt_ PVOID *ppval)
+HRESULT CHL_DsRemoveAtLL(
+    _In_ PCHL_LLIST pLList, 
+    _In_ int iIndexToRemove, 
+    _Inout_opt_ PVOID pvValOut, 
+    _In_opt_ BOOL fGetPointerOnly)
 {
     int itr;
     PLLNODE pCurNode;
@@ -246,9 +258,9 @@ HRESULT CHL_DsRemoveAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToRemove, _Inout
     _UnlinkNode(pLList, pCurNode);
     --(pLList->nCurNodes);
 
-    if(ppval)
+    if(pvValOut)
     {
-        _CopyValOut(pCurNode, pLList->valType, ppval);
+        _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, fGetPointerOnly);
 
         // DO NOT free value memory since we are returning it
         _FreeNodeMem(pCurNode, pLList->valType, FALSE);
@@ -262,14 +274,14 @@ HRESULT CHL_DsRemoveAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToRemove, _Inout
     return hr;
 
 error_return:
-    if(fMutexLocked)
+    if(fMutexLocked && !ReleaseMutex(pLList->hMuAccess))
     {
-        ReleaseMutex(pLList->hMuAccess);    
+        logerr("%s(): error_return mutex unlock", __FUNCTION__);
     }
     return hr;
 }
 
-HRESULT CHL_DsPeekAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToPeek, _Inout_ PVOID *ppval)
+HRESULT CHL_DsPeekAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToPeek, _Inout_ PVOID pvValOut, _In_opt_ BOOL fGetPointerOnly)
 {
     BOOL fMutexLocked = FALSE;
     PLLNODE pCurNode = NULL;
@@ -292,18 +304,16 @@ HRESULT CHL_DsPeekAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToPeek, _Inout_ PV
     if(iIndexToPeek == 0)
     {
         hr = S_OK;
-        _CopyValOut(pLList->pHead, pLList->valType, ppval);
+        pCurNode = pLList->pHead;
     }
     else if(iIndexToPeek == (pLList->nCurNodes - 1))
     {
         hr = S_OK;
-        _CopyValOut(pLList->pTail, pLList->valType, ppval);
+        pCurNode = pLList->pTail;
     }
     else
     {
         int itr;
-
-        hr = S_OK;
 
         // Iterate through the list to the specified index
         pCurNode = pLList->pHead;
@@ -312,17 +322,26 @@ HRESULT CHL_DsPeekAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToPeek, _Inout_ PV
             pCurNode = pCurNode->pright;
         }
 
+        if(pCurNode != NULL)
+        {
+            hr = S_OK;
+        }
+
         ASSERT(pCurNode != NULL);
-        _CopyValOut(pCurNode, pLList->valType, ppval);
+    }
+
+    if(SUCCEEDED(hr) && (pvValOut != NULL))
+    {
+        _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, fGetPointerOnly);
     }
 
     ReleaseMutex(pLList->hMuAccess);
     return hr;
 
 error_return:
-    if(fMutexLocked)
+    if(fMutexLocked && !ReleaseMutex(pLList->hMuAccess))
     {
-        ReleaseMutex(pLList->hMuAccess);    
+        logerr("%s(): error_return mutex unlock", __FUNCTION__);
     }
     return hr;
 }
@@ -331,13 +350,14 @@ HRESULT CHL_DsFindLL(
     _In_ PCHL_LLIST pLList, 
     _In_ PVOID pvValToFind, 
     _In_ BOOL (*pfnComparer)(PVOID, PVOID), 
-    _Inout_opt_ PVOID *ppval)
+    _Inout_opt_ PVOID pvValOut, 
+    _In_opt_ BOOL fGetPointerOnly)
 {
     BOOL fMutexLocked = FALSE;
 
     PLLNODE pCurNode = NULL;
     PVOID pvCurVal = NULL;
-    LL_VALTYPE valType = pLList->valType;
+    CHL_VALTYPE valType = pLList->valType;
 
     HRESULT hr = S_OK;
     if(!pLList || !pfnComparer)
@@ -359,7 +379,7 @@ HRESULT CHL_DsFindLL(
     hr = E_NOT_SET;
     while(pCurNode)
     {
-        _CopyValOut(pCurNode, valType, &pvCurVal);
+        _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, TRUE);
         if( pfnComparer(pvValToFind, pvCurVal) )
         {
             hr = S_OK;
@@ -368,9 +388,9 @@ HRESULT CHL_DsFindLL(
         pCurNode = pCurNode->pright;
     }
 
-    if(SUCCEEDED(hr) && ppval != NULL)
+    if(SUCCEEDED(hr) && (pvValOut != NULL))
     {
-        _CopyValOut(pCurNode, valType, ppval);
+        _CopyValOut(&pCurNode->chlVal, valType, pvValOut, fGetPointerOnly);
     }
 
     ReleaseMutex(pLList->hMuAccess);
@@ -387,19 +407,19 @@ error_return:
 DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
 {
     PLLNODE pCurNode, pNextNode;
-    LL_VALTYPE valType;
+    CHL_VALTYPE valType;
 
     HRESULT hr = S_OK;
     if(!pLList)
     {
         hr = E_INVALIDARG;
-        goto error_return;
+        goto done;
     }
 
     hr = CHL_GnOwnMutex(pLList->hMuAccess);
     if(FAILED(hr))
     {
-        goto error_return;
+        goto done;
     }
 
     valType = pLList->valType;
@@ -419,81 +439,8 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
     // this linked list now.
     CloseHandle(pLList->hMuAccess);
     CHL_MmFree((PVOID*)&pLList);
-    return hr;
-
-error_return:
-    return hr;
-}
-
-static void _CopyValOut(PLLNODE pnode, LL_VALTYPE valType, _Out_ PVOID *ppValOut)
-{
-    ASSERT(pnode);
-    ASSERT(valType >= LL_VAL_BYTE && valType <= LL_VAL_PTR);
-    ASSERT(ppValOut);
-
-    switch(valType)
-    {
-        case LL_VAL_BYTE:
-        case LL_VAL_UINT:
-        case LL_VAL_DWORD:
-        case LL_VAL_LONGLONG:
-        {
-            SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
-            ASSERT(FALSE);
-        }
-
-        case LL_VAL_PTR:
-        {
-            memcpy(ppValOut, pnode->nodeval.pval, pnode->dwValSize);
-            //*ppValOut = pnode->nodeval.pval;
-            break;
-        }
-
-        default:
-        {
-            ASSERT(FALSE);
-            break;
-        }
-    }
-}
-
-static HRESULT _PopulateNode(PLLNODE pNodeToPopulate, LL_VALTYPE valType, PVOID pval, int valsize)
-{
-    HRESULT hr = S_OK;
-
-    ASSERT(pNodeToPopulate);
-    ASSERT(pval);
-    ASSERT(valsize > 0);
-
-    pNodeToPopulate->dwValSize = valsize;
-    switch(valType)
-    {
-        case LL_VAL_BYTE:
-        case LL_VAL_UINT:
-        case LL_VAL_DWORD:
-        case LL_VAL_LONGLONG:
-        {
-            hr = E_NOTIMPL;
-            break;
-        }
-
-        case LL_VAL_PTR:
-        {
-            hr = CHL_MmAlloc((PVOID*)&pNodeToPopulate->nodeval.pval, valsize, NULL);
-            if(SUCCEEDED(hr))
-            {
-                memcpy(pNodeToPopulate->nodeval.pval, pval, valsize);
-            }
-            break;
-        }
-
-        default:
-        {
-            hr = E_UNEXPECTED;
-            break;
-        }
-    }
-
+    
+done:
     return hr;
 }
 
@@ -576,14 +523,15 @@ static void _UnlinkNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove)
     }
 }
 
-static void _FreeNodeMem(PLLNODE pnode, LL_VALTYPE valType, BOOL fFreeValMem)
+static void _FreeNodeMem(PLLNODE pnode, CHL_VALTYPE valType, BOOL fFreeValMem)
 {
     ASSERT(pnode);
+    ASSERT((valType > CHL_VT_START) && (valType < CHL_VT_END));
 
     // Free memory occupied by the value, if applicable
-    if(fFreeValMem && valType == LL_VAL_PTR)
+    if(fFreeValMem)
     {
-        CHL_MmFree((PVOID*)&pnode->nodeval.pval);
+        _DeleteVal(&pnode->chlVal, valType);
     }
 
     // Finally, free the node itself

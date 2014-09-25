@@ -4,7 +4,7 @@
 // Shishir Bhat (http://www.shishirprasad.net)
 // History
 //      06/23/13 Initial version
-//
+//      09/18/2014 Standardize keys and value types
 
 #ifndef _COMMONINCLUDE_H
 #define _COMMONINCLUDE_H
@@ -27,6 +27,7 @@ extern "C" {
 #include "DbgHelpers.h"
 #include "Helpers.h"
 #include "Defines.h"
+#include "InternalDefines.h"
 
 #ifdef __cplusplus
 }

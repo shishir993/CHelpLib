@@ -10,6 +10,7 @@
 #define CHL_DEFINES_H
 
 #include <Windows.h>
+#include "InternalDefines.h"
 
 // -------------------------------------------
 // #defs and typedefs
@@ -25,32 +26,68 @@
 #define CHLE_EMPTY_FILE     17011
 
 // Key Types
-#define CHL_KT_STRING   10
-#define CHL_KT_INT32    11
+typedef enum
+{
+    // Invalid value type
+    CHL_KT_START,
+
+    // Signed 32bit integer
+    CHL_KT_INT32,
+
+    // Unsigned 32bit integer
+    CHL_KT_UINT32,
+
+    // A pointer whose pointed-to address is the key
+    CHL_KT_POINTER,
+
+    // Null-terminated ANSI string
+    CHL_KT_STRING,
+
+    // Null-terminated Unicode(wide char) string
+    CHL_KT_WSTRING,
+
+    // Invalid value type
+    CHL_KT_END
+}CHL_KEYTYPE;
 
 // Value Types
-#define CHL_VT_STRING   20
-#define CHL_VT_INT32    21
-#define CHL_VT_PVOID    22
+typedef enum
+{
+    // Invalid value type
+    CHL_VT_START,
 
-// Key type and Value type typedefs
-typedef int CHL_KEYTYPE;
-typedef int CHL_VALTYPE;
+    // Signed 32bit integer
+    CHL_VT_INT32,
 
-#define HT_MUTEX_NAME   (TEXT("CHL_MUTEX_NAME"))
+    // Unsigned 32bit integer
+    CHL_VT_UINT32,
+
+    // Pointer of any type(pointed-to address is the value stored)
+    CHL_VT_POINTER,
+
+    // Any user object(data structure).
+    CHL_VT_USEROBJECT,
+
+    // Null-terminated ANSI string
+    CHL_VT_STRING,
+
+    // Null-terminated Unicode(wide char) string
+    CHL_VT_WSTRING,
+
+    // Invalid value type
+    CHL_VT_END
+}CHL_VALTYPE;
 
 // -------------------------------------------
-// Structures
+// Functions internal only
+HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PVOID pvKey, _In_opt_ int iValSize);
+HRESULT _CopyKeyOut(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _Inout_ PVOID pvKeyOut, _In_ BOOL fGetPointerOnly);
+BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PVOID pvRightKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize);
+void _DeleteKey(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType);
 
-union _key {
-    BYTE *skey;
-    DWORD dwkey;
-};
-
-union _val {
-    DWORD dwVal;
-    void *pval;
-    BYTE *pbVal;
-};
+HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PVOID pvVal, _In_opt_ int iValSize);
+HRESULT _CopyValOut(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVOID pvValOut, _In_ BOOL fGetPointerOnly);
+BOOL _IsDuplicateVal(_In_ CHL_val *pLeftVal, _In_ PVOID pRightVal, _In_ CHL_VALTYPE valType, _In_ int iValSize);
+void _DeleteVal(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType);
 
 #endif // CHL_DEFINES_H

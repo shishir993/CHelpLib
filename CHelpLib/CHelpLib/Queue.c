@@ -4,10 +4,7 @@
 HRESULT CHL_DsCreateQ(_Out_ PCHL_QUEUE *ppQueueObj, _In_ CHL_VALTYPE valType, _In_opt_ int nEstimatedItems)
 {
     HRESULT hr = S_OK;
-    PCHL_QUEUE pq = NULL;
-    LL_VALTYPE valTypeLL;
-
-    ASSERT(ppQueueObj && valType >= CHL_VT_STRING && valType <= CHL_VT_PVOID);
+    PCHL_QUEUE pq;
     pq = (PCHL_QUEUE)malloc(sizeof(CHL_QUEUE));
     if(pq == NULL)
     {
@@ -17,21 +14,8 @@ HRESULT CHL_DsCreateQ(_Out_ PCHL_QUEUE *ppQueueObj, _In_ CHL_VALTYPE valType, _I
 
     ZeroMemory(pq, sizeof(CHL_QUEUE));
 
-    // Temp mapping code until all data structures use the common Key and Value types
-    switch(valType)
-    {
-    case CHL_VT_STRING:
-    case CHL_VT_PVOID:
-        valTypeLL = LL_VAL_PTR;
-        break;
-
-    default:
-        hr = E_INVALIDARG;       
-        goto done;
-    }
-
     // Create the linked list
-    hr = CHL_DsCreateLL(&pq->pList, valTypeLL, nEstimatedItems);
+    hr = CHL_DsCreateLL(&pq->pList, valType, nEstimatedItems);
     if(FAILED(hr))
     {
         goto done;
@@ -93,14 +77,13 @@ HRESULT CHL_DsInsertQ(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_ int nV
     return hr;
 }
 
-HRESULT CHL_DsDeleteQ(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue)
+HRESULT CHL_DsDeleteQ(_In_ PCHL_QUEUE pQueueObj, _Inout_opt_ PVOID pvValOut, _In_opt_ BOOL fGetPointerOnly)
 {
     HRESULT hr = S_OK;
 
     ASSERT(pQueueObj && pQueueObj->pList);
-    ASSERT(ppvValue);
+    ASSERT(pvValOut);
 
-    *ppvValue = NULL;
     if(pQueueObj->nCurItems <= 0)
     {
         hr = E_NOT_SET;
@@ -108,7 +91,7 @@ HRESULT CHL_DsDeleteQ(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue)
     else
     {
         // Linked list always inserts at the tail, so the first item is the one to be deleted
-        hr = CHL_DsRemoveAtLL(pQueueObj->pList, 0, ppvValue);
+        hr = CHL_DsRemoveAtLL(pQueueObj->pList, 0, pvValOut, fGetPointerOnly);
         if(SUCCEEDED(hr))
         {
             --(pQueueObj->nCurItems);
@@ -117,21 +100,21 @@ HRESULT CHL_DsDeleteQ(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue)
     return hr;
 }
 
-HRESULT CHL_DsPeekQ(_In_ PCHL_QUEUE pQueueObj, _Out_ PVOID *ppvValue)
+HRESULT CHL_DsPeekQ(_In_ PCHL_QUEUE pQueueObj, _Inout_opt_ PVOID pvValOut, _In_opt_ BOOL fGetPointerOnly)
 {
     HRESULT hr = S_OK;
     ASSERT(pQueueObj && pQueueObj->pList);
-    ASSERT(ppvValue);
+    ASSERT(pvValOut);
 
     // Linked list always inserts at the tail, so the first item is the one to be peek'd
     if(pQueueObj->nCurItems > 0)
     {
-        hr = CHL_DsPeekAtLL(pQueueObj->pList, 0, ppvValue);
+        hr = CHL_DsPeekAtLL(pQueueObj->pList, 0, pvValOut, fGetPointerOnly);
     }
     else
     {
         hr = E_NOT_SET;
-        *ppvValue = NULL;
+        pvValOut = NULL;
     }
     return hr;
 }
@@ -144,7 +127,7 @@ HRESULT CHL_DsFindQ(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_opt_ BOOL
 
     if(pQueueObj->nCurItems > 0)
     {
-        hr = CHL_DsFindLL(pQueueObj->pList, pvValue, pfnComparer, NULL);
+        hr = CHL_DsFindLL(pQueueObj->pList, pvValue, pfnComparer, NULL, FALSE);
     }
     else
     {
