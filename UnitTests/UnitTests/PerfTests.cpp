@@ -41,7 +41,7 @@ void doPerfTests()
         //
         // Code to test
         //
-        testSuccess[numRuns] = testHashtable(HT_KEY_DWORD, HT_VAL_DWORD, sizes[numRuns], FALSE);
+        testSuccess[numRuns] = testHashtable(CHL_KT_UINT32, CHL_VT_UINT32, sizes[numRuns], FALSE);
 
         // End counter
         if(!QueryPerformanceCounter(&counterEnd))
@@ -69,15 +69,15 @@ void doPerfTests()
     return;
 }
 
-BOOL testHashtable(HT_KEYTYPE keytype, HT_VALTYPE valType, int nEntries, BOOL fRandomize)
+BOOL testHashtable(CHL_KEYTYPE keytype, CHL_VALTYPE valType, int nEntries, BOOL fRandomize)
 {
     switch(keytype)
     {
-        case HT_KEY_STR:
+        case CHL_KT_STRING:
             break;
 
-        case HT_KEY_DWORD:
-            if(valType == HT_VAL_DWORD)
+        case CHL_KT_UINT32:
+            if(valType == CHL_VT_UINT32)
                 return testHastable_NumNum(nEntries, fRandomize);
             break;
     }
@@ -93,7 +93,7 @@ BOOL testHastable_NumNum(int nEntries, BOOL fRandomize)
     CHL_HTABLE *phtable = NULL;
     int counter;
 
-    if(FAILED(CHL_DsCreateHT(&phtable, 10, HT_KEY_DWORD, HT_VAL_DWORD, FALSE)))
+    if(FAILED(CHL_DsCreateHT(&phtable, 10, CHL_KT_UINT32, CHL_VT_UINT32, FALSE)))
         goto error_return;
 
     if(fRandomize)
@@ -108,7 +108,7 @@ BOOL testHastable_NumNum(int nEntries, BOOL fRandomize)
     {
         for(counter = 0; counter < nEntries; ++counter)
         {
-            if(FAILED(CHL_DsInsertHT(phtable, &counter, sizeof(DWORD), &counter, sizeof(DWORD))))
+            if(FAILED(CHL_DsInsertHT(phtable, (PVOID)counter, sizeof(DWORD), (PVOID)counter, sizeof(DWORD))))
                 goto error_return;
         }
     }

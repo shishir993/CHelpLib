@@ -282,7 +282,7 @@ static BOOL fInsertRemoveFind()
 
     // Create the linked list
     wprintf(L"Creating linked list\n");
-    if(FAILED(CHL_DsCreateLL(&pLList, LL_VAL_PTR, numTestData)))
+    if(FAILED(CHL_DsCreateLL(&pLList, CHL_VT_POINTER, numTestData)))
     {
         wprintf(L"!!!! Cannot create linked list(size = %d): Error %u\n", numTestData, GetLastError());
         goto test_failed;
@@ -292,7 +292,7 @@ static BOOL fInsertRemoveFind()
     for(index = 0; index < numTestData; ++index)
     {
         wprintf(L"Inserting element %d\n", index);
-        if(FAILED(CHL_DsInsertLL(pLList, &(ppTestStructs[index]), sizeof(PTESTSTRUCT))))
+        if(FAILED(CHL_DsInsertLL(pLList, ppTestStructs[index], sizeof(PTESTSTRUCT))))
         {
             wprintf(L"!!!! Could not insert element %d\n", index);
             goto test_failed;
@@ -301,7 +301,7 @@ static BOOL fInsertRemoveFind()
 
     // Remove the last inserted, i.e., numTestData - 1 index
     wprintf(L"Removing at %d\n", numTestData-1);
-    if(FAILED(CHL_DsRemoveAtLL(pLList, numTestData-1, (void**)&pRetrievedTestData)))
+    if(FAILED(CHL_DsRemoveAtLL(pLList, numTestData-1, (void**)&pRetrievedTestData, TRUE)))
     {
         wprintf(L"!!!! Could not remove at %d\n", numTestData-1);
         goto test_failed;
@@ -324,7 +324,7 @@ static BOOL fInsertRemoveFind()
     wprintf(L"Finding after removing at end...\n");
     for(index = 0; index < numTestData - 1; ++index)
     {
-        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pRetrievedTestData)))
+        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pRetrievedTestData, TRUE)))
         {
             wprintf(L"!!!! Could not find element at %d after removing at %d\n", index, numTestData - 1);
             goto test_failed;
@@ -340,7 +340,7 @@ static BOOL fInsertRemoveFind()
 
     // Add the fourth one again
     wprintf(L"Adding the last one again...\n");
-    if(FAILED(CHL_DsInsertLL(pLList, &(ppTestStructs[numTestData-1]), sizeof(PTESTSTRUCT))))
+    if(FAILED(CHL_DsInsertLL(pLList, ppTestStructs[numTestData-1], sizeof(PTESTSTRUCT))))
     {
         wprintf(L"!!!! Could not re-insert element %d\n", numTestData-1);
         goto test_failed;
@@ -348,7 +348,7 @@ static BOOL fInsertRemoveFind()
 
     // Remove using the other remove function
     wprintf(L"Remove the last one using *RemoveLL() function\n");
-    if(FAILED(CHL_DsRemoveLL(pLList, ppTestStructs[numTestData-1], TRUE, fCompareTestStructs, (void**)&pRetrievedTestData)))
+    if(FAILED(CHL_DsRemoveLL(pLList, ppTestStructs[numTestData-1], TRUE, fCompareTestStructs, (void**)&pRetrievedTestData, TRUE)))
     {
         wprintf(L"!!!! Could not remove at %d using RemoveLL()\n", numTestData-1);
         goto test_failed;
@@ -358,7 +358,7 @@ static BOOL fInsertRemoveFind()
     for(index = 0; index < numTestData - 1; ++index)
     {
         wprintf(L"Finding element %d\n", index);
-        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pRetrievedTestData)))
+        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pRetrievedTestData, TRUE)))
         {
             wprintf(L"!!!! Could not find element at %d after removing at %d\n", index, numTestData - 1);
             goto test_failed;
@@ -374,7 +374,7 @@ static BOOL fInsertRemoveFind()
 
     // Remove first one inserted
     wprintf(L"Removing first one\n");
-    if(FAILED(CHL_DsRemoveAtLL(pLList, 0, (void**)&pRetrievedTestData)))
+    if(FAILED(CHL_DsRemoveAtLL(pLList, 0, (void**)&pRetrievedTestData, TRUE)))
     {
         wprintf(L"!!!! Could not remove at 0\n");
         goto test_failed;
@@ -397,7 +397,7 @@ static BOOL fInsertRemoveFind()
     for(index = 1; index < numTestData - 1; ++index)
     {
         wprintf(L"Finding element %d\n", index);
-        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pRetrievedTestData)))
+        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pRetrievedTestData, TRUE)))
         {
             wprintf(L"!!!! Could not find element at %d after removing first and last\n", index);
             goto test_failed;
@@ -448,7 +448,7 @@ static BOOL fInsertAndFind_Internal(PTESTSTRUCT *ppTestStructs, int nElems)
 
     // First, create the linked list
     wprintf(L"Creating linked list of %d elements\n", nElems);
-    if(FAILED(CHL_DsCreateLL(&pLList, LL_VAL_PTR, nElems)))
+    if(FAILED(CHL_DsCreateLL(&pLList, CHL_VT_POINTER, nElems)))
     {
         wprintf(L"!!!! Cannot create linked list(size = %d): Error %u\n", nElems, GetLastError());
         return FALSE;
@@ -458,7 +458,7 @@ static BOOL fInsertAndFind_Internal(PTESTSTRUCT *ppTestStructs, int nElems)
     wprintf(L"Inserting total of %d elements\n", nElems);
     for(index = 0; index < nElems; ++index)
     {
-        if(FAILED(CHL_DsInsertLL(pLList, &(ppTestStructs[index]), sizeof(PTESTSTRUCT))))
+        if(FAILED(CHL_DsInsertLL(pLList, ppTestStructs[index], sizeof(PTESTSTRUCT))))
         {
             wprintf(L"!!!! Could not insert element %d\n", index);
             goto test_failed;
@@ -470,7 +470,7 @@ static BOOL fInsertAndFind_Internal(PTESTSTRUCT *ppTestStructs, int nElems)
     for(index = nElems - 1; index >= 0; --index)
     {
         wprintf(L"Finding element %d\n", index);
-        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pStructFound)))
+        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pStructFound, TRUE)))
         {
             wprintf(L"!!!! Could not find element %d\n", index);
             ++nElemsNotFound;

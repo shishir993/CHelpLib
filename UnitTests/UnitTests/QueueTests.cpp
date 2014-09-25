@@ -40,7 +40,8 @@ static HRESULT _TestStrings()
     // Insert all
     for(int i = 0; i < ARRAYSIZE(apszTest); ++i)
     {
-        if(FAILED(pq->Insert(pq, (PVOID)&apszTest[i], sizeof PWCHAR)))
+        if(FAILED(pq->Insert(pq, apszTest[i], 
+                    strlen(apszTest[i])+sizeof(apszTest[0][0]))))
         {
             printf("Failed to insert %d:%s\n", i, apszTest[i]);
             hr = E_FAIL;
@@ -79,7 +80,7 @@ static HRESULT _TestStrings()
     }
 
     char *psz = NULL;
-    if(FAILED(pq->Peek(pq, (PVOID*)&psz)))
+    if(FAILED(pq->Peek(pq, (PVOID*)&psz, TRUE)))
     {
         printf("Failed to peek\n");
         hr = E_FAIL;
@@ -92,7 +93,7 @@ static HRESULT _TestStrings()
     // Delete all and print them
     psz = NULL;
     int iFound = 0;
-    while(SUCCEEDED(pq->Delete(pq, (PVOID*)&psz)))
+    while(SUCCEEDED(pq->Delete(pq, (PVOID*)&psz, TRUE)))
     {
         printf("Retrieved: [%s] ", psz);
         if(strcmp(apszTest[iFound++], psz) != 0)
@@ -100,6 +101,7 @@ static HRESULT _TestStrings()
             printf("NO MATCH");
             hr = E_FAIL;
         }
+        free(psz);
         printf("\n");
     }
 
@@ -139,12 +141,12 @@ static HRESULT _TestIntegers()
     }
 
     // Delete all and print them
-    int* pi = NULL;
+    int foundVal = NULL;
     int iFound = 0;
-    while(SUCCEEDED(pq->Delete(pq, (PVOID*)&pi)))
+    while(SUCCEEDED(pq->Delete(pq, &foundVal, TRUE)))
     {
-        printf("Retrieved: [%d] ", *pi);
-        if(aiTest[iFound++] != *pi)
+        printf("Retrieved: [%d] ", foundVal);
+        if(aiTest[iFound++] != foundVal)
         {
             printf("NO MATCH");
             hr = E_FAIL;
