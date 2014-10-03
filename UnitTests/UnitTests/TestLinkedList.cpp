@@ -49,7 +49,7 @@ BOOL fCreateTestStruct(__out PTESTSTRUCT *ppStruct)
 
     pStruct->dw = pStruct->ui >> 2;
     pStruct->pv = (void*)(pStruct->ui | 0x00401000);
-    if(SUCCEEDED(CreateRandString(pStruct->sz, _countof(pStruct->sz))))
+    if(FAILED(CreateRandString(pStruct->sz, _countof(pStruct->sz))))
     {
         goto error_return;
     }

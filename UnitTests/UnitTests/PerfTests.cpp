@@ -1,6 +1,9 @@
 
 #include "PerfTests.h"
 
+extern WCHAR* g_pszPassed;
+extern WCHAR* g_pszFailed;
+
 #define MAX_RUNS 5
 
 void doPerfTests()
@@ -17,6 +20,9 @@ void doPerfTests()
 
     DWORD dwError = 0;
     BOOL testSuccess[MAX_RUNS] = {TRUE};
+
+    wprintf(L"\n-----------------------------------------------------\n");
+    wprintf(L"\n------------------- Hashtable Perf ------------------\n");
 
     // This retrieves the counts per second
     if(!QueryPerformanceFrequency(&freq))
@@ -62,10 +68,16 @@ void doPerfTests()
 
     wprintf(L"%16s %13s %19s %s\n---------------------------------------------------------------\n",
         L"RunSize", L"TimeSeconds", L"TimeMicro", L"Result");
-    for(numRuns = 0; numRuns < MAX_RUNS; ++numRuns)
-        wprintf(L"%16d %5.8lf %16.3lf %s\n", sizes[numRuns], elapsedTime[numRuns], elapsedTime[numRuns] * 1e6, 
-                                                                                testSuccess[numRuns]?L"PASSED":L"FAILED");
 
+    BOOL success = TRUE;
+    for(numRuns = 0; numRuns < MAX_RUNS; ++numRuns)
+    {
+        success &= testSuccess[numRuns];
+        wprintf(L"%16d %5.8lf %16.3lf %s\n", sizes[numRuns], elapsedTime[numRuns], elapsedTime[numRuns] * 1e6, 
+                                            CHOOSE_TEST_OUTCOME(testSuccess[numRuns]));
+    }
+
+    wprintf(L"\nEND TEST SUITE: Hashtable Perf: %s\n", CHOOSE_TEST_OUTCOME(success));
     return;
 }
 

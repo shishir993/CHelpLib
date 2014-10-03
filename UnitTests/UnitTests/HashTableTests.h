@@ -6,5 +6,6 @@
 
 // Unit tests
 BOOL ExecUnitTestsHT();
+BOOL ExecFuncTestsHT();
 
 #endif // _HASHTABLE_TESTS_H
