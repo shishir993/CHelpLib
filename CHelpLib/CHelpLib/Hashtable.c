@@ -67,7 +67,7 @@ DWORD _hashs(_In_ int tablesize, _In_bytecount_c_(iKeySize) const BYTE *key, int
     while ((c != 0) && (i < iKeySize))
     {
       hash = ((hash << 5) + hash) + c; // hash * 33 + c
-      c = key[i++];
+      c = key[++i];
     }
 
     return (DWORD)(hash % tablesize);
@@ -91,7 +91,7 @@ DWORD _hashsW(_In_ int tablesize, _In_bytecount_c_(iKeySize) const PUSHORT key, 
     while ((us != 0) && (i < iKeySize))
     {
       hash = ((hash << 5) + hash) + us; // hash * 33 + us
-      us = key[i++];
+      us = key[++i];
     }
 
     return (DWORD)(hash % tablesize);
@@ -101,7 +101,6 @@ DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize,
 {
     DWORD dwKeyHash;
 
-    ASSERT(iKeySize > 0);
     ASSERT(iTableNodes > 0);
     ASSERT((keyType > CHL_KT_START) && (keyType < CHL_KT_END));
 
@@ -123,21 +122,21 @@ DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize,
 
         case CHL_KT_STRING:
         {
-            int nBytes = iKeySize;
-            if(nBytes <= 0)
+            int nChars = iKeySize/sizeof(char);
+            if(nChars <= 0)
             {
-                nBytes = strlen((PCSTR)pvKey) + sizeof(char);
+                nChars = strlen((PCSTR)pvKey) + 1;
             }
-            dwKeyHash = _hashs(iTableNodes, (const PBYTE)pvKey, nBytes);
+            dwKeyHash = _hashs(iTableNodes, (const PBYTE)pvKey, nChars);
             break;
         }
 
         case CHL_KT_WSTRING:
         {
-            int nChars = iKeySize;
+            int nChars = iKeySize/sizeof(WCHAR);
             if(nChars <= 0)
             {
-                nChars = wcslen((PCWSTR)pvKey) + sizeof(WCHAR);
+                nChars = wcslen((PCWSTR)pvKey) + 1;
             }
             dwKeyHash = _hashsW(iTableNodes, (const PUSHORT)pvKey, nChars);
             break;
@@ -325,7 +324,7 @@ HRESULT CHL_DsInsertHT(
     ASSERT(iValSize > 0);
     
     // validate parameters
-    if(!phtable || (iKeySize <= 0))
+    if(!phtable)
     {
         hr = E_INVALIDARG;
         goto error_return;
@@ -340,19 +339,33 @@ HRESULT CHL_DsInsertHT(
     }
     
     keyType = phtable->keyType;
+    if(iKeySize <= 0 && FAILED(_GetKeySize(pvkey, keyType, &iKeySize)))
+    {
+        logerr("%s(): Keysize unspecified or unable to determine.", __FUNCTION__);
+        hr = E_FAIL;
+        goto error_return;
+    }
+    pnewnode->iKeySize = iKeySize;
+
     hr = _CopyKeyIn(&pnewnode->chlKey, keyType, pvkey, iKeySize);
     if(FAILED(hr))
     {
         goto delete_newnode_return;
     }
-    pnewnode->iKeySize = iKeySize;
+
+    if(iValSize <= 0 && FAILED(_GetValSize(pvVal, phtable->valType, &iValSize)))
+    {
+        logerr("%s(): Valsize unspecified or unable to determine.", __FUNCTION__);
+        hr = E_FAIL;
+        goto error_return;
+    }
+    pnewnode->iValSize = iValSize;
 
     hr = _CopyValIn(&pnewnode->chlVal, phtable->valType, pvVal, iValSize);
     if(FAILED(hr))
     {
         goto delete_newnode_return;
     }
-    pnewnode->iValSize = iValSize;
 
     // insert into hashtable
     hr = CHL_GnOwnMutex(phtable->hMuAccess);
@@ -363,15 +376,15 @@ HRESULT CHL_DsInsertHT(
     fLocked = TRUE;
 
     ASSERT(phtable->nTableSize > 0);
-    index = _GetKeyHash(pvkey, keyType, iKeySize, phtable->nTableSize);
+    index = _GetKeyHash(pvkey, keyType, pnewnode->iKeySize, phtable->nTableSize);
     
     // verify that duplicate values are not inserted (same key and value)
     if(phtable->phtNodes[index])
     {
         // We have the key hashing onto a index that is already populated
-        if(_IsDuplicateKey(&(phtable->phtNodes[index]->chlKey), pvkey, keyType, iKeySize))
+        if(_IsDuplicateKey(&(phtable->phtNodes[index]->chlKey), pvkey, keyType, pnewnode->iKeySize))
         {
-            if(_IsDuplicateVal(&(phtable->phtNodes[index]->chlVal), pvVal, phtable->valType, iValSize))
+            if(_IsDuplicateVal(&(phtable->phtNodes[index]->chlVal), pvVal, phtable->valType, pnewnode->iValSize))
             {
                 // Both key and value are same
                 // Delete the newly created node and return
@@ -382,7 +395,7 @@ HRESULT CHL_DsInsertHT(
             {
                 // Same key but different value, just update node with new value
                 // NOTE: Old value will be lost!!
-                if(!_UpdateNodeVal(phtable->phtNodes[index], pvVal, phtable->valType, iValSize))
+                if(!_UpdateNodeVal(phtable->phtNodes[index], pvVal, phtable->valType, pnewnode->iValSize))
                 {
                     hr = E_FAIL;
                 }
@@ -439,9 +452,13 @@ HRESULT CHL_DsFindHT(
 
     HRESULT hr = S_OK;
 
-    ASSERT(phtable);
-    ASSERT(iKeySize > 0);
-    
+    // validate parameters
+    if(!phtable)
+    {
+        hr = E_INVALIDARG;
+        goto not_found;
+    }
+
     hr = CHL_GnOwnMutex(phtable->hMuAccess);
     if(FAILED(hr))
     {
@@ -450,18 +467,27 @@ HRESULT CHL_DsFindHT(
     fLocked = TRUE;
     
     ASSERT(phtable->nTableSize > 0);
+
+    if(iKeySize <= 0 && FAILED(_GetKeySize(pvkey, phtable->keyType, &iKeySize)))
+    {
+        logerr("%s(): Keysize unspecified or unable to determine.", __FUNCTION__);
+        hr = E_FAIL;
+        goto not_found;
+    }
+
     index = _GetKeyHash(pvkey, phtable->keyType, iKeySize, phtable->nTableSize);
     
     phtFoundNode = phtable->phtNodes[index];
-    if(!phtFoundNode || 
-        !_FindKeyInList(phtFoundNode, pvkey, iKeySize, phtable->keyType, 
-                        &phtFoundNode, NULL))
+    if((phtFoundNode == NULL) || 
+        (_FindKeyInList(phtFoundNode, pvkey, iKeySize, phtable->keyType, &phtFoundNode, NULL) == FALSE))
     {
         hr = E_NOT_SET;
         goto not_found;
     }
 
-    ASSERT(phtFoundNode);
+    // Passed in or Calculated keysize should be equal to stored keysize
+    ASSERT(iKeySize == phtFoundNode->iKeySize);
+
     if(pvVal)
     {
         _CopyValOut(&phtFoundNode->chlVal, phtable->valType, pvVal, fGetPointerOnly);
@@ -502,6 +528,13 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
     fLocked = TRUE;
     
     ASSERT(phtable->nTableSize > 0);
+
+    if(iKeySize <= 0 && FAILED(_GetKeySize(pvkey, phtable->keyType, &iKeySize)))
+    {
+        logerr("%s(): Keysize unspecified or unable to determine.", __FUNCTION__);
+        hr = E_FAIL;
+        goto error_return;
+    }
     index = _GetKeyHash(pvkey, phtable->keyType, iKeySize, phtable->nTableSize);
     
     phtFoundNode = phtable->phtNodes[index];

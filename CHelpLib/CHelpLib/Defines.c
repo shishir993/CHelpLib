@@ -10,11 +10,11 @@
 #include "Defines.h"
 #include "MemFunctions.h"
 
-HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID pvKey, _In_opt_ int iKeySize)
+HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID pvKey, _Inout_opt_ int iKeySize)
 {
     HRESULT hr = S_OK;
 
-    ASSERT(pChlKey);
+    ASSERT(pChlKey && (iKeySize > 0));
     ASSERT((keyType > CHL_KT_START) && (keyType < CHL_KT_END));
 
     switch(keyType)
@@ -44,25 +44,14 @@ HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID 
         case CHL_KT_STRING:
         {
             PSTR psz = (PSTR)pvKey;
-            int nBytes = iKeySize;
-            
             hr = (psz != NULL) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                if(nBytes <= 0)
-                {
-                    nBytes = strlen(psz) + sizeof(char);
-                }
-
-                hr = CHL_MmAlloc((PVOID*)&pChlKey->pszKey, nBytes, NULL);
+                hr = CHL_MmAlloc((PVOID*)&pChlKey->pszKey, iKeySize, NULL);
                 if(SUCCEEDED(hr))
                 {
-                    memcpy(pChlKey->pszKey, psz, nBytes);
+                    memcpy(pChlKey->pszKey, psz, iKeySize);
                 }
-            }
-            else
-            {
-                hr = E_INVALIDARG;
             }
             break;
         }
@@ -70,20 +59,13 @@ HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID 
         case CHL_KT_WSTRING:
         {
             PWSTR pwsz = (PWSTR)pvKey;
-            int nBytes = iKeySize;
-            
             hr = (pwsz != NULL) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                if(nBytes <= 0)
-                {
-                    nBytes = wcslen(pwsz) + sizeof(WCHAR);
-                }
-
-                hr = CHL_MmAlloc((PVOID*)&pChlKey->pwszKey, nBytes, NULL);
+                hr = CHL_MmAlloc((PVOID*)&pChlKey->pwszKey, iKeySize, NULL);
                 if(SUCCEEDED(hr))
                 {
-                    memcpy(pChlKey->pwszKey, pwsz, nBytes);
+                    memcpy(pChlKey->pwszKey, pwsz, iKeySize);
                 }
             }
             break;
@@ -93,7 +75,6 @@ HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID 
         {
             hr = E_NOTIMPL;
             logerr("%s(): Invalid keyType %d", __FUNCTION__, keyType);
-            ASSERT(FALSE);
             break;
         }
     }
@@ -145,7 +126,6 @@ HRESULT _CopyKeyOut(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _Inout_ PVO
         {
             hr = E_NOTIMPL;
             logerr("%s(): Invalid keyType %d", __FUNCTION__, keyType);
-            ASSERT(FALSE);
             break;
         }
     }
@@ -208,7 +188,6 @@ BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL
         default:
         {
             logerr("%s(): Invalid keyType %d", __FUNCTION__, keyType);
-            ASSERT(FALSE);
             break;
         }
     }
@@ -238,11 +217,61 @@ void _DeleteKey(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType)
     }
 }
 
+HRESULT _GetKeySize(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ PINT piKeySize)
+{
+    HRESULT hr = S_OK;
+
+    ASSERT(piKeySize);
+    ASSERT((keyType > CHL_KT_START) && (keyType < CHL_KT_END));
+
+    switch(keyType)
+    {
+        case CHL_KT_INT32:
+        {
+            *piKeySize = sizeof(int);
+            break;
+        }
+
+        case CHL_KT_UINT32:
+        {
+            *piKeySize = sizeof(UINT);
+            break;
+        }
+
+        case CHL_KT_POINTER:
+        {
+            *piKeySize = sizeof(PVOID);
+            break;
+        }
+
+        case CHL_KT_STRING:
+        {
+            *piKeySize = strlen((PCSTR)pvKey) + sizeof(char);
+            break;
+        }
+
+        case CHL_KT_WSTRING:
+        {
+            *piKeySize = (wcslen((PCWSTR)pvKey) + 1) * sizeof(WCHAR);
+            break;
+        }
+
+        default:
+        {
+            hr = E_NOTIMPL;
+            logerr("%s(): Invalid keyType %d", __FUNCTION__, keyType);
+            break;
+        }
+    }
+    return hr;
+
+}
+
 HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID pvVal, _In_opt_ int iValSize)
 {
     HRESULT hr = S_OK;
 
-    ASSERT(pChlVal);
+    ASSERT(pChlVal && (iValSize > 0));
     ASSERT((valType > CHL_VT_START) && (valType < CHL_VT_END));
 
     switch(valType)
@@ -261,21 +290,18 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
 
         case CHL_VT_POINTER:
         {
-            if(pvVal != NULL)
+            hr = (pvVal != NULL) ? S_OK : E_INVALIDARG;
+            if(SUCCEEDED(hr))
             {
                 pChlVal->pvPtr = pvVal;
-            }
-            else
-            {
-                hr = E_INVALIDARG;
-                logerr("%s(): NULL pointer for VT_POINTER %d", iValSize);
             }
             break;
         }
 
         case CHL_VT_USEROBJECT:
         {
-            if((pvVal != NULL) && (iValSize > 0))
+            hr = ((pvVal != NULL) && (iValSize > 0)) ? S_OK : E_INVALIDARG;
+            if(SUCCEEDED(hr))
             {
                 hr = CHL_MmAlloc((PVOID*)&pChlVal->pvUserObj, iValSize, NULL);
                 if(SUCCEEDED(hr))
@@ -283,31 +309,19 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
                     memcpy(pChlVal->pvUserObj, pvVal, iValSize);
                 }
             }
-            else
-            {
-                hr = E_INVALIDARG;
-                logerr("%s(): Invalid value size for USEROBJECT %d", iValSize);
-            }
             break;
         }
 
         case CHL_VT_STRING:
         {
             PSTR psz = (PSTR)pvVal;
-            int nBytes = iValSize;
-            
             hr = (psz != NULL) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                if(nBytes <= 0)
-                {
-                    nBytes = strlen(psz) + sizeof(WCHAR);
-                }
-
-                hr = CHL_MmAlloc((PVOID*)&pChlVal->pszVal, nBytes, NULL);
+                hr = CHL_MmAlloc((PVOID*)&pChlVal->pszVal, iValSize, NULL);
                 if(SUCCEEDED(hr))
                 {
-                    memcpy(pChlVal->pszVal, psz, nBytes);
+                    memcpy(pChlVal->pszVal, psz, iValSize);
                 }
             }
             break;
@@ -316,20 +330,13 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
         case CHL_VT_WSTRING:
         {
             PWSTR pwsz = (PWSTR)pvVal;
-            int nBytes = iValSize;
-
             hr = (pwsz != NULL) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                if(nBytes <= 0)
-                {
-                    nBytes = wcslen(pwsz) + sizeof(WCHAR);
-                }
-
-                hr = CHL_MmAlloc((PVOID*)&pChlVal->pwszVal, nBytes, NULL);
+                hr = CHL_MmAlloc((PVOID*)&pChlVal->pwszVal, iValSize, NULL);
                 if(SUCCEEDED(hr))
                 {
-                    memcpy(pChlVal->pwszVal, pwsz, nBytes);
+                    memcpy(pChlVal->pwszVal, pwsz, iValSize);
                 }
             }
             break;
@@ -339,7 +346,6 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
         {
             hr = E_NOTIMPL;
             logerr("%s(): Invalid valType %d", __FUNCTION__, valType);
-            ASSERT(FALSE);
             break;
         }
     }
@@ -400,7 +406,6 @@ HRESULT _CopyValOut(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVO
         {
             hr = E_NOTIMPL;
             logerr("%s(): Invalid valType %d", __FUNCTION__, valType);
-            ASSERT(FALSE);
             break;
         }
     }
@@ -463,7 +468,6 @@ BOOL _IsDuplicateVal(_In_ CHL_val *pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
         default:
         {
             logerr("%s(): Invalid valType %d", __FUNCTION__, valType);
-            ASSERT(FALSE);
             break;
         }
     }
@@ -497,4 +501,60 @@ void _DeleteVal(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType)
             break;
         }
     }
+}
+
+HRESULT _GetValSize(_In_ PVOID pvVal, _In_ CHL_VALTYPE valType, _In_ PINT piValSize)
+{
+    HRESULT hr = S_OK;
+
+    ASSERT(piValSize);
+    ASSERT((valType > CHL_VT_START) && (valType < CHL_VT_END));
+
+    switch(valType)
+    {
+        case CHL_VT_INT32:
+        {
+            *piValSize = sizeof(int);
+            break;
+        }
+
+        case CHL_VT_UINT32:
+        {
+            *piValSize = sizeof(UINT);
+            break;
+        }
+
+        case CHL_VT_POINTER:
+        {
+            *piValSize = sizeof(PVOID);
+            break;
+        }
+
+        case CHL_VT_USEROBJECT:
+        {
+            // Cannot determine size of user defined structure
+            hr = E_FAIL;
+            break;
+        }
+
+        case CHL_VT_STRING:
+        {
+            *piValSize = strlen((PCSTR)pvVal) + sizeof(char);
+            break;
+        }
+
+        case CHL_VT_WSTRING:
+        {
+            *piValSize = (wcslen((PCWSTR)pvVal) + 1) * sizeof(WCHAR);
+            break;
+        }
+
+        default:
+        {
+            hr = E_NOTIMPL;
+            logerr("%s(): Invalid valType %d", __FUNCTION__, valType);
+            break;
+        }
+    }
+    return hr;
 }

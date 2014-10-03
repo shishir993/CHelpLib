@@ -23,7 +23,7 @@ extern "C" {
 
 typedef struct _LlNode {
     CHL_val chlVal;
-    DWORD dwValSize;
+    int iValSize;
     struct _LlNode *pleft;
     struct _LlNode *pright;
 }LLNODE, *PLLNODE;

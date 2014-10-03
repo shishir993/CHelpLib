@@ -102,7 +102,14 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
     }
 
     // Populate value into new node
-    pNewNode->dwValSize = iValSize;
+    if(iValSize <= 0 && FAILED(_GetValSize(pvVal, pLList->valType, &iValSize)))
+    {
+        logerr("%s(): Valsize unspecified or unable to determine.", __FUNCTION__);
+        hr = E_FAIL;
+        goto error_return;
+    }
+    pNewNode->iValSize = iValSize;
+
     hr = _CopyValIn(&pNewNode->chlVal, pLList->valType, pvVal, iValSize);
     if(FAILED(hr))
     {
