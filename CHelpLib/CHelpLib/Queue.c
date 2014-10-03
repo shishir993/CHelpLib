@@ -64,7 +64,7 @@ HRESULT CHL_DsDestroyQ(_In_ PCHL_QUEUE pQueueObj)
     return hr;
 }
 
-HRESULT CHL_DsInsertQ(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_ int nValSize)
+HRESULT CHL_DsInsertQ(_In_ PCHL_QUEUE pQueueObj, _In_ PCVOID pvValue, _In_ int nValSize)
 {
     HRESULT hr = S_OK;
     ASSERT(pQueueObj && pQueueObj->pList);
@@ -119,7 +119,7 @@ HRESULT CHL_DsPeekQ(_In_ PCHL_QUEUE pQueueObj, _Inout_opt_ PVOID pvValOut, _In_o
     return hr;
 }
 
-HRESULT CHL_DsFindQ(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_opt_ BOOL (*pfnComparer)(void*, void*))
+HRESULT CHL_DsFindQ(_In_ PCHL_QUEUE pQueueObj, _In_ PCVOID pvValue, _In_opt_ BOOL (*pfnComparer)(PCVOID, PCVOID))
 {
     HRESULT hr = S_OK;
     ASSERT(pQueueObj && pQueueObj->pList);
@@ -127,7 +127,7 @@ HRESULT CHL_DsFindQ(_In_ PCHL_QUEUE pQueueObj, _In_ PVOID pvValue, _In_opt_ BOOL
 
     if(pQueueObj->nCurItems > 0)
     {
-        hr = CHL_DsFindLL(pQueueObj->pList, pvValue, pfnComparer, NULL, FALSE);
+        hr = CHL_DsFindLL(pQueueObj->pList, pvValue, pfnComparer);
     }
     else
     {

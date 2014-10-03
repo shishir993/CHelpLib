@@ -228,7 +228,8 @@ HRESULT CHL_DsDestroyHT(_In_ PCHL_HTABLE phtable)
 {   
     int i;
     int maxNodes;
-    int ktype, vtype;
+    CHL_KEYTYPE ktype;
+    CHL_VALTYPE vtype;
     BOOL fInHeap;
     HT_NODE **phtnodes = NULL;
     HT_NODE *pcurnode = NULL;
@@ -278,9 +279,9 @@ done:
 
 HRESULT CHL_DsInsertHT(
     _In_ PCHL_HTABLE phtable, 
-    _In_ PVOID const pvkey, 
+    _In_ PCVOID pvkey, 
     _In_ int keySize, 
-    _In_ PVOID pvVal, 
+    _In_ PCVOID pvVal, 
     _In_ int iValSize)
 {
     DWORD index;
@@ -398,7 +399,7 @@ int exhandler(int excode, LPEXCEPTION_POINTERS exptrs)
 
 HRESULT CHL_DsFindHT(
     _In_ PCHL_HTABLE phtable, 
-    _In_ PVOID const pvkey, 
+    _In_ PCVOID pvkey, 
     _In_ int keySize, 
     _Inout_opt_ PVOID pvVal, 
     _Inout_opt_ PINT pvalsize,
@@ -453,7 +454,7 @@ not_found:
     
 }
 
-HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PVOID const pvkey, _In_ int keySize)
+HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int keySize)
 {   
     int index = 0;
     HT_NODE *phtFoundNode = NULL;
@@ -715,17 +716,12 @@ void _DeleteNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFre
     
     _DeleteKey(&pnode->chlKey, ktype);
 
-    if(vtype == CHL_VT_POINTER)
+    if(vtype == CHL_VT_POINTER && fFreeVal)
     {
-        if(fFreeVal)
-        {
-            _DeleteVal(&pnode->chlVal, vtype);
-        }
+        free(pnode->chlVal.pvPtr);
     }
-    else
-    {
-        _DeleteVal(&pnode->chlVal, vtype);
-    }
+
+    _DeleteVal(&pnode->chlVal, vtype);
     
     DBG_MEMSET(pnode, sizeof(HT_NODE));
     free(pnode);

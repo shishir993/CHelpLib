@@ -125,7 +125,7 @@ error_return:
 
 }
 
-BOOL fCompareTestStructs(void* pleft, void* pright)
+BOOL fCompareTestStructs(PCVOID pleft, PCVOID pright)
 {
     if(!pleft || !pright)
     {
@@ -324,17 +324,12 @@ static BOOL fInsertRemoveFind()
     wprintf(L"Finding after removing at end...\n");
     for(index = 0; index < numTestData - 1; ++index)
     {
-        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pRetrievedTestData, TRUE)))
+        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs)))
         {
             wprintf(L"!!!! Could not find element at %d after removing at %d\n", index, numTestData - 1);
-            goto test_failed;
-        }
-
-        if(!fCompareTestStructs(ppTestStructs[index], pRetrievedTestData))
-        {
-            wprintf(L"!!!! Found NO MATCH %d: ", index);
             vDumpTestStruct(ppTestStructs[index]);
             wprintf(L"\n");
+            goto test_failed;
         }
     }
 
@@ -348,7 +343,7 @@ static BOOL fInsertRemoveFind()
 
     // Remove using the other remove function
     wprintf(L"Remove the last one using *RemoveLL() function\n");
-    if(FAILED(CHL_DsRemoveLL(pLList, ppTestStructs[numTestData-1], TRUE, fCompareTestStructs, (void**)&pRetrievedTestData, TRUE)))
+    if(FAILED(CHL_DsRemoveLL(pLList, ppTestStructs[numTestData-1], TRUE, fCompareTestStructs)))
     {
         wprintf(L"!!!! Could not remove at %d using RemoveLL()\n", numTestData-1);
         goto test_failed;
@@ -358,17 +353,12 @@ static BOOL fInsertRemoveFind()
     for(index = 0; index < numTestData - 1; ++index)
     {
         wprintf(L"Finding element %d\n", index);
-        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pRetrievedTestData, TRUE)))
+        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs)))
         {
             wprintf(L"!!!! Could not find element at %d after removing at %d\n", index, numTestData - 1);
-            goto test_failed;
-        }
-
-        if(!fCompareTestStructs(ppTestStructs[index], pRetrievedTestData))
-        {
-            wprintf(L"!!!! Found NO MATCH %d: ", index);
             vDumpTestStruct(ppTestStructs[index]);
             wprintf(L"\n");
+            goto test_failed;
         }
     }
 
@@ -397,17 +387,12 @@ static BOOL fInsertRemoveFind()
     for(index = 1; index < numTestData - 1; ++index)
     {
         wprintf(L"Finding element %d\n", index);
-        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pRetrievedTestData, TRUE)))
+        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs)))
         {
             wprintf(L"!!!! Could not find element at %d after removing first and last\n", index);
-            goto test_failed;
-        }
-
-        if(FAILED(fCompareTestStructs(ppTestStructs[index], pRetrievedTestData)))
-        {
-            wprintf(L"!!!! Found NO MATCH %d: ", index);
             vDumpTestStruct(ppTestStructs[index]);
             wprintf(L"\n");
+            goto test_failed;
         }
     }
 
@@ -470,19 +455,12 @@ static BOOL fInsertAndFind_Internal(PTESTSTRUCT *ppTestStructs, int nElems)
     for(index = nElems - 1; index >= 0; --index)
     {
         wprintf(L"Finding element %d\n", index);
-        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs, (void**)&pStructFound, TRUE)))
+        if(FAILED(CHL_DsFindLL(pLList, ppTestStructs[index], fCompareTestStructs)))
         {
             wprintf(L"!!!! Could not find element %d\n", index);
+            vDumpTestStruct(ppTestStructs[index]);
+            wprintf(L"\n");
             ++nElemsNotFound;
-        }
-        else
-        {
-            if(!fCompareTestStructs(ppTestStructs[index], pStructFound))
-            {
-                wprintf(L"!!!! Found NO MATCH %d: ", index);
-                vDumpTestStruct(ppTestStructs[index]);
-                wprintf(L"\n");
-            }
         }
     }
 

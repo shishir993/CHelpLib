@@ -25,6 +25,10 @@
 #define CHLE_MUTEX_TIMEOUT  17010
 #define CHLE_EMPTY_FILE     17011
 
+#ifndef PCVOID
+typedef PVOID const PCVOID;
+#endif
+
 // Key Types
 typedef enum
 {
@@ -80,14 +84,14 @@ typedef enum
 
 // -------------------------------------------
 // Functions internal only
-HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PVOID pvKey, _In_opt_ int iValSize);
+HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID pvKey, _In_opt_ int iValSize);
 HRESULT _CopyKeyOut(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _Inout_ PVOID pvKeyOut, _In_ BOOL fGetPointerOnly);
-BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PVOID pvRightKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize);
+BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize);
 void _DeleteKey(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType);
 
-HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PVOID pvVal, _In_opt_ int iValSize);
+HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID pvVal, _In_opt_ int iValSize);
 HRESULT _CopyValOut(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVOID pvValOut, _In_ BOOL fGetPointerOnly);
-BOOL _IsDuplicateVal(_In_ CHL_val *pLeftVal, _In_ PVOID pRightVal, _In_ CHL_VALTYPE valType, _In_ int iValSize);
+BOOL _IsDuplicateVal(_In_ CHL_val *pLeftVal, _In_ PCVOID pRightVal, _In_ CHL_VALTYPE valType, _In_ int iValSize);
 void _DeleteVal(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType);
 
 #endif // CHL_DEFINES_H

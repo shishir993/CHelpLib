@@ -79,7 +79,7 @@ error_return:
     return hr;
 }
 
-HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PVOID pvVal, _In_opt_ int iValSize)
+HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int iValSize)
 {
     PLLNODE pNewNode = NULL;
 
@@ -138,11 +138,9 @@ error_return:
 
 HRESULT CHL_DsRemoveLL(
     _In_ PCHL_LLIST pLList, 
-    _In_ PVOID pvValToFind, 
+    _In_ PCVOID pvValToFind, 
     _In_ BOOL fStopOnFirstFind, 
-    _In_ BOOL (*pfnComparer)(PVOID, PVOID), 
-    _Inout_opt_ PVOID pvValOut,
-    _In_opt_ BOOL fGetPointerOnly)
+    _In_ BOOL (*pfnComparer)(PVOID, PVOID))
 {
     PLLNODE pCurNode = NULL;
     PVOID pvCurVal = NULL;
@@ -176,23 +174,9 @@ HRESULT CHL_DsRemoveLL(
             hr = S_OK;
 
             _UnlinkNode(pLList, pCurNode);
-            
-            if(pvValOut)
-            {
-                hr = _CopyValOut(&pCurNode->chlVal, valType, pvValOut, fGetPointerOnly);
-                if(SUCCEEDED(hr))
-                {
-                    --(pLList->nCurNodes);
+            _FreeNodeMem(pCurNode, valType, TRUE);
 
-                    // DO NOT free value memory since we are returning it
-                    _FreeNodeMem(pCurNode, valType, FALSE);
-                }
-            }
-            else
-            {
-                --(pLList->nCurNodes);
-                _FreeNodeMem(pCurNode, valType, TRUE);
-            }
+            --(pLList->nCurNodes);
 
             if(fStopOnFirstFind)
             {
@@ -255,19 +239,18 @@ HRESULT CHL_DsRemoveAtLL(
 
     ASSERT(pCurNode);
 
-    _UnlinkNode(pLList, pCurNode);
-    --(pLList->nCurNodes);
-
     if(pvValOut)
     {
-        _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, fGetPointerOnly);
-
-        // DO NOT free value memory since we are returning it
-        _FreeNodeMem(pCurNode, pLList->valType, FALSE);
+        hr = _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, fGetPointerOnly);
     }
-    else
+
+    if(SUCCEEDED(hr))
     {
-        _FreeNodeMem(pCurNode, pLList->valType, TRUE);
+        // Unlink and only then free node memory
+        _UnlinkNode(pLList, pCurNode);
+        --(pLList->nCurNodes);
+
+        _FreeNodeMem(pCurNode, pLList->valType, !pvValOut);
     }
 
     ReleaseMutex(pLList->hMuAccess);
@@ -348,10 +331,8 @@ error_return:
 
 HRESULT CHL_DsFindLL(
     _In_ PCHL_LLIST pLList, 
-    _In_ PVOID pvValToFind, 
-    _In_ BOOL (*pfnComparer)(PVOID, PVOID), 
-    _Inout_opt_ PVOID pvValOut, 
-    _In_opt_ BOOL fGetPointerOnly)
+    _In_ PCVOID pvValToFind, 
+    _In_ BOOL (*pfnComparer)(PCVOID, PCVOID))
 {
     BOOL fMutexLocked = FALSE;
 
@@ -386,11 +367,6 @@ HRESULT CHL_DsFindLL(
             break;
         }
         pCurNode = pCurNode->pright;
-    }
-
-    if(SUCCEEDED(hr) && (pvValOut != NULL))
-    {
-        _CopyValOut(&pCurNode->chlVal, valType, pvValOut, fGetPointerOnly);
     }
 
     ReleaseMutex(pLList->hMuAccess);
@@ -529,6 +505,10 @@ static void _FreeNodeMem(PLLNODE pnode, CHL_VALTYPE valType, BOOL fFreeValMem)
     ASSERT((valType > CHL_VT_START) && (valType < CHL_VT_END));
 
     // Free memory occupied by the value, if applicable
+    // LinkedList doesn't have the facility to indicate that a 
+    // heap memory must be freed when the valtype is CHL_VT_POINTER
+    // like the hash table has.
+    // TODO: Revisit and see if this is a necessary feature.
     if(fFreeValMem)
     {
         _DeleteVal(&pnode->chlVal, valType);

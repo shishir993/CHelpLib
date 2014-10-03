@@ -50,26 +50,26 @@ typedef struct _hashtable {
 
     HRESULT (*Insert)(
         struct _hashtable* phtable, 
-        PVOID const pvkey, 
+        PCVOID pvkey, 
         int keySize, 
         PVOID pvVal, 
         int iValSize);
 
     HRESULT (*Find)(
         struct _hashtable* phtable, 
-        PVOID const pvkey, 
+        PCVOID pvkey, 
         int keySize, 
         PVOID pvVal, 
         PINT pvalsize,
         BOOL fGetPointerOnly);
 
-    HRESULT (*Remove)(struct _hashtable* phtable, PVOID const pvkey, int keySize);
+    HRESULT (*Remove)(struct _hashtable* phtable, PCVOID pvkey, int keySize);
 
     HRESULT (*InitIterator)(CHL_HT_ITERATOR *pItr);
     HRESULT (*GetNext)(
         struct _hashtable* phtable, 
         CHL_HT_ITERATOR *pItr, 
-        PVOID const pvKey, 
+        PCVOID pvKey, 
         PINT pkeysize,
         PVOID pvVal, 
         PINT pvalsize,
@@ -90,8 +90,8 @@ typedef struct _hashtable {
 //                   This is used to determine the initial size of the hashtable.
 //      keyType: Type of variable that is used as key - a string or a number
 //      valType: Type of value that is stored - number, string or void(can be anything)
-//      fValInHeapMem: Set this to true if the value(void type) is allocated memory on the heap
-//                     so that it is freed whenever an table entry is removed or when table is destroyed.
+//      fValInHeapMem: Set this to true if the value(type is CHL_VT_POINTER) is allocated memory on the heap.
+//                     This indicates the hash table to free it when a table entry is removed.
 // 
 DllExpImp HRESULT CHL_DsCreateHT(
     _Inout_ CHL_HTABLE **pHTableOut, 
@@ -104,26 +104,26 @@ DllExpImp HRESULT CHL_DsDestroyHT(_In_ CHL_HTABLE *phtable);
 
 DllExpImp HRESULT CHL_DsInsertHT(
     _In_ CHL_HTABLE *phtable, 
-    _In_ PVOID const pvkey, 
+    _In_ PCVOID pvkey, 
     _In_ int keySize, 
-    _In_ PVOID pvVal, 
+    _In_ PCVOID pvVal, 
     _In_ int iValSize);
 
 DllExpImp HRESULT CHL_DsFindHT(
     _In_ CHL_HTABLE *phtable, 
-    _In_ PVOID const pvkey, 
+    _In_ PCVOID pvkey, 
     _In_ int keySize, 
     _Inout_opt_ PVOID pvVal, 
     _Inout_opt_ PINT pvalsize,
     _In_opt_ BOOL fGetPointerOnly);
 
-DllExpImp HRESULT CHL_DsRemoveHT(_In_ CHL_HTABLE *phtable, _In_ PVOID const pvkey, _In_ int keySize);
+DllExpImp HRESULT CHL_DsRemoveHT(_In_ CHL_HTABLE *phtable, _In_ PCVOID pvkey, _In_ int keySize);
 
 DllExpImp HRESULT CHL_DsInitIteratorHT(_In_ CHL_HT_ITERATOR *pItr);
 DllExpImp HRESULT CHL_DsGetNextHT(
     _In_ CHL_HTABLE *phtable, 
     _In_ CHL_HT_ITERATOR *pItr, 
-    _Inout_opt_ PVOID const pvKey, 
+    _Inout_opt_ PCVOID pvKey, 
     _Inout_opt_ PINT pkeysize,
     _Inout_opt_ PVOID pvVal, 
     _Inout_opt_ PINT pvalsize,

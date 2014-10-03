@@ -37,34 +37,30 @@ typedef struct _LinkedList {
     HANDLE hMuAccess;
 
     // Access methods
-    HRESULT (*Insert)(struct _LinkedList* pLList, PVOID pvVal, int iValSize);
+    HRESULT (*Insert)(struct _LinkedList* pLList, PCVOID pvVal, int iValSize);
 
     HRESULT (*Remove)(
         struct _LinkedList* pLList, 
-        PVOID pvValToFind, 
+        PCVOID pvValToFind, 
         BOOL fStopOnFirstFind, 
-        BOOL (*pfnComparer)(PVOID, PVOID), 
-        PVOID pvVal, 
-        BOOL fGetPointerOnly);
+        BOOL (*pfnComparer)(PCVOID, PCVOID));
 
     HRESULT (*RemoveAt)(
         struct _LinkedList* pLList, 
         int iIndexToRemove, 
-        PVOID pvVal, 
+        PVOID pvValOut, 
         BOOL fGetPointerOnly);
 
     HRESULT (*Peek)(
         struct _LinkedList* pLList, 
         int iIndexToPeek, 
-        _Inout_ PVOID pvVal, 
+        PVOID pvValOut, 
         BOOL fGetPointerOnly);
 
     HRESULT (*Find)(
         struct _LinkedList* pLList, 
-        PVOID pvValToFind, 
-        BOOL (*pfnComparer)(PVOID, PVOID), 
-        PVOID pvValOut, 
-        BOOL fGetPointerOnly);
+        PCVOID pvValToFind, 
+        BOOL (*pfnComparer)(PCVOID, PCVOID));
 
     HRESULT (*Destroy)(struct _LinkedList* pLList);
 
@@ -85,34 +81,30 @@ DllExpImp HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE val
 //              types are passed by reference(their address) and they are stored in the heap.
 //      iValSize: Size in bytes of the value. Optional for intrinsic types, mandatory for others.
 //
-DllExpImp HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PVOID pvVal, _In_opt_ int iValSize);
+DllExpImp HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int iValSize);
 
 DllExpImp HRESULT CHL_DsRemoveLL(
     _In_ PCHL_LLIST pLList, 
-    _In_ PVOID pvValToFind, 
+    _In_ PCVOID pvValToFind, 
     _In_ BOOL fStopOnFirstFind, 
-    _In_ BOOL (*pfnComparer)(PVOID, PVOID), 
-    _Inout_opt_ PVOID pvVal, 
-    _In_opt_ BOOL fGetPointerOnly);
+    _In_ BOOL (*pfnComparer)(PCVOID, PCVOID));
 
 DllExpImp HRESULT CHL_DsRemoveAtLL(
     _In_ PCHL_LLIST pLList, 
     _In_ int iIndexToRemove, 
-    _Inout_opt_ PVOID pvVal, 
+    _Inout_opt_ PVOID pvValOut, 
     _In_opt_ BOOL fGetPointerOnly);
 
 DllExpImp HRESULT CHL_DsPeekAtLL(
     _In_ PCHL_LLIST pLList, 
     _In_ int iIndexToPeek, 
-    _Inout_ PVOID pvVal, 
+    _Inout_ PVOID pvValOut, 
     _In_opt_ BOOL fGetPointerOnly);
 
 DllExpImp HRESULT CHL_DsFindLL(
     _In_ PCHL_LLIST pLList, 
-    _In_ PVOID pvValToFind, 
-    _In_ BOOL (*pfnComparer)(PVOID, PVOID), 
-    _Inout_opt_ PVOID pvValOut, 
-    _In_opt_ BOOL fGetPointerOnly);
+    _In_ PCVOID pvValToFind, 
+    _In_ BOOL (*pfnComparer)(PCVOID, PCVOID));
 
 DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList);
 

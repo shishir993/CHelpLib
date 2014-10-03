@@ -21,7 +21,7 @@ HRESULT QueueRunTests()
     return hr;
 }
 
-BOOL CompareStrings(PVOID pToFind, PVOID pCurVal)
+BOOL CompareStrings(PCVOID pToFind, PCVOID pCurVal)
 {
     return strcmp((char*)pToFind, (char*)pCurVal) == 0;
 }

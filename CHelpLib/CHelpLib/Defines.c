@@ -10,7 +10,7 @@
 #include "Defines.h"
 #include "MemFunctions.h"
 
-HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PVOID pvKey, _In_opt_ int iKeySize)
+HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID pvKey, _In_opt_ int iKeySize)
 {
     HRESULT hr = S_OK;
 
@@ -148,7 +148,7 @@ HRESULT _CopyKeyOut(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _Inout_ PVO
     return hr;
 }
 
-BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PVOID pvRightKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize)
+BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize)
 {
     BOOL fMatch = FALSE;
 
@@ -234,7 +234,7 @@ void _DeleteKey(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType)
     }
 }
 
-HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PVOID pvVal, _In_opt_ int iValSize)
+HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID pvVal, _In_opt_ int iValSize)
 {
     HRESULT hr = S_OK;
 
@@ -395,7 +395,7 @@ HRESULT _CopyValOut(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVO
     return hr;
 }
 
-BOOL _IsDuplicateVal(_In_ CHL_val *pChlLeftVal, _In_ PVOID pvRightVal, _In_ CHL_VALTYPE valType, _In_ int iValSize)
+BOOL _IsDuplicateVal(_In_ CHL_val *pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL_VALTYPE valType, _In_ int iValSize)
 {
     BOOL fMatch = FALSE;
 
