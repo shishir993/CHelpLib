@@ -51,19 +51,19 @@ typedef struct _hashtable {
     HRESULT (*Insert)(
         struct _hashtable* phtable, 
         PCVOID pvkey, 
-        int keySize, 
+        int iKeySize, 
         PVOID pvVal, 
         int iValSize);
 
     HRESULT (*Find)(
         struct _hashtable* phtable, 
         PCVOID pvkey, 
-        int keySize, 
+        int iKeySize, 
         PVOID pvVal, 
         PINT pvalsize,
         BOOL fGetPointerOnly);
 
-    HRESULT (*Remove)(struct _hashtable* phtable, PCVOID pvkey, int keySize);
+    HRESULT (*Remove)(struct _hashtable* phtable, PCVOID pvkey, int iKeySize);
 
     HRESULT (*InitIterator)(CHL_HT_ITERATOR *pItr);
     HRESULT (*GetNext)(
@@ -84,7 +84,7 @@ typedef struct _hashtable {
 
 // Creates a hashtable and returns a pointer which can be used for later operations
 // on the table.
-// params:
+// Params:
 //      pHTableOut: Address of pointer where to copy the pointer to the hashtable
 //      nEstEntries: Estimated number of entries that would be in the table at any given time.
 //                   This is used to determine the initial size of the hashtable.
@@ -102,22 +102,33 @@ DllExpImp HRESULT CHL_DsCreateHT(
 
 DllExpImp HRESULT CHL_DsDestroyHT(_In_ CHL_HTABLE *phtable);
 
+// Inserts a key,value pair into the hash table. If the key already exists, then the value is over-written
+// with the new value. If both the key and value already exist, then nothing is changed in the hash table.
+// Params:
+//      phtable: Pointer to the hashtable object returned by CHL_DsCreateHT function.
+//      pvkey: Pointer to the key.
+//      iKeySize: For strings(ANSI and UNICODE), this the number of characters including terminating NULL.
+//               For other types, it is the size in bytes.
+//      pvVal: Value to be stored. Please see documentation for details.
+//      iValSize: For strings(ANSI and UNICODE), number of characters including terminating NULL.
+//                For other types, it is the size in bytes.
+//
 DllExpImp HRESULT CHL_DsInsertHT(
     _In_ CHL_HTABLE *phtable, 
     _In_ PCVOID pvkey, 
-    _In_ int keySize, 
+    _In_ int iKeySize, 
     _In_ PCVOID pvVal, 
     _In_ int iValSize);
 
 DllExpImp HRESULT CHL_DsFindHT(
     _In_ CHL_HTABLE *phtable, 
     _In_ PCVOID pvkey, 
-    _In_ int keySize, 
+    _In_ int iKeySize, 
     _Inout_opt_ PVOID pvVal, 
     _Inout_opt_ PINT pvalsize,
     _In_opt_ BOOL fGetPointerOnly);
 
-DllExpImp HRESULT CHL_DsRemoveHT(_In_ CHL_HTABLE *phtable, _In_ PCVOID pvkey, _In_ int keySize);
+DllExpImp HRESULT CHL_DsRemoveHT(_In_ CHL_HTABLE *phtable, _In_ PCVOID pvkey, _In_ int iKeySize);
 
 DllExpImp HRESULT CHL_DsInitIteratorHT(_In_ CHL_HT_ITERATOR *pItr);
 DllExpImp HRESULT CHL_DsGetNextHT(
@@ -131,6 +142,9 @@ DllExpImp HRESULT CHL_DsGetNextHT(
 
 DllExpImp int CHL_DsGetNearestSizeIndexHT(_In_ int maxNumberOfEntries);
 DllExpImp void CHL_DsDumpHT(_In_ CHL_HTABLE *phtable);
+
+// Exposing for unit testing
+DllExpImp DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize, _In_ int iTableNodes);
 
 #ifdef __cplusplus
 }

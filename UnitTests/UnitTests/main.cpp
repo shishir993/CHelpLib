@@ -7,6 +7,8 @@
 #include "StringFunctions.h"
 #include "IOFunctions.h"
 
+#include "HashTableTests.h"
+
 #define MAX_RAND_COUNT      9999
 #define MAX_TIME_TESTS      10
 #define MAX_RUNS_SYS_CALL   3
@@ -45,6 +47,9 @@ int main()
 
     // Test string functions
     success = fTestStrings() & success;
+
+    // Hashtable unit tests
+    success &= ExecUnitTestsHT();
 
     // Test hash table
     success = fTestHT_StrStr() & success;

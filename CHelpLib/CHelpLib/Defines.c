@@ -33,7 +33,11 @@ HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID 
 
         case CHL_KT_POINTER:
         {
-            pChlKey->pvKey = pvKey;
+            hr = (pvKey != NULL) ? S_OK : E_INVALIDARG;
+            if(SUCCEEDED(hr))
+            {
+                pChlKey->pvKey = pvKey;
+            }
             break;
         }
 
@@ -238,7 +242,7 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
 {
     HRESULT hr = S_OK;
 
-    ASSERT(pChlVal && pvVal);
+    ASSERT(pChlVal);
     ASSERT((valType > CHL_VT_START) && (valType < CHL_VT_END));
 
     switch(valType)
@@ -257,7 +261,15 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
 
         case CHL_VT_POINTER:
         {
-            pChlVal->pvPtr = pvVal;
+            if(pvVal != NULL)
+            {
+                pChlVal->pvPtr = pvVal;
+            }
+            else
+            {
+                hr = E_INVALIDARG;
+                logerr("%s(): NULL pointer for VT_POINTER %d", iValSize);
+            }
             break;
         }
 

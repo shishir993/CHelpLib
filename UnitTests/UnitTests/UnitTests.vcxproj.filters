@@ -30,6 +30,12 @@
     <ClCompile Include="QueueTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HashTableTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TestUtil.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PerfTests.h">
@@ -46,6 +52,12 @@
     </ClInclude>
     <ClInclude Include="QueueTests.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HashTableTests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TestUtil.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

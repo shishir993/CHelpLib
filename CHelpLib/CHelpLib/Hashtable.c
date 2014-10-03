@@ -22,10 +22,9 @@ unsigned int hashSizes[] = {43,     197,    547,    1471,
 static DWORD _hashi(_In_ int tablesize, _In_ int key);
 static DWORD _hashu(_In_ int tablesize, _In_ UINT key);
 static DWORD _hashs(_In_ int tablesize, _In_bytecount_c_(iKeySize) const BYTE *key, _In_ int iKeySize);
-static DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize, _In_ int iTableNodes);
+static DWORD _hashsW(_In_ int tablesize, _In_bytecount_c_(iKeySize) const PUSHORT key, int iKeySize);
 
 static void _DeleteNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFreeVal);
-
 static HRESULT _UpdateNodeVal(HT_NODE *pnode, PVOID pvVal, CHL_VALTYPE valType, int iValSize);
 
 static BOOL _FindKeyInList(
@@ -74,6 +73,30 @@ DWORD _hashs(_In_ int tablesize, _In_bytecount_c_(iKeySize) const BYTE *key, int
     return (DWORD)(hash % tablesize);
 }
 
+// Wide-char version of the hash function
+DWORD _hashsW(_In_ int tablesize, _In_bytecount_c_(iKeySize) const PUSHORT key, int iKeySize)
+{
+    DWORD hash = 5381;
+    USHORT us;
+    int i = 0;
+
+    ASSERT(tablesize > 0);
+
+    //
+    // hash function from
+    // http://www.cse.yorku.ca/~oz/hash.html
+    //
+
+    us = key[0];
+    while ((us != 0) && (i < iKeySize))
+    {
+      hash = ((hash << 5) + hash) + us; // hash * 33 + us
+      us = key[i++];
+    }
+
+    return (DWORD)(hash % tablesize);
+}
+
 DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize, _In_ int iTableNodes)
 {
     DWORD dwKeyHash;
@@ -111,7 +134,12 @@ DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize,
 
         case CHL_KT_WSTRING:
         {
-            // TODO
+            int nChars = iKeySize;
+            if(nChars <= 0)
+            {
+                nChars = wcslen((PCWSTR)pvKey) + sizeof(WCHAR);
+            }
+            dwKeyHash = _hashsW(iTableNodes, (const PUSHORT)pvKey, nChars);
             break;
         }
 
@@ -280,7 +308,7 @@ done:
 HRESULT CHL_DsInsertHT(
     _In_ PCHL_HTABLE phtable, 
     _In_ PCVOID pvkey, 
-    _In_ int keySize, 
+    _In_ int iKeySize, 
     _In_ PCVOID pvVal, 
     _In_ int iValSize)
 {
@@ -297,7 +325,7 @@ HRESULT CHL_DsInsertHT(
     ASSERT(iValSize > 0);
     
     // validate parameters
-    if(!phtable || (keySize <= 0))
+    if(!phtable || (iKeySize <= 0))
     {
         hr = E_INVALIDARG;
         goto error_return;
@@ -312,12 +340,12 @@ HRESULT CHL_DsInsertHT(
     }
     
     keyType = phtable->keyType;
-    hr = _CopyKeyIn(&pnewnode->chlKey, keyType, pvkey, keySize);
+    hr = _CopyKeyIn(&pnewnode->chlKey, keyType, pvkey, iKeySize);
     if(FAILED(hr))
     {
         goto delete_newnode_return;
     }
-    pnewnode->iKeySize = keySize;
+    pnewnode->iKeySize = iKeySize;
 
     hr = _CopyValIn(&pnewnode->chlVal, phtable->valType, pvVal, iValSize);
     if(FAILED(hr))
@@ -335,13 +363,13 @@ HRESULT CHL_DsInsertHT(
     fLocked = TRUE;
 
     ASSERT(phtable->nTableSize > 0);
-    index = _GetKeyHash(pvkey, keyType, keySize, phtable->nTableSize);
+    index = _GetKeyHash(pvkey, keyType, iKeySize, phtable->nTableSize);
     
     // verify that duplicate values are not inserted (same key and value)
     if(phtable->phtNodes[index])
     {
         // We have the key hashing onto a index that is already populated
-        if(_IsDuplicateKey(&(phtable->phtNodes[index]->chlKey), pvkey, keyType, keySize))
+        if(_IsDuplicateKey(&(phtable->phtNodes[index]->chlKey), pvkey, keyType, iKeySize))
         {
             if(_IsDuplicateVal(&(phtable->phtNodes[index]->chlVal), pvVal, phtable->valType, iValSize))
             {
@@ -400,7 +428,7 @@ int exhandler(int excode, LPEXCEPTION_POINTERS exptrs)
 HRESULT CHL_DsFindHT(
     _In_ PCHL_HTABLE phtable, 
     _In_ PCVOID pvkey, 
-    _In_ int keySize, 
+    _In_ int iKeySize, 
     _Inout_opt_ PVOID pvVal, 
     _Inout_opt_ PINT pvalsize,
     _In_opt_ BOOL fGetPointerOnly)
@@ -412,7 +440,7 @@ HRESULT CHL_DsFindHT(
     HRESULT hr = S_OK;
 
     ASSERT(phtable);
-    ASSERT(keySize > 0);
+    ASSERT(iKeySize > 0);
     
     hr = CHL_GnOwnMutex(phtable->hMuAccess);
     if(FAILED(hr))
@@ -422,11 +450,11 @@ HRESULT CHL_DsFindHT(
     fLocked = TRUE;
     
     ASSERT(phtable->nTableSize > 0);
-    index = _GetKeyHash(pvkey, phtable->keyType, keySize, phtable->nTableSize);
+    index = _GetKeyHash(pvkey, phtable->keyType, iKeySize, phtable->nTableSize);
     
     phtFoundNode = phtable->phtNodes[index];
     if(!phtFoundNode || 
-        !_FindKeyInList(phtFoundNode, pvkey, keySize, phtable->keyType, 
+        !_FindKeyInList(phtFoundNode, pvkey, iKeySize, phtable->keyType, 
                         &phtFoundNode, NULL))
     {
         hr = E_NOT_SET;
@@ -454,7 +482,7 @@ not_found:
     
 }
 
-HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int keySize)
+HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKeySize)
 {   
     int index = 0;
     HT_NODE *phtFoundNode = NULL;
@@ -474,11 +502,11 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int key
     fLocked = TRUE;
     
     ASSERT(phtable->nTableSize > 0);
-    index = _GetKeyHash(pvkey, phtable->keyType, keySize, phtable->nTableSize);
+    index = _GetKeyHash(pvkey, phtable->keyType, iKeySize, phtable->nTableSize);
     
     phtFoundNode = phtable->phtNodes[index];
     if(!phtFoundNode ||
-        !_FindKeyInList(phtFoundNode, pvkey, keySize, phtable->keyType, 
+        !_FindKeyInList(phtFoundNode, pvkey, iKeySize, phtable->keyType, 
             &phtFoundNode, &phtPrevFound))
     {
         hr = E_NOT_SET;
@@ -527,14 +555,23 @@ HRESULT CHL_DsGetNextHT(
     _Inout_opt_ PINT pvalsize,
     _In_opt_ BOOL fGetPointerOnly)
 {
-    
-    int indexIterator;
     HRESULT hr;
+    int indexIterator;
+    BOOL fLocked = FALSE;
 
     ASSERT(phtable && pItr);
 
     if(!phtable || !pItr)
+    {
         return E_INVALIDARG;
+    }
+
+    hr = CHL_GnOwnMutex(phtable->hMuAccess);
+    if(FAILED(hr))
+    {
+        goto done;
+    }
+    fLocked = TRUE;
 
     // Trivial check to see if iterator was initialized or not
     hr = S_OK;
@@ -604,6 +641,9 @@ HRESULT CHL_DsGetNextHT(
             *pvalsize = pItr->phtCurNodeInList->iValSize;
     }
 
+done:
+    if(fLocked && !ReleaseMutex(phtable->hMuAccess))
+        logerr("%s(): error_return mutex unlock ", __FUNCTIONW__);
     return hr;
 }
 

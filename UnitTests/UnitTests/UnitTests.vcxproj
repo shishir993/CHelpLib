@@ -89,17 +89,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Assert.cpp" />
+    <ClCompile Include="HashTableTests.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PerfTests.cpp" />
     <ClCompile Include="QueueTests.cpp" />
     <ClCompile Include="TestLinkedList.cpp" />
+    <ClCompile Include="TestUtil.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assert.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="HashTableTests.h" />
     <ClInclude Include="PerfTests.h" />
     <ClInclude Include="QueueTests.h" />
     <ClInclude Include="TestLinkedList.h" />
+    <ClInclude Include="TestUtil.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

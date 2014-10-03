@@ -1,6 +1,7 @@
 
 #include "Common.h"
 #include "TestLinkedList.h"
+#include "TestUtil.h"
 
 #include "LinkedList.h"
 #include "MemFunctions.h"
@@ -22,30 +23,6 @@ static BOOL fInsertAndFind_Internal(PTESTSTRUCT *ppTestStructs, int nElems);
 ////////////////////////////////////////////////////////////////////// 
 // ************************ Test Helpers ************************
 //
-BOOL fCreatRandString(__out WCHAR *pszBuffer, __in int nBufSize)
-{
-    static WCHAR szSource[] = L"qwertyuiopasdfghjklzxcvbnm1234567890!@#$%^&*()";
-    static int nElems = _countof(szSource);
-    int iError;
-
-    UINT uiSelector;
-    
-    for(int i = 0; i < nBufSize - 1; ++i)
-    {
-        if((iError = rand_s(&uiSelector)))
-        {
-            SetLastError(iError);
-            return FALSE;
-        }
-
-        uiSelector = uiSelector % (nElems-1);
-        pszBuffer[i] = szSource[uiSelector];
-    }
-    
-    pszBuffer[nBufSize - 1] = 0;
-
-    return TRUE;
-}
 
 BOOL fCreateTestStruct(__out PTESTSTRUCT *ppStruct)
 {
@@ -72,7 +49,7 @@ BOOL fCreateTestStruct(__out PTESTSTRUCT *ppStruct)
 
     pStruct->dw = pStruct->ui >> 2;
     pStruct->pv = (void*)(pStruct->ui | 0x00401000);
-    if(!fCreatRandString(pStruct->sz, _countof(pStruct->sz)))
+    if(SUCCEEDED(CreateRandString(pStruct->sz, _countof(pStruct->sz))))
     {
         goto error_return;
     }
