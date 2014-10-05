@@ -54,6 +54,7 @@ int main()
     
     success = success & SUCCEEDED(QueueRunTests());
 
+    wprintf(L"\nCumulative result: %s\n", CHOOSE_TEST_OUTCOME(success));
     OutputDebugString(L"\nTests done. Exiting...");
     return !success;
 }

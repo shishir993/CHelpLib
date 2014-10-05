@@ -269,7 +269,7 @@ HRESULT CHL_DsRemoveAtLL(
         _UnlinkNode(pLList, pCurNode);
         --(pLList->nCurNodes);
 
-        _FreeNodeMem(pCurNode, pLList->valType, !pvValOut);
+        _FreeNodeMem(pCurNode, pLList->valType, (!pvValOut || !fGetPointerOnly));
     }
 
     ReleaseMutex(pLList->hMuAccess);
