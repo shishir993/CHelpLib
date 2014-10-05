@@ -278,7 +278,7 @@ static BOOL fInsertRemoveFind()
 
     // Remove the last inserted, i.e., numTestData - 1 index
     wprintf(L"Removing at %d\n", numTestData-1);
-    if(FAILED(CHL_DsRemoveAtLL(pLList, numTestData-1, (void**)&pRetrievedTestData, TRUE)))
+    if(FAILED(CHL_DsRemoveAtLL(pLList, numTestData-1, (void**)&pRetrievedTestData, 0, TRUE)))
     {
         wprintf(L"!!!! Could not remove at %d\n", numTestData-1);
         goto test_failed;
@@ -341,7 +341,7 @@ static BOOL fInsertRemoveFind()
 
     // Remove first one inserted
     wprintf(L"Removing first one\n");
-    if(FAILED(CHL_DsRemoveAtLL(pLList, 0, (void**)&pRetrievedTestData, TRUE)))
+    if(FAILED(CHL_DsRemoveAtLL(pLList, 0, (void**)&pRetrievedTestData, 0, TRUE)))
     {
         wprintf(L"!!!! Could not remove at 0\n");
         goto test_failed;

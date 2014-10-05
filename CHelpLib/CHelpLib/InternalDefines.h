@@ -14,15 +14,15 @@
 // -------------------------------------------
 // Structures
 
-typedef union CHL_key {
+union _tagCHL_KEYDEF {
     PSTR pszKey;
     PWSTR pwszKey;
     int iKey;
     UINT uiKey;
     PVOID pvKey;
-}CHL_key;
+};
 
-typedef union CHL_val {
+union _tagCHL_VALDEF {
     int iVal;
     UINT uiVal;
     double dVal;
@@ -30,6 +30,26 @@ typedef union CHL_val {
     PWSTR pwszVal;  // Pointer to wide string(value is allocated on heap)
     PVOID pvPtr;    // Stores a pointer(any type)(value is allocated on heap)
     PVOID pvUserObj;   // Pointer to user object(value is allocated on heap)
-}CHL_val;
+};
+
+typedef struct CHL_KEY
+{
+    // Num. of bytes as size of key
+    int iKeySize;
+
+    // Storage for the key
+    union _tagCHL_KEYDEF keyDef;
+
+}CHL_KEY, *PCHL_KEY;
+
+typedef struct CHL_VAL
+{
+    // Num. of bytes as size of val
+    int iValSize;
+
+    // Storage for the value
+    union _tagCHL_VALDEF valDef;
+
+}CHL_VAL, *PCHL_VAL;
 
 #endif // CHL_INT_DEFINES_H

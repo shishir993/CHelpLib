@@ -22,8 +22,7 @@ extern "C" {
 #define CHLE_LLIST_VALTYPE  17101
 
 typedef struct _LlNode {
-    CHL_val chlVal;
-    int iValSize;
+    CHL_VAL chlVal;
     struct _LlNode *pleft;
     struct _LlNode *pright;
 }LLNODE, *PLLNODE;
@@ -48,13 +47,15 @@ typedef struct _LinkedList {
     HRESULT (*RemoveAt)(
         struct _LinkedList* pLList, 
         int iIndexToRemove, 
-        PVOID pvValOut, 
+        PVOID pvValOut,
+        PINT piValBufSize,
         BOOL fGetPointerOnly);
 
     HRESULT (*Peek)(
         struct _LinkedList* pLList, 
         int iIndexToPeek, 
-        PVOID pvValOut, 
+        PVOID pvValOut,
+        PINT piValBufSize,
         BOOL fGetPointerOnly);
 
     HRESULT (*Find)(
@@ -93,12 +94,14 @@ DllExpImp HRESULT CHL_DsRemoveAtLL(
     _In_ PCHL_LLIST pLList, 
     _In_ int iIndexToRemove, 
     _Inout_opt_ PVOID pvValOut, 
+    _Inout_opt_ PINT piValBufSize,
     _In_opt_ BOOL fGetPointerOnly);
 
 DllExpImp HRESULT CHL_DsPeekAtLL(
     _In_ PCHL_LLIST pLList, 
     _In_ int iIndexToPeek, 
-    _Inout_ PVOID pvValOut, 
+    _Inout_opt_ PVOID pvValOut, 
+    _Inout_opt_ PINT piValBufSize,
     _In_opt_ BOOL fGetPointerOnly);
 
 DllExpImp HRESULT CHL_DsFindLL(

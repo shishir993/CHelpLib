@@ -20,10 +20,8 @@ extern "C" {
 // hashtable node
 typedef struct _hashTableNode {
     //BOOL fOccupied;     // FALSE = not occupied
-    CHL_key chlKey;
-    CHL_val chlVal;
-    int iKeySize;
-    int iValSize;
+    CHL_KEY chlKey;
+    CHL_VAL chlVal;
     struct _hashTableNode *pnext;
 }HT_NODE;
 

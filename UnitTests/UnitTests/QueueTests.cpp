@@ -80,7 +80,7 @@ static HRESULT _TestStrings()
     }
 
     char *psz = NULL;
-    if(FAILED(pq->Peek(pq, (PVOID*)&psz, TRUE)))
+    if(FAILED(pq->Peek(pq, (PVOID*)&psz, 0, TRUE)))
     {
         printf("Failed to peek\n");
         hr = E_FAIL;
@@ -93,7 +93,7 @@ static HRESULT _TestStrings()
     // Delete all and print them
     psz = NULL;
     int iFound = 0;
-    while(SUCCEEDED(pq->Delete(pq, (PVOID*)&psz, TRUE)))
+    while(SUCCEEDED(pq->Delete(pq, (PVOID*)&psz, 0, TRUE)))
     {
         printf("Retrieved: [%s] ", psz);
         if(strcmp(apszTest[iFound++], psz) != 0)
@@ -143,7 +143,7 @@ static HRESULT _TestIntegers()
     // Delete all and print them
     int foundVal = NULL;
     int iFound = 0;
-    while(SUCCEEDED(pq->Delete(pq, &foundVal, TRUE)))
+    while(SUCCEEDED(pq->Delete(pq, &foundVal, 0, TRUE)))
     {
         printf("Retrieved: [%d] ", foundVal);
         if(aiTest[iFound++] != foundVal)

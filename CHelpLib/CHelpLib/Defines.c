@@ -10,24 +10,27 @@
 #include "Defines.h"
 #include "MemFunctions.h"
 
-HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID pvKey, _Inout_opt_ int iKeySize)
+#pragma region KeyFunctions
+
+HRESULT _CopyKeyIn(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID pvKey, _Inout_opt_ int iKeySize)
 {
     HRESULT hr = S_OK;
 
     ASSERT(pChlKey && (iKeySize > 0));
     ASSERT((keyType > CHL_KT_START) && (keyType < CHL_KT_END));
 
+    pChlKey->iKeySize = iKeySize;
     switch(keyType)
     {
         case CHL_KT_INT32:
         {
-            pChlKey->iKey = (int)pvKey;
+            pChlKey->keyDef.iKey = (int)pvKey;
             break;
         }
 
         case CHL_KT_UINT32:
         {
-            pChlKey->uiKey = (UINT)pvKey;
+            pChlKey->keyDef.uiKey = (UINT)pvKey;
             break;
         }
 
@@ -36,7 +39,7 @@ HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID 
             hr = (pvKey != NULL) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                pChlKey->pvKey = pvKey;
+                pChlKey->keyDef.pvKey = pvKey;
             }
             break;
         }
@@ -47,10 +50,10 @@ HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID 
             hr = (psz != NULL) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                hr = CHL_MmAlloc((PVOID*)&pChlKey->pszKey, iKeySize, NULL);
+                hr = CHL_MmAlloc((PVOID*)&pChlKey->keyDef.pszKey, iKeySize, NULL);
                 if(SUCCEEDED(hr))
                 {
-                    memcpy(pChlKey->pszKey, psz, iKeySize);
+                    memcpy(pChlKey->keyDef.pszKey, psz, iKeySize);
                 }
             }
             break;
@@ -62,10 +65,10 @@ HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID 
             hr = (pwsz != NULL) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                hr = CHL_MmAlloc((PVOID*)&pChlKey->pwszKey, iKeySize, NULL);
+                hr = CHL_MmAlloc((PVOID*)&pChlKey->keyDef.pwszKey, iKeySize, NULL);
                 if(SUCCEEDED(hr))
                 {
-                    memcpy(pChlKey->pwszKey, pwsz, iKeySize);
+                    memcpy(pChlKey->keyDef.pwszKey, pwsz, iKeySize);
                 }
             }
             break;
@@ -81,44 +84,56 @@ HRESULT _CopyKeyIn(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID 
     return hr;
 }
 
-HRESULT _CopyKeyOut(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _Inout_ PVOID pvKeyOut, _In_ BOOL fGetPointerOnly)
+HRESULT _CopyKeyOut(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType, _Inout_ PVOID pvKeyOut, _In_ BOOL fGetPointerOnly)
 {
     HRESULT hr = S_OK;
 
     ASSERT(pChlKey && pvKeyOut);
     ASSERT((keyType > CHL_KT_START) && (keyType < CHL_KT_END));
 
-    DBG_UNREFERENCED_PARAMETER(fGetPointerOnly);
-
     switch(keyType)
     {
         case CHL_KT_INT32:
         {
-            *((int*)pvKeyOut) = pChlKey->iKey;
+            *((int*)pvKeyOut) = pChlKey->keyDef.iKey;
             break;
         }
 
         case CHL_KT_UINT32:
         {
-            *((PUINT)pvKeyOut) = pChlKey->uiKey;
+            *((PUINT)pvKeyOut) = pChlKey->keyDef.uiKey;
             break;
         }
 
         case CHL_KT_POINTER:
         {
-            *((PVOID*)pvKeyOut) = pChlKey->pvKey;
+            *((PVOID*)pvKeyOut) = pChlKey->keyDef.pvKey;
             break;
         }
 
         case CHL_KT_STRING:
         {
-            *((char**)pvKeyOut) = pChlKey->pszKey;  // TODO: Use fGetPointerOnly
+            if(fGetPointerOnly)
+            {
+                *((char**)pvKeyOut) = pChlKey->keyDef.pszKey;
+            }
+            else
+            {
+                memcpy(pvKeyOut, pChlKey->keyDef.pszKey, pChlKey->iKeySize);
+            }
             break;
         }
 
         case CHL_KT_WSTRING:
         {
-            *((WCHAR**)pvKeyOut) = pChlKey->pwszKey;    // TODO: Use fGetPointerOnly
+            if(fGetPointerOnly)
+            {
+                *((WCHAR**)pvKeyOut) = pChlKey->keyDef.pwszKey;
+            }
+            else
+            {
+                memcpy(pvKeyOut, pChlKey->keyDef.pwszKey, pChlKey->iKeySize);
+            }
             break;
         }
 
@@ -132,7 +147,7 @@ HRESULT _CopyKeyOut(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType, _Inout_ PVO
     return hr;
 }
 
-BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize)
+BOOL _IsDuplicateKey(_In_ PCHL_KEY pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize)
 {
     BOOL fMatch = FALSE;
 
@@ -143,19 +158,19 @@ BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL
     {
         case CHL_KT_INT32:
         {
-            fMatch = (pChlLeftKey->iKey == (int)pvRightKey);
+            fMatch = (pChlLeftKey->keyDef.iKey == (int)pvRightKey);
             break;
         }
 
         case CHL_KT_UINT32:
         {
-            fMatch = (pChlLeftKey->uiKey == (UINT)pvRightKey);
+            fMatch = (pChlLeftKey->keyDef.uiKey == (UINT)pvRightKey);
             break;
         }
 
         case CHL_KT_POINTER:
         {
-            fMatch = (pChlLeftKey->pvKey == pvRightKey);
+            fMatch = (pChlLeftKey->keyDef.pvKey == pvRightKey);
             break;
         }
 
@@ -163,7 +178,7 @@ BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL
         {
             if((iKeySize > 0) && (pvRightKey != NULL))
             {
-                fMatch = strncmp(pChlLeftKey->pszKey, (PCSTR)pvRightKey, iKeySize) == 0;
+                fMatch = strncmp(pChlLeftKey->keyDef.pszKey, (PCSTR)pvRightKey, iKeySize) == 0;
             }
             else
             {
@@ -176,7 +191,7 @@ BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL
         {
             if(iKeySize > 0)
             {
-                fMatch = wcsncmp(pChlLeftKey->pwszKey, (PCWSTR)pvRightKey, iKeySize) == 0;   
+                fMatch = wcsncmp(pChlLeftKey->keyDef.pwszKey, (PCWSTR)pvRightKey, iKeySize) == 0;   
             }
             else
             {
@@ -194,19 +209,19 @@ BOOL _IsDuplicateKey(_In_ CHL_key *pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL
     return fMatch;
 }
 
-void _DeleteKey(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType)
+void _DeleteKey(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType)
 {
     switch(keyType)
     {
         case CHL_KT_STRING:
         {
-            CHL_MmFree((PVOID*)&pChlKey->pszKey);
+            CHL_MmFree((PVOID*)&pChlKey->keyDef.pszKey);
             break;
         }
 
         case CHL_KT_WSTRING:
         {
-            CHL_MmFree((PVOID*)&pChlKey->pwszKey);
+            CHL_MmFree((PVOID*)&pChlKey->keyDef.pwszKey);
             break;
         }
 
@@ -217,7 +232,7 @@ void _DeleteKey(_In_ CHL_key *pChlKey, _In_ CHL_KEYTYPE keyType)
     }
 }
 
-HRESULT _GetKeySize(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ PINT piKeySize)
+HRESULT _GetKeySize(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _Inout_ PINT piKeySize)
 {
     HRESULT hr = S_OK;
 
@@ -267,24 +282,46 @@ HRESULT _GetKeySize(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ PINT piKeyS
 
 }
 
-HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID pvVal, _In_opt_ int iValSize)
+HRESULT _EnsureSufficientKeyBuf(
+    _In_ PCHL_KEY pChlKey, 
+    _In_ int iSpecBufSize, 
+    _Inout_opt_ PINT piReqBufSize)
+{
+    HRESULT hr = S_OK;
+    
+    ASSERT(pChlKey);
+    ASSERT(pChlKey->iKeySize > 0);
+
+    hr = (iSpecBufSize >= pChlKey->iKeySize) ? S_OK : HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+    if(piReqBufSize != NULL)
+    {
+        *piReqBufSize = pChlKey->iKeySize;
+    }
+
+    return hr;
+}
+
+#pragma endregion KeyFunctions
+
+HRESULT _CopyValIn(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID pvVal, _In_opt_ int iValSize)
 {
     HRESULT hr = S_OK;
 
     ASSERT(pChlVal && (iValSize > 0));
     ASSERT((valType > CHL_VT_START) && (valType < CHL_VT_END));
 
+    pChlVal->iValSize = iValSize;
     switch(valType)
     {
         case CHL_VT_INT32:
         {
-            pChlVal->iVal = (int)pvVal;
+            pChlVal->valDef.iVal = (int)pvVal;
             break;
         }
 
         case CHL_VT_UINT32:
         {
-            pChlVal->uiVal = (UINT)pvVal;
+            pChlVal->valDef.uiVal = (UINT)pvVal;
             break;
         }
 
@@ -293,7 +330,7 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
             hr = (pvVal != NULL) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                pChlVal->pvPtr = pvVal;
+                pChlVal->valDef.pvPtr = pvVal;
             }
             break;
         }
@@ -303,10 +340,10 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
             hr = ((pvVal != NULL) && (iValSize > 0)) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                hr = CHL_MmAlloc((PVOID*)&pChlVal->pvUserObj, iValSize, NULL);
+                hr = CHL_MmAlloc((PVOID*)&pChlVal->valDef.pvUserObj, iValSize, NULL);
                 if(SUCCEEDED(hr))
                 {
-                    memcpy(pChlVal->pvUserObj, pvVal, iValSize);
+                    memcpy(pChlVal->valDef.pvUserObj, pvVal, iValSize);
                 }
             }
             break;
@@ -318,10 +355,10 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
             hr = (psz != NULL) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                hr = CHL_MmAlloc((PVOID*)&pChlVal->pszVal, iValSize, NULL);
+                hr = CHL_MmAlloc((PVOID*)&pChlVal->valDef.pszVal, iValSize, NULL);
                 if(SUCCEEDED(hr))
                 {
-                    memcpy(pChlVal->pszVal, psz, iValSize);
+                    memcpy(pChlVal->valDef.pszVal, psz, iValSize);
                 }
             }
             break;
@@ -333,10 +370,10 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
             hr = (pwsz != NULL) ? S_OK : E_INVALIDARG;
             if(SUCCEEDED(hr))
             {
-                hr = CHL_MmAlloc((PVOID*)&pChlVal->pwszVal, iValSize, NULL);
+                hr = CHL_MmAlloc((PVOID*)&pChlVal->valDef.pwszVal, iValSize, NULL);
                 if(SUCCEEDED(hr))
                 {
-                    memcpy(pChlVal->pwszVal, pwsz, iValSize);
+                    memcpy(pChlVal->valDef.pwszVal, pwsz, iValSize);
                 }
             }
             break;
@@ -352,53 +389,69 @@ HRESULT _CopyValIn(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
     return hr;
 }
 
-HRESULT _CopyValOut(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVOID pvValOut, _In_ BOOL fGetPointerOnly)
+HRESULT _CopyValOut(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVOID pvValOut, _In_ BOOL fGetPointerOnly)
 {
     HRESULT hr = S_OK;
 
     ASSERT(pChlVal && pvValOut);
     ASSERT((valType > CHL_VT_START) && (valType < CHL_VT_END));
 
-    DBG_UNREFERENCED_PARAMETER(fGetPointerOnly);
-
     switch(valType)
     {
         case CHL_VT_INT32:
         {
-            *((int*)pvValOut) = pChlVal->iVal;
+            *((int*)pvValOut) = pChlVal->valDef.iVal;
             break;
         }
 
         case CHL_VT_UINT32:
         {
-            *((PUINT)pvValOut) = pChlVal->uiVal;
+            *((PUINT)pvValOut) = pChlVal->valDef.uiVal;
             break;
         }
 
         case CHL_VT_POINTER:
         {
-            *((PVOID*)pvValOut) = pChlVal->pvPtr;
+            *((PVOID*)pvValOut) = pChlVal->valDef.pvPtr;
             break;
         }
 
         case CHL_VT_USEROBJECT:
         {
-            //memcpy(ppValOut, pnode->chlVal.pvUserObj, pnode->dwValSize);
-            *((PVOID*)pvValOut) = pChlVal->pvUserObj;   // TODO: Return object itself based on fGetPointerOnly
+            if(fGetPointerOnly)
+            {
+                *((PVOID*)pvValOut) = pChlVal->valDef.pvUserObj;
+            }
+            else
+            {
+                memcpy(pvValOut, pChlVal->valDef.pvUserObj, pChlVal->iValSize);
+            }
             break;
         }
 
         case CHL_VT_STRING:
         {
-            //memcpy(ppValOut, pnode->chlVal.pszVal, pnode->dwValSize);
-            *((PVOID*)pvValOut) = pChlVal->pszVal;   // TODO: Return object itself based on fGetPointerOnly
+            if(fGetPointerOnly)
+            {
+                *((PVOID*)pvValOut) = pChlVal->valDef.pszVal;
+            }
+            else
+            {
+                memcpy(pvValOut, pChlVal->valDef.pszVal, pChlVal->iValSize);
+            }
             break;
         }
 
         case CHL_VT_WSTRING:
         {
-            //memcpy(ppValOut, pnode->chlVal.pwszVal, pnode->dwValSize);
-            *((PVOID*)pvValOut) = pChlVal->pwszVal;   // TODO: Return object itself based on fGetPointerOnly
+            if(fGetPointerOnly)
+            {
+                *((PVOID*)pvValOut) = pChlVal->valDef.pwszVal;
+            }
+            else
+            {
+                memcpy(pvValOut, pChlVal->valDef.pwszVal, pChlVal->iValSize);
+            }            
             break;
         }
 
@@ -412,7 +465,7 @@ HRESULT _CopyValOut(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVO
     return hr;
 }
 
-BOOL _IsDuplicateVal(_In_ CHL_val *pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL_VALTYPE valType, _In_ int iValSize)
+BOOL _IsDuplicateVal(_In_ PCHL_VAL pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL_VALTYPE valType, _In_ int iValSize)
 {
     BOOL fMatch = FALSE;
 
@@ -423,19 +476,19 @@ BOOL _IsDuplicateVal(_In_ CHL_val *pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
     {
         case CHL_VT_INT32:
         {
-            fMatch = (pChlLeftVal->iVal == (int)pvRightVal);
+            fMatch = (pChlLeftVal->valDef.iVal == (int)pvRightVal);
             break;
         }
 
         case CHL_VT_UINT32:
         {
-            fMatch = (pChlLeftVal->uiVal == (UINT)pvRightVal);
+            fMatch = (pChlLeftVal->valDef.uiVal == (UINT)pvRightVal);
             break;
         }
 
         case CHL_VT_POINTER:
         {
-            fMatch = (pChlLeftVal->pvPtr == pvRightVal);
+            fMatch = (pChlLeftVal->valDef.pvPtr == pvRightVal);
             break;
         }
 
@@ -443,7 +496,7 @@ BOOL _IsDuplicateVal(_In_ CHL_val *pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
         {
             if((iValSize > 0) && (pvRightVal != NULL))
             {
-                fMatch = strncmp(pChlLeftVal->pszVal, (PCSTR)pvRightVal, iValSize) == 0;   
+                fMatch = strncmp(pChlLeftVal->valDef.pszVal, (PCSTR)pvRightVal, iValSize) == 0;   
             }
             else
             {
@@ -456,7 +509,7 @@ BOOL _IsDuplicateVal(_In_ CHL_val *pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
         {
             if((iValSize > 0) && (pvRightVal != NULL))
             {
-                fMatch = wcsncmp(pChlLeftVal->pwszVal, (PCWSTR)pvRightVal, iValSize) == 0;   
+                fMatch = wcsncmp(pChlLeftVal->valDef.pwszVal, (PCWSTR)pvRightVal, iValSize) == 0;   
             }
             else
             {
@@ -474,25 +527,25 @@ BOOL _IsDuplicateVal(_In_ CHL_val *pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
     return fMatch;
 }
 
-void _DeleteVal(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType)
+void _DeleteVal(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType)
 {
     switch(valType)
     {
         case CHL_VT_USEROBJECT:
         {
-            CHL_MmFree((PVOID*)&pChlVal->pvUserObj);
+            CHL_MmFree((PVOID*)&pChlVal->valDef.pvUserObj);
             break;
         }
 
         case CHL_VT_STRING:
         {
-            CHL_MmFree((PVOID*)&pChlVal->pszVal);
+            CHL_MmFree((PVOID*)&pChlVal->valDef.pszVal);
             break;
         }
 
         case CHL_VT_WSTRING:
         {
-            CHL_MmFree((PVOID*)&pChlVal->pwszVal);
+            CHL_MmFree((PVOID*)&pChlVal->valDef.pwszVal);
             break;
         }
 
@@ -503,7 +556,7 @@ void _DeleteVal(_In_ CHL_val *pChlVal, _In_ CHL_VALTYPE valType)
     }
 }
 
-HRESULT _GetValSize(_In_ PVOID pvVal, _In_ CHL_VALTYPE valType, _In_ PINT piValSize)
+HRESULT _GetValSize(_In_ PVOID pvVal, _In_ CHL_VALTYPE valType, _Inout_ PINT piValSize)
 {
     HRESULT hr = S_OK;
 
@@ -556,5 +609,24 @@ HRESULT _GetValSize(_In_ PVOID pvVal, _In_ CHL_VALTYPE valType, _In_ PINT piValS
             break;
         }
     }
+    return hr;
+}
+
+HRESULT _EnsureSufficientValBuf(
+    _In_ PCHL_VAL pChlVal, 
+    _In_ int iSpecBufSize, 
+    _Inout_opt_ PINT piReqBufSize)
+{
+    HRESULT hr = S_OK;
+    
+    ASSERT(pChlVal);
+    ASSERT(pChlVal->iValSize > 0);
+
+    hr = (iSpecBufSize >= pChlVal->iValSize) ? S_OK : HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+    if(piReqBufSize != NULL)
+    {
+        *piReqBufSize = pChlVal->iValSize;
+    }
+
     return hr;
 }

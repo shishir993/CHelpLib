@@ -108,7 +108,6 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
         hr = E_FAIL;
         goto error_return;
     }
-    pNewNode->iValSize = iValSize;
 
     hr = _CopyValIn(&pNewNode->chlVal, pLList->valType, pvVal, iValSize);
     if(FAILED(hr))
@@ -208,7 +207,8 @@ error_return:
 HRESULT CHL_DsRemoveAtLL(
     _In_ PCHL_LLIST pLList, 
     _In_ int iIndexToRemove, 
-    _Inout_opt_ PVOID pvValOut, 
+    _Inout_opt_ PVOID pvValOut,
+    _Inout_opt_ PINT piValBufSize,
     _In_opt_ BOOL fGetPointerOnly)
 {
     int itr;
@@ -248,7 +248,19 @@ HRESULT CHL_DsRemoveAtLL(
 
     if(pvValOut)
     {
-        hr = _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, fGetPointerOnly);
+        // Ensure sufficient buffer is provided in this case.
+        if(!fGetPointerOnly)
+        {
+            hr = _EnsureSufficientValBuf(
+                    &pCurNode->chlVal,
+                    (piValBufSize && (*piValBufSize > 0)) ? *piValBufSize : sizeof(PVOID),
+                    piValBufSize);
+        }
+
+        if(SUCCEEDED(hr))
+        {
+            hr = _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, fGetPointerOnly);
+        }
     }
 
     if(SUCCEEDED(hr))
@@ -271,7 +283,12 @@ error_return:
     return hr;
 }
 
-HRESULT CHL_DsPeekAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToPeek, _Inout_ PVOID pvValOut, _In_opt_ BOOL fGetPointerOnly)
+HRESULT CHL_DsPeekAtLL(
+    _In_ PCHL_LLIST pLList,
+    _In_ int iIndexToPeek,
+    _Inout_opt_ PVOID pvValOut,
+    _Inout_opt_ PINT piValBufSize,
+    _In_opt_ BOOL fGetPointerOnly)
 {
     BOOL fMutexLocked = FALSE;
     PLLNODE pCurNode = NULL;
@@ -322,7 +339,19 @@ HRESULT CHL_DsPeekAtLL(_In_ PCHL_LLIST pLList, _In_ int iIndexToPeek, _Inout_ PV
 
     if(SUCCEEDED(hr) && (pvValOut != NULL))
     {
-        _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, fGetPointerOnly);
+        // Ensure sufficient buffer is provided in this case.
+        if(!fGetPointerOnly)
+        {
+            hr = _EnsureSufficientValBuf(
+                    &pCurNode->chlVal,
+                    (piValBufSize && (*piValBufSize > 0)) ? *piValBufSize : sizeof(PVOID),
+                    piValBufSize);
+        }
+
+        if(SUCCEEDED(hr))
+        {
+            _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, fGetPointerOnly);
+        }
     }
 
     ReleaseMutex(pLList->hMuAccess);

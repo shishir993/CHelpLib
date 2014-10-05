@@ -523,8 +523,15 @@ BOOL _NumStrRand()
         wprintf(L"Contents of hashtable now... *********************\n\n");
 
         int numfound = 0;
-        while(SUCCEEDED(CHL_DsGetNextHT(phtable, &itr, &dwkey, &keysize, &dwval, &valsize, FALSE)))
+        while(TRUE)
         {
+            keysize = sizeof(dwkey);
+            valsize = sizeof(dwval);
+            if(FAILED(CHL_DsGetNextHT(phtable, &itr, &dwkey, &keysize, &dwval, &valsize, FALSE)))
+            {
+                break;
+            }
+
             if(numfound >= MAX_RAND_COUNT)
             {
                 wprintf(L"WTF? Hashtable is returning more than what was put in!!\n");
@@ -561,6 +568,7 @@ BOOL _NumStrRand()
         wprintf(L"Finding all values in reverse now... ***************\n\n");
         for(int i = MAX_RAND_COUNT-1; i >= 0; --i)
         {
+            valsize = sizeof(foundval);
             if(FAILED(CHL_DsFindHT(phtable, (PVOID)stRandKeyVals[i].dwkey, sizeof(DWORD), &foundval, &valsize, FALSE)))
             {
                 ++numnotfound;
@@ -692,8 +700,15 @@ BOOL _WstrNumRand()
         wprintf(L"Retrieve full content of hashtable now... *********************\n\n");
 
         int numfound = 0;
-        while(SUCCEEDED(CHL_DsGetNextHT(phtable, &itr, &pszRetKey, &keysize, &dwRetVal, &valsize, TRUE)))
+        while(TRUE)
         {
+            keysize = 0; // getting pointer only, want to know the keysize
+            valsize = sizeof(dwRetVal);
+            if(FAILED(CHL_DsGetNextHT(phtable, &itr, &pszRetKey, &keysize, &dwRetVal, &valsize, TRUE)))
+            {
+                break;
+            }
+
             if(numfound >= MAX_RAND_COUNT)
             {
                 wprintf(L"WTF? Hashtable is returning more than what was put in!!\n");
@@ -730,6 +745,7 @@ BOOL _WstrNumRand()
         wprintf(L"Finding all values in reverse now... ***************\n\n");
         for(int i = MAX_RAND_COUNT-1; i >= 0; --i)
         {
+            valsize = sizeof(foundval);
             if(FAILED(CHL_DsFindHT(phtable, (PVOID)stRandKeyVals[i].pszKey, 0, &foundval, &valsize, FALSE)))
             {
                 ++numnotfound;

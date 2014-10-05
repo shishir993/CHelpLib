@@ -77,7 +77,7 @@ HRESULT CHL_DsInsertQ(_In_ PCHL_QUEUE pQueueObj, _In_ PCVOID pvValue, _In_ int n
     return hr;
 }
 
-HRESULT CHL_DsDeleteQ(_In_ PCHL_QUEUE pQueueObj, _Inout_opt_ PVOID pvValOut, _In_opt_ BOOL fGetPointerOnly)
+HRESULT CHL_DsDeleteQ(_In_ PCHL_QUEUE pQueueObj, _Inout_opt_ PVOID pvValOut, _Inout_opt_ PINT piValBufSize, _In_opt_ BOOL fGetPointerOnly)
 {
     HRESULT hr = S_OK;
 
@@ -90,17 +90,20 @@ HRESULT CHL_DsDeleteQ(_In_ PCHL_QUEUE pQueueObj, _Inout_opt_ PVOID pvValOut, _In
     }
     else
     {
-        // Linked list always inserts at the tail, so the first item is the one to be deleted
-        hr = CHL_DsRemoveAtLL(pQueueObj->pList, 0, pvValOut, fGetPointerOnly);
-        if(SUCCEEDED(hr))
+        if(pvValOut)
         {
-            --(pQueueObj->nCurItems);
+            // Linked list always inserts at the tail, so the first item is the one to be deleted
+            hr = CHL_DsRemoveAtLL(pQueueObj->pList, 0, pvValOut, piValBufSize, fGetPointerOnly);
+            if(SUCCEEDED(hr))
+            {
+                --(pQueueObj->nCurItems);
+            }
         }
     }
     return hr;
 }
 
-HRESULT CHL_DsPeekQ(_In_ PCHL_QUEUE pQueueObj, _Inout_opt_ PVOID pvValOut, _In_opt_ BOOL fGetPointerOnly)
+HRESULT CHL_DsPeekQ(_In_ PCHL_QUEUE pQueueObj, _Inout_opt_ PVOID pvValOut, _Inout_opt_ PINT piValBufSize, _In_opt_ BOOL fGetPointerOnly)
 {
     HRESULT hr = S_OK;
     ASSERT(pQueueObj && pQueueObj->pList);
@@ -109,7 +112,7 @@ HRESULT CHL_DsPeekQ(_In_ PCHL_QUEUE pQueueObj, _Inout_opt_ PVOID pvValOut, _In_o
     // Linked list always inserts at the tail, so the first item is the one to be peek'd
     if(pQueueObj->nCurItems > 0)
     {
-        hr = CHL_DsPeekAtLL(pQueueObj->pList, 0, pvValOut, fGetPointerOnly);
+        hr = CHL_DsPeekAtLL(pQueueObj->pList, 0, pvValOut, piValBufSize, fGetPointerOnly);
     }
     else
     {
