@@ -6,7 +6,10 @@
 #include "LinkedList.h"
 #include "MemFunctions.h"
 
-#define NUM_TESTS   2
+#define NUM_TESTS   3
+
+extern WCHAR* g_pszPassed;
+extern WCHAR* g_pszFailed;
 
 typedef struct _testStruct {
     UINT ui;
@@ -16,9 +19,10 @@ typedef struct _testStruct {
 }TESTSTRUCT, *PTESTSTRUCT;
 
 // Tests
-static BOOL fInsertAndFind();
-static BOOL fInsertRemoveFind();
-static BOOL fInsertAndFind_Internal(PTESTSTRUCT *ppTestStructs, int nElems);
+static BOOL _InsertAndFind();
+static BOOL _InsertRemoveFind();
+static BOOL _InsertRemoveFind_NotPointer();
+static BOOL _InsertAndFind_Internal(PTESTSTRUCT *ppTestStructs, int nElems);
 
 ////////////////////////////////////////////////////////////////////// 
 // ************************ Test Helpers ************************
@@ -161,23 +165,52 @@ void vFreePointerList(PTESTSTRUCT *ppTestStructs, int nElems)
 // ************************ Test Functions ************************
 
 //
-BOOL fTestLinkedList()
+BOOL ExecFuncTestsLL()
 {
     int nTotalTests = NUM_TESTS;
     int nPassed = 0;
 
-    if(fInsertAndFind())
+    wprintf(L"\n-----------------------------------------------------\n");
+    wprintf(L"\n---------------- LinkedList Functional --------------\n");
+
+    wchar_t *pszTestName = L"LinkedList: Insert and Find";
+    wprintf(L"\n-----------------------------------------------\nStarting Test: %s\n", pszTestName);
+    if(_InsertAndFind())
     {
         ++nPassed;
+        wprintf(L"\nPASSED: %s\n-----------------------------------------------\n", pszTestName);
+    }
+    else
+    {
+        wprintf(L"\nFAILED: %s\n-----------------------------------------------\n", pszTestName);
     }
 
-    
-    if(fInsertRemoveFind())
+    pszTestName = L"LinkedList: Insert Find and Remove";
+    wprintf(L"\n-----------------------------------------------\nStarting Test: %s\n", pszTestName);
+    if(_InsertRemoveFind())
     {
         ++nPassed;
+        wprintf(L"\nPASSED: %s\n-----------------------------------------------\n", pszTestName);
+    }
+    else
+    {
+        wprintf(L"\nFAILED: %s\n-----------------------------------------------\n", pszTestName);
+    }
+
+    pszTestName = L"LinkedList: Insert Find and Remove with CHL_VT_USEROBJECT";
+    wprintf(L"\n-----------------------------------------------\nStarting Test: %s\n", pszTestName);
+    if(_InsertRemoveFind_NotPointer())
+    {
+        ++nPassed;
+        wprintf(L"\nPASSED: %s\n-----------------------------------------------\n", pszTestName);
+    }
+    else
+    {
+        wprintf(L"\nFAILED: %s\n-----------------------------------------------\n", pszTestName);
     }
 
     wprintf(L"TEST Linked List: Total = %d, Passed = %d\n", nTotalTests, nPassed);
+    wprintf(L"\nEND TEST SUITE: LinkedList Functional: %s\n", CHOOSE_TEST_OUTCOME(nPassed == nTotalTests));
 
     return nPassed == nTotalTests;
 }
@@ -185,7 +218,7 @@ BOOL fTestLinkedList()
 // Basic insert and find test.
 // - Insert 1, 2, 8 elements and find all.
 // : All inserted elements must be found
-static BOOL fInsertAndFind()
+static BOOL _InsertAndFind()
 {
     PTESTSTRUCT *ppTestStructs = NULL;
     BOOL fResult = TRUE;
@@ -202,7 +235,7 @@ static BOOL fInsertAndFind()
         goto error_return;
     }
 
-    fResult &= fInsertAndFind_Internal(ppTestStructs, nCurrentElems);
+    fResult &= _InsertAndFind_Internal(ppTestStructs, nCurrentElems);
     vFreePointerList(ppTestStructs, nCurrentElems);
 
     // Two elements
@@ -213,7 +246,7 @@ static BOOL fInsertAndFind()
         goto error_return;
     }
 
-    fResult &= fInsertAndFind_Internal(ppTestStructs, nCurrentElems);
+    fResult &= _InsertAndFind_Internal(ppTestStructs, nCurrentElems);
     vFreePointerList(ppTestStructs, nCurrentElems);
 
     // Eight elements
@@ -224,7 +257,7 @@ static BOOL fInsertAndFind()
         goto error_return;
     }
 
-    fResult &= fInsertAndFind_Internal(ppTestStructs, nCurrentElems);
+    fResult &= _InsertAndFind_Internal(ppTestStructs, nCurrentElems);
     vFreePointerList(ppTestStructs, nCurrentElems);
 
     wprintf(L"\nEND %s\n", __FUNCTIONW__);
@@ -237,7 +270,7 @@ error_return:
 
 // Insert, remove and try to find the removed and other elements.
 // 
-static BOOL fInsertRemoveFind()
+static BOOL _InsertRemoveFind()
 {
     int index;
     PTESTSTRUCT *ppTestStructs = NULL;
@@ -396,7 +429,98 @@ test_failed:
     return FALSE;
 }
 
-static BOOL fInsertAndFind_Internal(PTESTSTRUCT *ppTestStructs, int nElems)
+static BOOL _InsertRemoveFind_NotPointer()
+{
+    int index;
+    PTESTSTRUCT *ppTestStructs = NULL;
+    PTESTSTRUCT pRetrievedTestData = NULL;
+
+    PCHL_LLIST pLList = NULL;
+
+    int numTestData = 16;
+    BOOL fTestPassed = TRUE;
+
+    wprintf(L"\nSTART %s\n", __FUNCTIONW__);
+
+    // Create test structs
+    wprintf(L"Creating test structs\n");
+    if(!fCreateTestStructs(numTestData, &ppTestStructs))
+    {
+        wprintf(L"!!!! Cannot create test data %u\n", GetLastError());
+        goto test_failed;
+    }
+
+    // Create the linked list
+    wprintf(L"Creating linked list\n");
+    if(FAILED(CHL_DsCreateLL(&pLList, CHL_VT_USEROBJECT, numTestData)))
+    {
+        wprintf(L"!!!! Cannot create linked list(size = %d): Error %u\n", numTestData, GetLastError());
+        goto test_failed;
+    }
+
+    // Insert all four
+    for(index = 0; index < numTestData; ++index)
+    {
+        wprintf(L"Inserting element %d\n", index);
+        if(FAILED(pLList->Insert(pLList, ppTestStructs[index], sizeof(TESTSTRUCT))))
+        {
+            wprintf(L"!!!! Could not insert element %d\n", index);
+            goto test_failed;
+        }
+    }
+
+    // Find all
+    for(index = 0; index < numTestData; ++index)
+    {
+        if(FAILED(pLList->Find(pLList, ppTestStructs[index], fCompareTestStructs)))
+        {
+            wprintf(L"!!!! Could not find element %d\n", index);
+            fTestPassed = FALSE;
+        }
+    }
+
+    // Remove all using RemoveAt and check if retrieved data is correct
+    int nRemoved = 0;
+    TESTSTRUCT stFound = {};
+    int valSize = sizeof(stFound);
+    while(SUCCEEDED(pLList->RemoveAt(pLList, 0, &stFound, &valSize, FALSE)))
+    {
+        if(!fCompareTestStructs(ppTestStructs[nRemoved], &stFound))
+        {
+            wprintf(L"Retrieved struct doesn't match at index %d\n", nRemoved);
+            fTestPassed = FALSE;
+        }
+        
+        ++nRemoved;
+    }
+
+    if(nRemoved < numTestData)
+    {
+        wprintf(L"Found only %d items out of %d\n", nRemoved, numTestData);
+        fTestPassed = FALSE;
+    }
+
+    pLList->Destroy(pLList);
+    vFreePointerList(ppTestStructs, numTestData);
+
+    return fTestPassed;
+
+test_failed:
+    if(ppTestStructs)
+    {
+        vFreePointerList(ppTestStructs, numTestData);
+    }
+
+    if(pLList)
+    {
+        CHL_DsDestroyLL(pLList);
+    }
+    wprintf(L"-- FAILED --\n");
+    wprintf(L"\nEND %s\n", __FUNCTIONW__);
+    return FALSE;
+}
+
+static BOOL _InsertAndFind_Internal(PTESTSTRUCT *ppTestStructs, int nElems)
 {
     ASSERT(nElems > 0);
     ASSERT(ppTestStructs);

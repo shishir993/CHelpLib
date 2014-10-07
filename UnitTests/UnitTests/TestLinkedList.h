@@ -8,6 +8,6 @@
 #include <wchar.h>
 #include <Windows.h>
 
-BOOL fTestLinkedList();
+BOOL ExecFuncTestsLL();
 
 #endif // _TEST_LINKEDLIST_H

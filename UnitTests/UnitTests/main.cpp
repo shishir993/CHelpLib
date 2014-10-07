@@ -47,7 +47,7 @@ int main()
     //rdtscBusiness();
     
     // Test linked list
-    fTestLinkedList();
+    ExecFuncTestsLL();
 
     fTestCreateFileWithSize();
     vTestFileMapping();
