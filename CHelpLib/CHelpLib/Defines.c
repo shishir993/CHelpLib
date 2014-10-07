@@ -211,6 +211,7 @@ BOOL _IsDuplicateKey(_In_ PCHL_KEY pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL
 
 void _DeleteKey(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType)
 {
+    pChlKey->iKeySize = 0;
     switch(keyType)
     {
         case CHL_KT_STRING:
@@ -529,6 +530,7 @@ BOOL _IsDuplicateVal(_In_ PCHL_VAL pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
 
 void _DeleteVal(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType)
 {
+    pChlVal->iValSize = 0;
     switch(valType)
     {
         case CHL_VT_USEROBJECT:

@@ -19,7 +19,7 @@ extern "C" {
 
 // hashtable node
 typedef struct _hashTableNode {
-    //BOOL fOccupied;     // FALSE = not occupied
+    BOOL fOccupied;
     CHL_KEY chlKey;
     CHL_VAL chlVal;
     struct _hashTableNode *pnext;
@@ -39,7 +39,7 @@ typedef struct _hashtable {
     CHL_KEYTYPE keyType;
     CHL_VALTYPE valType;
     BOOL fValIsInHeap;
-    HT_NODE **phtNodes;
+    HT_NODE *phtNodes;
     int nTableSize;
     HANDLE hMuAccess;
 

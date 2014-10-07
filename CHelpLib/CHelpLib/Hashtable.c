@@ -24,7 +24,7 @@ static DWORD _hashu(_In_ int tablesize, _In_ UINT key);
 static DWORD _hashs(_In_ int tablesize, _In_bytecount_c_(iKeySize) const BYTE *key, _In_ int iKeySize);
 static DWORD _hashsW(_In_ int tablesize, _In_bytecount_c_(iKeySize) const PUSHORT key, int iKeySize);
 
-static void _DeleteNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFreeVal);
+static void _ClearNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFreeVal);
 static HRESULT _UpdateNodeVal(HT_NODE *pnode, PVOID pvVal, CHL_VALTYPE valType, int iValSize);
 
 static BOOL _FindKeyInList(
@@ -218,7 +218,7 @@ HRESULT CHL_DsCreateHT(
         goto error_return;
     }
     
-    pnewtable->phtNodes = (HT_NODE**)calloc(1, newTableSize * sizeof(HT_NODE*));
+    pnewtable->phtNodes = (HT_NODE*)calloc(newTableSize, sizeof(HT_NODE));
     if(pnewtable->phtNodes == NULL)
     {
         logerr("%s(): calloc() ", __FUNCTION__);
@@ -258,7 +258,7 @@ HRESULT CHL_DsDestroyHT(_In_ PCHL_HTABLE phtable)
     CHL_KEYTYPE ktype;
     CHL_VALTYPE vtype;
     BOOL fInHeap;
-    HT_NODE **phtnodes = NULL;
+    HT_NODE *phtnodes = NULL;
     HT_NODE *pcurnode = NULL;
     HT_NODE *pnextnode = NULL;
 
@@ -284,11 +284,20 @@ HRESULT CHL_DsDestroyHT(_In_ PCHL_HTABLE phtable)
         fInHeap = phtable->fValIsInHeap;
         for(i = 0; i < maxNodes; ++i)
         {
-            pcurnode = phtnodes[i];
+            pcurnode = phtnodes[i].pnext;
+            if(phtnodes[i].fOccupied)
+            {
+                _ClearNode(ktype, vtype, &phtnodes[i], fInHeap);
+            }
+
             while(pcurnode)
             {
                 pnextnode = pcurnode->pnext;
-                _DeleteNode(ktype, vtype, pcurnode, fInHeap);
+                
+                ASSERT(pcurnode->fOccupied);
+                _ClearNode(ktype, vtype, pcurnode, fInHeap);
+                CHL_MmFree((PVOID*)&pcurnode);
+
                 pcurnode = pnextnode;
             }   
         }   
@@ -312,8 +321,9 @@ HRESULT CHL_DsInsertHT(
     _In_ int iValSize)
 {
     DWORD index;
-    HT_NODE *pnewnode = NULL;
-    
+    HT_NODE *pNodeAtHashedIndex = NULL;
+    HT_NODE *pNodeToInsertTo = NULL;
+
     BOOL fLocked = FALSE;
     
     CHL_KEYTYPE keyType;
@@ -321,105 +331,105 @@ HRESULT CHL_DsInsertHT(
     HRESULT hr = S_OK;
 
     ASSERT(phtable);
-    ASSERT(iValSize > 0);
     
     // validate parameters
     if(!phtable)
     {
         hr = E_INVALIDARG;
-        goto error_return;
+        goto done;
     }
 
-    // create a new hashtable node
-    if( (pnewnode = (HT_NODE*)malloc(sizeof(HT_NODE))) == NULL )
-    { 
-        logerr("CHL_DsInsertHT(): malloc() ");
-        hr = E_OUTOFMEMORY;
-        goto error_return;
-    }
-    
     keyType = phtable->keyType;
     if(iKeySize <= 0 && FAILED(_GetKeySize(pvkey, keyType, &iKeySize)))
     {
         logerr("%s(): Keysize unspecified or unable to determine.", __FUNCTION__);
         hr = E_FAIL;
-        goto error_return;
-    }
-
-    hr = _CopyKeyIn(&pnewnode->chlKey, keyType, pvkey, iKeySize);
-    if(FAILED(hr))
-    {
-        goto delete_newnode_return;
+        goto done;
     }
 
     if(iValSize <= 0 && FAILED(_GetValSize(pvVal, phtable->valType, &iValSize)))
     {
         logerr("%s(): Valsize unspecified or unable to determine.", __FUNCTION__);
         hr = E_FAIL;
-        goto error_return;
+        goto done;
     }
 
-    hr = _CopyValIn(&pnewnode->chlVal, phtable->valType, pvVal, iValSize);
-    if(FAILED(hr))
-    {
-        goto delete_newnode_return;
-    }
-
-    // insert into hashtable
     hr = CHL_GnOwnMutex(phtable->hMuAccess);
     if(FAILED(hr))
     {
-        goto error_return;
+        goto done;
     }
     fLocked = TRUE;
 
     ASSERT(phtable->nTableSize > 0);
-    index = _GetKeyHash(pvkey, keyType, pnewnode->chlKey.iKeySize, phtable->nTableSize);
-    
-    // verify that duplicate values are not inserted (same key and value)
-    if(phtable->phtNodes[index])
+    index = _GetKeyHash(pvkey, keyType, iKeySize, phtable->nTableSize);
+    pNodeAtHashedIndex = &phtable->phtNodes[index];
+
+    // Verify that duplicate values are not inserted (same key and value)
+    if(pNodeAtHashedIndex->fOccupied == FALSE)
     {
-        // We have the key hashing onto a index that is already populated
-        if(_IsDuplicateKey(&(phtable->phtNodes[index]->chlKey), pvkey, keyType, pnewnode->chlKey.iKeySize))
+        // Nothing at this index, just copy key:value into this
+        pNodeToInsertTo = &phtable->phtNodes[index];
+    }
+    // We have the key hashing onto a index that is already populated, check if key is duplicate
+    else if(!_IsDuplicateKey(&pNodeAtHashedIndex->chlKey, pvkey, keyType, pNodeAtHashedIndex->chlKey.iKeySize))
+    {
+        // Not a duplicate, so this is just a key collision. Attach to linked list.
+        // create a new hashtable node
+        hr = CHL_MmAlloc((PVOID*)&pNodeToInsertTo, sizeof(HT_NODE), NULL);
+        if(FAILED(hr))
         {
-            if(_IsDuplicateVal(&(phtable->phtNodes[index]->chlVal), pvVal, phtable->valType, pnewnode->chlVal.iValSize))
+            hr = E_OUTOFMEMORY;
+            goto done;
+        }
+    }
+    // It is a duplicate key
+    else
+    {
+        if(!_IsDuplicateVal(&pNodeAtHashedIndex->chlVal, pvVal, phtable->valType, pNodeAtHashedIndex->chlVal.iValSize))
+        {
+            // Same key but different value, just update node with new value
+            // NOTE: Old value will be lost!!
+            hr =_UpdateNodeVal(pNodeAtHashedIndex, pvVal, phtable->valType, iValSize);
+        }
+        goto done;
+    }
+
+    ASSERT(pNodeToInsertTo);
+
+    // Populate node
+    hr = _CopyKeyIn(&pNodeToInsertTo->chlKey, keyType, pvkey, iKeySize);
+    if(SUCCEEDED(hr))
+    {
+        hr = _CopyValIn(&pNodeToInsertTo->chlVal, phtable->valType, pvVal, iValSize);
+        if(SUCCEEDED(hr))
+        {
+            pNodeToInsertTo->fOccupied = TRUE;
+            if(pNodeToInsertTo != pNodeAtHashedIndex)
             {
-                // Both key and value are same
-                // Delete the newly created node and return
-                _DeleteNode(phtable->keyType, phtable->valType, pnewnode, phtable->fValIsInHeap);
-                goto done;
-            }
-            else
-            {
-                // Same key but different value, just update node with new value
-                // NOTE: Old value will be lost!!
-                if(!_UpdateNodeVal(phtable->phtNodes[index], pvVal, phtable->valType, pnewnode->chlVal.iValSize))
-                {
-                    hr = E_FAIL;
-                }
-                goto done;
+                // There was a key collision. Connect to head of linked list.
+                pNodeToInsertTo->pnext = pNodeAtHashedIndex->pnext;
+                pNodeAtHashedIndex->pnext = pNodeToInsertTo;
             }
         }
     }
-    
-    // connect to head
-    pnewnode->pnext = phtable->phtNodes[index];
-    phtable->phtNodes[index] = pnewnode;
+
+    if(FAILED(hr))
+    {
+        // Check if we have to free any newly allocated node
+        if((pNodeToInsertTo != pNodeAtHashedIndex) && (pNodeToInsertTo != NULL))
+        {
+            _ClearNode(phtable->keyType, phtable->valType, pNodeToInsertTo, phtable->fValIsInHeap);
+            CHL_MmFree((PVOID*)&pNodeToInsertTo);
+        }
+    }
     
 done:
-    ReleaseMutex(phtable->hMuAccess);
-    return hr;
-    
-delete_newnode_return:
-    _DeleteNode(phtable->keyType, phtable->valType, pnewnode, phtable->fValIsInHeap);
-    
-error_return:
     if(fLocked && !ReleaseMutex(phtable->hMuAccess))
     {
         logerr("CHL_DsInsertHT(): error_return mutex unlock ");
     }
     return hr;
-    
 }
 
 
@@ -474,10 +484,13 @@ HRESULT CHL_DsFindHT(
     }
 
     index = _GetKeyHash(pvkey, phtable->keyType, iKeySize, phtable->nTableSize);
-    
-    phtFoundNode = phtable->phtNodes[index];
-    if((phtFoundNode == NULL) || 
-        (_FindKeyInList(phtFoundNode, pvkey, iKeySize, phtable->keyType, &phtFoundNode, NULL) == FALSE))
+    if(!_FindKeyInList(
+        &phtable->phtNodes[index],
+        pvkey,
+        iKeySize,
+        phtable->keyType,
+        &phtFoundNode,
+        NULL))
     {
         hr = E_NOT_SET;
         goto not_found;
@@ -492,9 +505,9 @@ HRESULT CHL_DsFindHT(
         if(!fGetPointerOnly)
         {
             hr = _EnsureSufficientValBuf(
-                        &phtFoundNode->chlVal,
-                        (piValSize && (*piValSize > 0)) ? *piValSize : sizeof(PVOID),
-                        piValSize);
+                    &phtFoundNode->chlVal,
+                    (piValSize && (*piValSize > 0)) ? *piValSize : sizeof(PVOID),
+                    piValSize);
         }
 
         if(SUCCEEDED(hr))
@@ -502,6 +515,12 @@ HRESULT CHL_DsFindHT(
             hr = _CopyValOut(&phtFoundNode->chlVal, phtable->valType, pvVal, fGetPointerOnly);
         }
     }
+
+    if(SUCCEEDED(hr) && (piValSize != NULL))
+    {
+        *piValSize = phtFoundNode->chlVal.iValSize;
+    }
+
     ReleaseMutex(phtable->hMuAccess);
     return hr;
     
@@ -542,10 +561,13 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
     }
     index = _GetKeyHash(pvkey, phtable->keyType, iKeySize, phtable->nTableSize);
     
-    phtFoundNode = phtable->phtNodes[index];
-    if(!phtFoundNode ||
-        !_FindKeyInList(phtFoundNode, pvkey, iKeySize, phtable->keyType, 
-            &phtFoundNode, &phtPrevFound))
+    if(!_FindKeyInList(
+        &phtable->phtNodes[index], 
+        pvkey, 
+        iKeySize, 
+        phtable->keyType, 
+        &phtFoundNode, 
+        &phtPrevFound))
     {
         hr = E_NOT_SET;
         goto error_return;
@@ -553,17 +575,19 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
 
     ASSERT(phtFoundNode);
 
-    // re-arrange pnext pointers
-    if(phtPrevFound)
+    if(phtFoundNode == &phtable->phtNodes[index])
     {
-        phtPrevFound->pnext = phtFoundNode->pnext;
+        // Node in the main table is to be removed
+        _ClearNode(phtable->keyType, phtable->valType, phtFoundNode, phtable->fValIsInHeap);
+        phtFoundNode->fOccupied = FALSE;
     }
     else
     {
-        phtable->phtNodes[index] = NULL;
+        ASSERT(phtPrevFound);
+        phtPrevFound->pnext = phtFoundNode->pnext;
+        _ClearNode(phtable->keyType, phtable->valType, phtFoundNode, phtable->fValIsInHeap);
+        CHL_MmFree((PVOID*)&phtFoundNode);
     }
-
-    _DeleteNode(phtable->keyType, phtable->valType, phtFoundNode, phtable->fValIsInHeap);
     
     ReleaseMutex(phtable->hMuAccess);
     return hr;
@@ -624,10 +648,10 @@ HRESULT CHL_DsGetNextHT(
     {
         for(indexIterator = 0; indexIterator < phtable->nTableSize; ++indexIterator)
         {
-            if(phtable->phtNodes[indexIterator])
+            if(phtable->phtNodes[indexIterator].fOccupied)
             {
                 iCurIndex = indexIterator;
-                pCurNode = phtable->phtNodes[indexIterator];
+                pCurNode = &phtable->phtNodes[indexIterator];
                 pItr->opType = HT_ITR_NEXT;
                 break;  // out of for loop
             }
@@ -652,10 +676,10 @@ HRESULT CHL_DsGetNextHT(
         {
             for(indexIterator = iCurIndex + 1; indexIterator < phtable->nTableSize; ++indexIterator)
             {
-                if(phtable->phtNodes[indexIterator])
+                if(phtable->phtNodes[indexIterator].fOccupied)
                 {
                     iCurIndex = indexIterator;
-                    pCurNode = phtable->phtNodes[indexIterator];
+                    pCurNode = &phtable->phtNodes[indexIterator];
                     pItr->opType = HT_ITR_NEXT;
                     break;  // out of for loop
                 }
@@ -720,6 +744,16 @@ HRESULT CHL_DsGetNextHT(
     {
         pItr->nCurIndex = iCurIndex;
         pItr->phtCurNodeInList = pCurNode;
+
+        if(piKeySize != NULL)
+        {
+            *piKeySize = pCurNode->chlKey.iKeySize;
+        }
+
+        if(piValSize != NULL)
+        {
+            *piValSize = pCurNode->chlVal.iValSize;
+        }
     }
 
 done:
@@ -829,26 +863,23 @@ void CHL_DsDumpHT(_In_ PCHL_HTABLE phtable)
     
 }// CHL_DsDumpHT
 
-void _DeleteNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFreeVal)
+void _ClearNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFreeVal)
 {
     ASSERT(pnode);
-
-    // Assume mutex is in our ownership
-    
-    _DeleteKey(&pnode->chlKey, ktype);
 
     if(vtype == CHL_VT_POINTER && fFreeVal)
     {
         free(pnode->chlVal.valDef.pvPtr);
     }
-
+        
+    _DeleteKey(&pnode->chlKey, ktype);
     _DeleteVal(&pnode->chlVal, vtype);
     
-    DBG_MEMSET(pnode, sizeof(HT_NODE));
-    free(pnode);
-    
+    pnode->fOccupied = FALSE;
+    pnode->pnext = NULL;
+
     return;
-}// _DeleteNode()
+}// _ClearNode()
 
 HRESULT _UpdateNodeVal(HT_NODE *pnode, PVOID pvVal, CHL_VALTYPE valType, int iValSize)
 {
@@ -904,20 +935,14 @@ BOOL _FindKeyInList(
 
     ASSERT(phtFoundNode);
     
-    pcurNode = pFirstHTNode;
-    
-    // In case of collisions, find the key in the sibling linked list
+    *phtFoundNode = NULL;
 
+    pcurNode = pFirstHTNode;
     while(pcurNode)
     {
-        if(pcurNode->chlKey.iKeySize != iKeySize)
-        {
-            prevNode = pcurNode;
-            pcurNode = pcurNode->pnext;
-            continue;
-        }
-
-        if(_IsDuplicateKey(&pcurNode->chlKey, pvkey, keyType, pcurNode->chlKey.iKeySize))
+        if(pcurNode->fOccupied &&
+            (pcurNode->chlKey.iKeySize == iKeySize) && 
+            _IsDuplicateKey(&pcurNode->chlKey, pvkey, keyType, pcurNode->chlKey.iKeySize))
         {
             break;
         }
@@ -926,18 +951,12 @@ BOOL _FindKeyInList(
         pcurNode = pcurNode->pnext;
     }
 
-    if(pcurNode)
-    {
-        if(phtPrevFound) *phtPrevFound = prevNode;
-        *phtFoundNode = pcurNode;
-        return TRUE;
-    }
-
+    *phtFoundNode = pcurNode;
     if(phtPrevFound)
     {
-        *phtPrevFound = NULL;
+        *phtPrevFound = prevNode;
     }
-    *phtFoundNode = NULL;
-    return FALSE;
+
+    return (pcurNode != NULL);
 }
 
