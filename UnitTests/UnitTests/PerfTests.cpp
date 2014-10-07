@@ -105,11 +105,13 @@ BOOL testHastable_NumNum(int nEntries, BOOL fRandomize)
     CHL_HTABLE *phtable = NULL;
     int counter;
 
-    if(FAILED(CHL_DsCreateHT(&phtable, 10, CHL_KT_UINT32, CHL_VT_UINT32, FALSE)))
+    if(FAILED(CHL_DsCreateHT(&phtable, nEntries, CHL_KT_UINT32, CHL_VT_UINT32, FALSE)))
         goto error_return;
 
     if(fRandomize)
     {
+        // TODO: This isn't complete
+
         if((keys = (DWORD*)malloc(sizeof(DWORD) * nEntries)) == NULL)
             goto error_return;
 

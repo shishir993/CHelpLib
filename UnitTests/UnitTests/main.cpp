@@ -40,17 +40,17 @@ int main()
     success &= ExecFuncTestsHT();
 
     //OutputDebugString(L"Starting perf tests on CHelpLib.dll");
-    //doPerfTests();
+    doPerfTests();
 
     //doSysCallTimingTests();
     //rdtsc_Query();
     //rdtscBusiness();
     
     // Test linked list
-    ExecFuncTestsLL();
+    //ExecFuncTestsLL();
 
-    fTestCreateFileWithSize();
-    vTestFileMapping();
+    //fTestCreateFileWithSize();
+    //vTestFileMapping();
     
     success = success & SUCCEEDED(QueueRunTests());
 
