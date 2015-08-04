@@ -33,7 +33,7 @@ typedef struct _LinkedList {
     CHL_VALTYPE valType;
     PLLNODE pHead;
     PLLNODE pTail;
-    HANDLE hMuAccess;
+	CRITICAL_SECTION csLock;
 
     // Access methods
     HRESULT (*Insert)(struct _LinkedList* pLList, PCVOID pvVal, int iValSize);

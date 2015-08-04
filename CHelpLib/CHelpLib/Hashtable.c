@@ -6,7 +6,6 @@
 #define HT_ITR_FIRST    0xdeedbeed
 #define HT_ITR_NEXT     0xabcddcba
 
-#define MUTEX_NAME_HT   (TEXT("CHL_MUTEX_HT"))
 
 /* Prime numbers from 
  * https://en.wikipedia.org/wiki/List_of_prime_numbers#Centered_heptagonal_primes
@@ -172,9 +171,6 @@ HRESULT CHL_DsCreateHT(
 {   
     int newTableSize = 0;
     PCHL_HTABLE pnewtable = NULL;
-    WCHAR wsMutexName[32];
-
-    unsigned int uiRand;
 
     HRESULT hr = S_OK;
 
@@ -187,15 +183,6 @@ HRESULT CHL_DsCreateHT(
         hr = E_INVALIDARG;
         goto error_return;
     }
-    
-    // Create a unique number to be appended to the mutex name
-    if( rand_s(&uiRand) != 0 )
-    {
-        logerr("Unable to get a random number");
-        hr = E_FAIL;
-        goto error_return;
-    }
-    swprintf_s(wsMutexName, 32, L"%s_%08X", MUTEX_NAME_HT, uiRand);
 
     // 
     newTableSize = hashSizes[CHL_DsGetNearestSizeIndexHT(nEstEntries)];
@@ -211,12 +198,7 @@ HRESULT CHL_DsCreateHT(
     pnewtable->keyType = keyType;
     pnewtable->valType = valType;
 
-    pnewtable->hMuAccess = CreateMutex( NULL, FALSE, wsMutexName);
-    if(pnewtable->hMuAccess == NULL)
-    {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        goto error_return;
-    }
+	InitializeCriticalSection(&pnewtable->csLock);
     
     pnewtable->phtNodes = (HT_NODE*)calloc(newTableSize, sizeof(HT_NODE));
     if(pnewtable->phtNodes == NULL)
@@ -269,11 +251,7 @@ HRESULT CHL_DsDestroyHT(_In_ PCHL_HTABLE phtable)
         goto done;  // hashtable isn't destroyed
     }
     
-    hr = CHL_GnOwnMutex(phtable->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto done;  // hashtable isn't destroyed
-    }
+	EnterCriticalSection(&phtable->csLock);
 
     phtnodes = phtable->phtNodes;
     if(phtnodes != NULL)
@@ -302,9 +280,9 @@ HRESULT CHL_DsDestroyHT(_In_ PCHL_HTABLE phtable)
             }   
         }   
     }
-    
-    //ReleaseMutex(phtable->hMuAccess); // ToDo: should we release or not??
-    CloseHandle(phtable->hMuAccess);
+
+	LeaveCriticalSection(&phtable->csLock);
+	DeleteCriticalSection(&phtable->csLock);
 
     DBG_MEMSET(phtable, sizeof(CHL_HTABLE));
     free(phtable);
@@ -354,11 +332,7 @@ HRESULT CHL_DsInsertHT(
         goto done;
     }
 
-    hr = CHL_GnOwnMutex(phtable->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto done;
-    }
+	EnterCriticalSection(&phtable->csLock);
     fLocked = TRUE;
 
     ASSERT(phtable->nTableSize > 0);
@@ -425,9 +399,9 @@ HRESULT CHL_DsInsertHT(
     }
     
 done:
-    if(fLocked && !ReleaseMutex(phtable->hMuAccess))
+    if(fLocked)
     {
-        logerr("CHL_DsInsertHT(): error_return mutex unlock ");
+		LeaveCriticalSection(&phtable->csLock);
     }
     return hr;
 }
@@ -467,11 +441,7 @@ HRESULT CHL_DsFindHT(
         goto not_found;
     }
 
-    hr = CHL_GnOwnMutex(phtable->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto not_found;
-    }
+	EnterCriticalSection(&phtable->csLock);
     fLocked = TRUE;
     
     ASSERT(phtable->nTableSize > 0);
@@ -521,13 +491,15 @@ HRESULT CHL_DsFindHT(
         *piValSize = phtFoundNode->chlVal.iValSize;
     }
 
-    ReleaseMutex(phtable->hMuAccess);
+	LeaveCriticalSection(&phtable->csLock);
     return hr;
     
 not_found:
     if(piValSize) *piValSize = 0;
-    if(fLocked && !ReleaseMutex(phtable->hMuAccess))
-        logerr("CHL_DsFindHT(): not_found mutex unlock ");
+	if (fLocked)
+	{
+		LeaveCriticalSection(&phtable->csLock);
+	}
     return hr;
     
 }
@@ -544,11 +516,7 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
 
     ASSERT(phtable && pvkey);
     
-    hr = CHL_GnOwnMutex(phtable->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto error_return;
-    }
+	EnterCriticalSection(&phtable->csLock);
     fLocked = TRUE;
     
     ASSERT(phtable->nTableSize > 0);
@@ -589,12 +557,14 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
         CHL_MmFree((PVOID*)&phtFoundNode);
     }
     
-    ReleaseMutex(phtable->hMuAccess);
+	LeaveCriticalSection(&phtable->csLock);
     return hr;
     
 error_return:
-    if(fLocked && !ReleaseMutex(phtable->hMuAccess))
-        logerr("CHL_DsRemoveHT(): error_return mutex unlock ");
+	if (fLocked)
+	{
+		LeaveCriticalSection(&phtable->csLock);
+	}
     return hr;
     
 }
@@ -623,7 +593,6 @@ HRESULT CHL_DsGetNextHT(
 {
     HRESULT hr;
     int indexIterator;
-    BOOL fLocked = FALSE;
 
     HT_NODE* pCurNode = NULL;
     int iCurIndex = 0;
@@ -635,12 +604,7 @@ HRESULT CHL_DsGetNextHT(
         return E_INVALIDARG;
     }
 
-    hr = CHL_GnOwnMutex(phtable->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto done;
-    }
-    fLocked = TRUE;
+	EnterCriticalSection(&phtable->csLock);
 
     // Trivial check to see if iterator was initialized or not
     hr = S_OK;
@@ -756,9 +720,7 @@ HRESULT CHL_DsGetNextHT(
         }
     }
 
-done:
-    if(fLocked && !ReleaseMutex(phtable->hMuAccess))
-        logerr("%s(): error_return mutex unlock ", __FUNCTIONW__);
+	LeaveCriticalSection(&phtable->csLock);
     return hr;
 }
 
@@ -794,8 +756,7 @@ void CHL_DsDumpHT(_In_ PCHL_HTABLE phtable)
     //keyType = phtable->keyType;
     //valType = phtable->valType;
     //
-    //if(FAILED(CHL_GnOwnMutex(phtable->hMuAccess)))
-    //    goto done;
+	//EnterCriticalSection(&phtable->csLock);
     //fLocked = TRUE;
     //
     //phtNodes = phtable->phtNodes;
@@ -857,8 +818,8 @@ void CHL_DsDumpHT(_In_ PCHL_HTABLE phtable)
     //printf("Occupied       : %d\n", nNodes);
     //    
     //done:
-    //if(fLocked && !ReleaseMutex(phtable->hMuAccess))
-    //    logerr("CHL_DsDumpHT(): mutex unlock ");  
+    //if(fLocked)
+	//	LeaveCriticalSection(&phtable->csLock);
     //return;
     
 }// CHL_DsDumpHT

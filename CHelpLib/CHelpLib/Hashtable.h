@@ -41,7 +41,7 @@ typedef struct _hashtable {
     BOOL fValIsInHeap;
     HT_NODE *phtNodes;
     int nTableSize;
-    HANDLE hMuAccess;
+	CRITICAL_SECTION csLock;
 
     // Access methods
     HRESULT (*Destroy)(struct _hashtable* phtable);

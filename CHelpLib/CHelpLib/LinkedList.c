@@ -20,9 +20,6 @@ static void _FreeNodeMem(PLLNODE pnode, CHL_VALTYPE valType, BOOL fFreeValMem);
 
 HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_opt_ int nEstEntries)
 {
-    unsigned int uiRand;
-    WCHAR wsMutexName[32];
-
     PCHL_LLIST pListLocal = NULL;
 
     HRESULT hr = S_OK;
@@ -34,15 +31,6 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_
         hr = E_INVALIDARG;
         goto error_return;
     }
-    
-    // Create a unique number to be appended to the mutex name
-    if( rand_s(&uiRand) != 0 )
-    {
-        logerr("Unable to get a random number");
-        hr = E_FAIL;
-        goto error_return;
-    }
-    swprintf_s(wsMutexName, _countof(wsMutexName), L"%s_%08X", MUTEX_NAME_LL, uiRand);
 
     hr = CHL_MmAlloc((PVOID*)&pListLocal, sizeof(CHL_LLIST), NULL);
     if(FAILED(hr))
@@ -54,12 +42,7 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_
     // Populate members
     pListLocal->valType = valType;
     pListLocal->nMaxNodes = nEstEntries;
-    pListLocal->hMuAccess = CreateMutex(NULL, FALSE, wsMutexName);
-    if(pListLocal->hMuAccess == NULL)
-    {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        goto error_return;
-    }
+	InitializeCriticalSection(&pListLocal->csLock);
 
     pListLocal->Insert = CHL_DsInsertLL;
     pListLocal->Remove = CHL_DsRemoveLL;
@@ -115,18 +98,14 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
         goto error_return;
     }
 
-    hr = CHL_GnOwnMutex(pLList->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto error_return;
-    }
+	EnterCriticalSection(&pLList->csLock);
 
     fMutexLocked = TRUE;
 
     _InsertNode(pLList, pNewNode);
     ++(pLList->nCurNodes);
 
-    ReleaseMutex(pLList->hMuAccess);
+	LeaveCriticalSection(&pLList->csLock);
     return hr;
 
 error_return:
@@ -135,9 +114,9 @@ error_return:
         CHL_MmFree((PVOID*)&pNewNode);
     }
 
-    if(fMutexLocked && !ReleaseMutex(pLList->hMuAccess))
+    if(fMutexLocked)
     {
-        logerr("%s(): error_return mutex unlock", __FUNCTION__);
+		LeaveCriticalSection(&pLList->csLock);
     }
     return hr;
 }
@@ -161,11 +140,7 @@ HRESULT CHL_DsRemoveLL(
         goto error_return;
     }
 
-    hr = CHL_GnOwnMutex(pLList->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto error_return;
-    }
+	EnterCriticalSection(&pLList->csLock);
 
     fMutexLocked = TRUE;
 
@@ -193,13 +168,13 @@ HRESULT CHL_DsRemoveLL(
         pCurNode = pCurNode->pright;
     }
 
-    ReleaseMutex(pLList->hMuAccess);
+	LeaveCriticalSection(&pLList->csLock);
     return hr;
 
 error_return:
-    if(fMutexLocked && !ReleaseMutex(pLList->hMuAccess))
+    if(fMutexLocked)
     {
-        logerr("%s(): error_return mutex unlock", __FUNCTION__);
+		LeaveCriticalSection(&pLList->csLock);
     }
     return hr;
 }
@@ -228,11 +203,7 @@ HRESULT CHL_DsRemoveAtLL(
         goto error_return;
     }
 
-    hr = CHL_GnOwnMutex(pLList->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto error_return;
-    }
+	EnterCriticalSection(&pLList->csLock);
 
     fMutexLocked = TRUE;
 
@@ -272,13 +243,13 @@ HRESULT CHL_DsRemoveAtLL(
         _FreeNodeMem(pCurNode, pLList->valType, (!pvValOut || !fGetPointerOnly));
     }
 
-    ReleaseMutex(pLList->hMuAccess);
+	LeaveCriticalSection(&pLList->csLock);
     return hr;
 
 error_return:
-    if(fMutexLocked && !ReleaseMutex(pLList->hMuAccess))
+    if(fMutexLocked)
     {
-        logerr("%s(): error_return mutex unlock", __FUNCTION__);
+		LeaveCriticalSection(&pLList->csLock);
     }
     return hr;
 }
@@ -300,11 +271,7 @@ HRESULT CHL_DsPeekAtLL(
         goto error_return;
     }
 
-    hr = CHL_GnOwnMutex(pLList->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto error_return;
-    }
+	EnterCriticalSection(&pLList->csLock);
     fMutexLocked = TRUE;
 
     hr = E_NOT_SET; // Start with this, set to S_OK if node is found
@@ -354,13 +321,13 @@ HRESULT CHL_DsPeekAtLL(
         }
     }
 
-    ReleaseMutex(pLList->hMuAccess);
+	LeaveCriticalSection(&pLList->csLock);
     return hr;
 
 error_return:
-    if(fMutexLocked && !ReleaseMutex(pLList->hMuAccess))
+    if(fMutexLocked)
     {
-        logerr("%s(): error_return mutex unlock", __FUNCTION__);
+		LeaveCriticalSection(&pLList->csLock);
     }
     return hr;
 }
@@ -383,11 +350,7 @@ HRESULT CHL_DsFindLL(
         goto error_return;
     }
 
-    hr = CHL_GnOwnMutex(pLList->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto error_return;
-    }
+	EnterCriticalSection(&pLList->csLock);
 
     fMutexLocked = TRUE;
 
@@ -405,13 +368,13 @@ HRESULT CHL_DsFindLL(
         pCurNode = pCurNode->pright;
     }
 
-    ReleaseMutex(pLList->hMuAccess);
+	LeaveCriticalSection(&pLList->csLock);
     return hr;
 
 error_return:
     if(fMutexLocked)
     {
-        ReleaseMutex(pLList->hMuAccess);    
+		LeaveCriticalSection(&pLList->csLock);
     }
     return hr;
 }
@@ -428,11 +391,7 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
         goto done;
     }
 
-    hr = CHL_GnOwnMutex(pLList->hMuAccess);
-    if(FAILED(hr))
-    {
-        goto done;
-    }
+	EnterCriticalSection(&pLList->csLock);
 
     valType = pLList->valType;
 
@@ -447,9 +406,8 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
         pCurNode = pNextNode;
     }
 
-    // Don't release mutex because no other thread must be able to use
-    // this linked list now.
-    CloseHandle(pLList->hMuAccess);
+	LeaveCriticalSection(&pLList->csLock);
+	DeleteCriticalSection(&pLList->csLock);
     CHL_MmFree((PVOID*)&pLList);
     
 done:
