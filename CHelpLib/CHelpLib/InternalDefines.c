@@ -7,7 +7,7 @@
 //
 
 #include "CommonInclude.h"
-#include "Defines.h"
+#include "InternalDefines.h"
 #include "MemFunctions.h"
 
 #pragma region KeyFunctions
