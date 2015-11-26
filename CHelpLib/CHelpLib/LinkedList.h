@@ -1,7 +1,7 @@
 
 // LinkedList.h
 // Contains functions that implement a linked list data structure
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      04/05/14 Initial version
 //      09/09/14 Refactor to store defs in individual headers.
@@ -15,7 +15,7 @@
 extern "C" {  
 #endif
 
-#include "CommonInclude.h"
+#include "Defines.h"
 
 // Custom error codes
 #define CHLE_LLIST_EINVAL   17100

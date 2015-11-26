@@ -1,7 +1,7 @@
 
 // Assert.h
 // Contains functions that provides the ASSERT() service
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      06/23/13 Initial version
 //

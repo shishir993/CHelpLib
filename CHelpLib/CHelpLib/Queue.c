@@ -1,4 +1,5 @@
 
+#include "InternalDefines.h"
 #include "Queue.h"
 
 HRESULT CHL_DsCreateQ(_Out_ PCHL_QUEUE *ppQueueObj, _In_ CHL_VALTYPE valType, _In_opt_ int nEstimatedItems)

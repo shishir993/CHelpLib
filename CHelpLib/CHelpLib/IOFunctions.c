@@ -1,12 +1,13 @@
 
 // IOFunctions.cpp
 // Contains functions that provide IO operation services
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      06/23/13 Initial version
 //      09/12/14 Naming convention modifications
 //
 
+#include "InternalDefines.h"
 #include "IOFunctions.h"
 
 // fChlIoReadLineFromStdin()
@@ -93,7 +94,7 @@ HRESULT CHL_IoCreateFileWithSize(_Out_ PHANDLE phFile, _In_z_ PWCHAR pszFilepath
             goto error_return;
         }
 
-        if(dwBytesWritten != iSizeBytes)
+        if(dwBytesWritten != (DWORD)iSizeBytes)
         {
             hr = E_FAIL;
             goto error_return;

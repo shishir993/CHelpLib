@@ -1,15 +1,18 @@
 
 // General.c
 // Contains general helper functions
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      01/20/14 Initial version
 //      09/12/14 Naming convention modifications
 //
 
+#include "InternalDefines.h"
 #include "General.h"
 
 #define MAPVIEW_NAME    L"Chl_FileMapViewName"
+
+#if !defined(_WIN64)
 
 // CHL_ChlGnIsOverflowINT()
 // Given two integers, returns TRUE if adding them results
@@ -50,6 +53,8 @@ BOOL CHL_GnIsOverflowUINT(_In_ UINT a, _In_ UINT b)
 ret_overflow:
     return TRUE;
 }
+
+#endif // _WIN64
 
 // Create a memory mapping given a handle to a file and return
 // return the handle to the memory mapped area.

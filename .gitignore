@@ -1,4 +1,7 @@
 *.opensdf
+*.tlog
+*.lastbuildstate
+*.log
 CHelpLib/*.sdf
 CHelpLib/*.suo
 CHelpLib/ipch/*
@@ -12,6 +15,12 @@ CHelpLib/CHelpLib/Debug
 CHelpLib/CHelpLib/Release/*
 CHelpLib/CHelpLib/Release
 CHelpLib/CHelpLib/*.user
+
+CHelpLib/Tests/Debug/*
+CHelpLib/Tests/Debug
+CHelpLib/Tests/Release/*
+CHelpLib/Tests/Release
+CHelpLib/Tests/*.user
 
 UnitTests/*.sdf
 UnitTests/*.suo

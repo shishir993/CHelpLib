@@ -1,7 +1,7 @@
 
 // Helpers.h
 // Contains handy helper defines and functions
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      06/23/13 Initial version
 //

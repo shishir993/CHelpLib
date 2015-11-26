@@ -95,7 +95,7 @@
     <ClCompile Include="Queue.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Defines.c">
+    <ClCompile Include="InternalDefines.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

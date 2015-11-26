@@ -1,7 +1,7 @@
 
 // CHelpLibDllMain.cpp
 // Contains the DllMain() function for CHelpLib DLL
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      06/23/13 Initial version
 //

@@ -1,6 +1,6 @@
 // CHelpLib.h
 // Exported symbols from CHelpLib DLL
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      Unknown history!
 //      09/09/14 Refactor to store defs in individual headers.
@@ -14,7 +14,7 @@
 extern "C" {  
 #endif
 
-#include "CommonInclude.h"
+#include "Defines.h"
 #include "MemFunctions.h"
 
 // hashtable node

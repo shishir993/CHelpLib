@@ -1,7 +1,7 @@
 
 
+#include "InternalDefines.h"
 #include "Hashtable.h"
-#include "General.h"
 
 #define HT_ITR_FIRST    0xdeedbeed
 #define HT_ITR_NEXT     0xabcddcba
@@ -12,10 +12,10 @@
  * and Carol primes for 16769023
  * and Circular primes for 319993, 919393
  */
-unsigned int hashSizes[] = {43,     197,    547,    1471,
-                            4663,   8233,   11173,  14561,  
-                            20483,  93563,  319993, 919393,
-                            16769023};
+int s_hashSizes[] = {43,     197,    547,    1471,
+                    4663,   8233,   11173,  14561,  
+                    20483,  93563,  319993, 919393,
+                    16769023};
 
 // File-local Functions
 static DWORD _hashi(_In_ int tablesize, _In_ int key);
@@ -144,7 +144,7 @@ DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize,
         default:
         {
             logerr("%s(): Invalid keyType %d", __FUNCTION__, keyType);
-            ASSERT(FALSE);
+            ASSERT(!L"Invalid keytype");
             break;
         }
     }
@@ -185,7 +185,7 @@ HRESULT CHL_DsCreateHT(
     }
 
     // 
-    newTableSize = hashSizes[CHL_DsGetNearestSizeIndexHT(nEstEntries)];
+    newTableSize = s_hashSizes[CHL_DsGetNearestSizeIndexHT(nEstEntries)];
     if((pnewtable = (CHL_HTABLE*)malloc(sizeof(CHL_HTABLE))) == NULL)
     {
         logerr("%s(): malloc() ", __FUNCTION__);
@@ -416,7 +416,7 @@ int exhandler(int excode, LPEXCEPTION_POINTERS exptrs)
     DBG_UNREFERENCED_LOCAL_VARIABLE(pexrec);
     DBG_UNREFERENCED_LOCAL_VARIABLE(pcontext);
 
-    __asm int 3
+    DebugBreak();
     return 0;
 }
 
@@ -727,7 +727,7 @@ HRESULT CHL_DsGetNextHT(
 int CHL_DsGetNearestSizeIndexHT(_In_ int maxNumberOfEntries)
 {
     int index = 0;
-    while((index < (_countof(hashSizes) - 1)) && (maxNumberOfEntries > hashSizes[index]))
+    while((index < (_countof(s_hashSizes) - 1)) && (maxNumberOfEntries > s_hashSizes[index]))
     {
         ++index;
     }

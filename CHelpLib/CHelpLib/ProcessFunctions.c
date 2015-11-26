@@ -1,12 +1,13 @@
 
 // ProcessFunctions.cpp
 // Contains functions that provide help Process related tasks
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      03/25/14 Initial version
 //      09/12/14 Naming convention modifications
 //
 
+#include "InternalDefines.h"
 #include "ProcessFunctions.h"
 
 // GetProcNameFromID()

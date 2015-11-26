@@ -1,7 +1,7 @@
 
 // ProcessFunctions.h
 // Contains functions that provide IO operation services
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      03/25/14 Initial version
 //      09/09/14 Refactor to store defs in individual headers.
@@ -15,7 +15,7 @@
 extern "C" {  
 #endif
 
-#include "CommonInclude.h"
+#include "Defines.h"
 
 // Custom error codes
 #define CHLE_PROC_DOSHEADER     17150

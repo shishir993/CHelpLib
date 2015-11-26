@@ -1,11 +1,12 @@
 
 // GuiFunctions.cpp
 // Contains functions that provide help in Gui code
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      03/25/14 Initial version
 //
 
+#include "InternalDefines.h"
 #include "GuiFunctions.h"
 
 // DoCenterWindow()

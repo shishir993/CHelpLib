@@ -1,10 +1,12 @@
 
 // CommonInclude.h
 // Contains common includes, defs and typedefs
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      06/23/13 Initial version
 //      09/18/2014 Standardize keys and value types
+//		08/04/2015 Make individual headers usable by clients
+//
 
 #ifndef _COMMONINCLUDE_H
 #define _COMMONINCLUDE_H
@@ -13,8 +15,6 @@
 extern "C" {  
 #endif
 
-#define _CRT_RAND_S
-#include <stdlib.h>
 #include <stdio.h>
 #include <Windows.h>
 #include <Psapi.h>
@@ -22,12 +22,7 @@ extern "C" {
 #include <malloc.h>
 #include <errno.h>
 #include <sal.h>
-
-#include "Assert.h"
-#include "DbgHelpers.h"
-#include "Helpers.h"
-#include "Defines.h"
-#include "InternalDefines.h"
+#include <Commctrl.h>
 
 #ifdef __cplusplus
 }

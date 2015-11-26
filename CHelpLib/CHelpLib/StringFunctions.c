@@ -1,6 +1,6 @@
 // StringFunctions.cpp
 // Contains functions that provide string operations
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      08/10/13 Initial version
 //      09/09/14 Refactor to store defs in individual headers.

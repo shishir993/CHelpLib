@@ -1,7 +1,7 @@
 
 // Defines.h
 // Contains common #defines, typedefs and data structures
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      09/20/14 Standardize API experience
 //

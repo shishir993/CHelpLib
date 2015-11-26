@@ -1,15 +1,16 @@
 // LinkedList.cpp
 // Contains functions that implement a linked list data structure
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      04/05/14 Initial version
 //      04/10/14 Changed to insert at end logic
 //      09/12/14 Naming convention modifications
 //
 
-#include "LinkedList.h"
+#include "InternalDefines.h"
 #include "General.h"
 #include "MemFunctions.h"
+#include "LinkedList.h"
 
 #define MUTEX_NAME_LL   (TEXT("CHL_MUTEX_LL"))
 

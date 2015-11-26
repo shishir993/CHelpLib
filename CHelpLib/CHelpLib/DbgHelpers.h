@@ -1,7 +1,7 @@
 
 // DbgHelpers.h
 // Defines and functions to help in debugging
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      06/23/13 Initial version
 //
@@ -18,9 +18,8 @@ extern "C" {
  * Modified/additions to my liking
  */
 
-#define clean_errno() (errno == 0 ? "None" : strerror(errno))
 #define logtrace(M, ...) fprintf(stderr, "[TRACE]  " M "\n", ##__VA_ARGS__)
-#define logerr(M, ...)  fprintf(stderr, "[ERROR] " M "(errno: %s)\n", ##__VA_ARGS__, clean_errno())
+#define logerr(M, ...)  fprintf(stderr, "[ERROR] " M "(lastError: %u)\n", ##__VA_ARGS__, GetLastError())
 #define logwarn(M, ...) fprintf(stderr, "[WARN]  " M "\n", ##__VA_ARGS__)
 #define loginfo(M, ...) fprintf(stderr, "[INFO]  " M "\n", ##__VA_ARGS__)
 

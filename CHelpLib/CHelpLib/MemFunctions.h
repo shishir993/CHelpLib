@@ -1,7 +1,7 @@
 
 // MemFunctions.h
 // Contains functions that provide memory alloc/dealloc services
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      06/23/13 Initial version
 //      09/09/14 Refactor to store defs in individual headers.
@@ -15,7 +15,7 @@
 extern "C" {  
 #endif
 
-#include "CommonInclude.h"
+#include "Defines.h"
 
 // Custom error codes
 #define CHLE_MEM_ENOMEM     17000

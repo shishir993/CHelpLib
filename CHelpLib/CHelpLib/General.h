@@ -1,7 +1,7 @@
 
 // General.h
 // Contains general helper functions
-// Shishir Bhat (http://www.shishirprasad.net)
+// Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      01/20/14 Initial version
 //      09/12/14 Naming convention modifications
@@ -14,13 +14,18 @@
 extern "C" {  
 #endif
 
-#include "CommonInclude.h"
+#include "Defines.h"
 
 // -------------------------------------------
 // Functions exported
 
+#if !defined(_WIN64)
+
 DllExpImp BOOL CHL_GnIsOverflowINT(_In_ int a, _In_ int b);
 DllExpImp BOOL CHL_GnIsOverflowUINT(_In_ UINT a, _In_ UINT b);
+
+#endif // _WIN64
+
 DllExpImp HRESULT CHL_GnCreateMemMapOfFile(
     _In_ HANDLE hFile, 
     _In_ DWORD dwReqProtection, 
