@@ -178,7 +178,7 @@ BOOL _IsDuplicateKey(_In_ PCHL_KEY pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL
         {
             if((iKeySize > 0) && (pvRightKey != NULL))
             {
-                fMatch = strncmp(pChlLeftKey->keyDef.pszKey, (PCSTR)pvRightKey, iKeySize) == 0;
+                fMatch = strncmp(pChlLeftKey->keyDef.pszKey, (PCSTR)pvRightKey, (iKeySize / sizeof(char))) == 0;
             }
             else
             {
@@ -191,7 +191,7 @@ BOOL _IsDuplicateKey(_In_ PCHL_KEY pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL
         {
             if(iKeySize > 0)
             {
-                fMatch = wcsncmp(pChlLeftKey->keyDef.pwszKey, (PCWSTR)pvRightKey, iKeySize) == 0;   
+                fMatch = wcsncmp(pChlLeftKey->keyDef.pwszKey, (PCWSTR)pvRightKey, (iKeySize / sizeof(WCHAR))) == 0;
             }
             else
             {
@@ -262,7 +262,7 @@ HRESULT _GetKeySize(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _Inout_ PINT piK
 
         case CHL_KT_STRING:
         {
-            *piKeySize = strlen((PCSTR)pvKey) + sizeof(char);
+            *piKeySize = (strlen((PCSTR)pvKey) + 1) * sizeof(char);
             break;
         }
 
@@ -497,7 +497,8 @@ BOOL _IsDuplicateVal(_In_ PCHL_VAL pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
         {
             if((iValSize > 0) && (pvRightVal != NULL))
             {
-                fMatch = strncmp(pChlLeftVal->valDef.pszVal, (PCSTR)pvRightVal, iValSize) == 0;   
+                size_t cch = (iValSize / sizeof(char)) - 1;
+                fMatch = strncmp(pChlLeftVal->valDef.pszVal, (PCSTR)pvRightVal, cch) == 0;   
             }
             else
             {
@@ -510,7 +511,8 @@ BOOL _IsDuplicateVal(_In_ PCHL_VAL pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
         {
             if((iValSize > 0) && (pvRightVal != NULL))
             {
-                fMatch = wcsncmp(pChlLeftVal->valDef.pwszVal, (PCWSTR)pvRightVal, iValSize) == 0;   
+                size_t cch = (iValSize / sizeof(WCHAR)) - 1;
+                fMatch = wcsncmp(pChlLeftVal->valDef.pwszVal, (PCWSTR)pvRightVal, cch) == 0;
             }
             else
             {
@@ -594,7 +596,7 @@ HRESULT _GetValSize(_In_ PVOID pvVal, _In_ CHL_VALTYPE valType, _Inout_ PINT piV
 
         case CHL_VT_STRING:
         {
-            *piValSize = strlen((PCSTR)pvVal) + sizeof(char);
+            *piValSize = (strlen((PCSTR)pvVal) + 1) * sizeof(char);
             break;
         }
 

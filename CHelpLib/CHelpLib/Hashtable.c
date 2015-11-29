@@ -124,7 +124,7 @@ DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize,
             int nChars = iKeySize/sizeof(char);
             if(nChars <= 0)
             {
-                nChars = strlen((PCSTR)pvKey) + 1;
+                nChars = strlen((PCSTR)pvKey);
             }
             dwKeyHash = _hashs(iTableNodes, (const PBYTE)pvKey, nChars);
             break;
@@ -135,7 +135,7 @@ DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize,
             int nChars = iKeySize/sizeof(WCHAR);
             if(nChars <= 0)
             {
-                nChars = wcslen((PCWSTR)pvKey) + 1;
+                nChars = wcslen((PCWSTR)pvKey);
             }
             dwKeyHash = _hashsW(iTableNodes, (const PUSHORT)pvKey, nChars);
             break;
@@ -192,7 +192,7 @@ HRESULT CHL_DsCreateHT(
         hr = E_OUTOFMEMORY;
         goto error_return;
     }
-    
+
     pnewtable->fValIsInHeap = fValInHeapMem;
     pnewtable->nTableSize = newTableSize;
     pnewtable->keyType = keyType;
@@ -280,6 +280,9 @@ HRESULT CHL_DsDestroyHT(_In_ PCHL_HTABLE phtable)
             }   
         }   
     }
+
+    phtable->nTableSize = 0;
+    phtable->phtNodes = NULL;
 
 	LeaveCriticalSection(&phtable->csLock);
 	DeleteCriticalSection(&phtable->csLock);
@@ -404,20 +407,6 @@ done:
 		LeaveCriticalSection(&phtable->csLock);
     }
     return hr;
-}
-
-
-int exhandler(int excode, LPEXCEPTION_POINTERS exptrs)
-{
-    EXCEPTION_RECORD *pexrec = exptrs->ExceptionRecord;
-    PCONTEXT pcontext = exptrs->ContextRecord;
-
-    DBG_UNREFERENCED_PARAMETER(excode);
-    DBG_UNREFERENCED_LOCAL_VARIABLE(pexrec);
-    DBG_UNREFERENCED_LOCAL_VARIABLE(pcontext);
-
-    DebugBreak();
-    return 0;
 }
 
 HRESULT CHL_DsFindHT(
@@ -569,9 +558,9 @@ error_return:
     
 }
 
-HRESULT CHL_DsInitIteratorHT(_In_ CHL_HT_ITERATOR *pItr)
+HRESULT CHL_DsInitIteratorHT(_In_ PCHL_HTABLE phtable, _Inout_ struct _hashtableIterator *pItr)
 {
-    if(!pItr)
+    if(!phtable || !pItr)
     {
         return E_INVALIDARG;
     }
@@ -579,12 +568,12 @@ HRESULT CHL_DsInitIteratorHT(_In_ CHL_HT_ITERATOR *pItr)
     pItr->opType = HT_ITR_FIRST;
     pItr->nCurIndex = 0;
     pItr->phtCurNodeInList = NULL;
+    pItr->pMyHashTable = phtable;
     return S_OK;
 }
 
 HRESULT CHL_DsGetNextHT(
-    _In_ PCHL_HTABLE phtable, 
-    _In_ CHL_HT_ITERATOR *pItr, 
+    _In_ struct _hashtableIterator *pItr,
     _Inout_opt_ PVOID pvKey, 
     _Inout_opt_ PINT piKeySize,
     _Inout_opt_ PVOID pvVal, 
@@ -597,13 +586,16 @@ HRESULT CHL_DsGetNextHT(
     HT_NODE* pCurNode = NULL;
     int iCurIndex = 0;
 
-    ASSERT(phtable && pItr);
+    PCHL_HTABLE phtable = NULL;
 
-    if(!phtable || !pItr)
+    ASSERT(pItr && pItr->pMyHashTable);
+
+    if(!pItr)
     {
         return E_INVALIDARG;
     }
 
+    phtable = pItr->pMyHashTable;
 	EnterCriticalSection(&phtable->csLock);
 
     // Trivial check to see if iterator was initialized or not
