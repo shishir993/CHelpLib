@@ -503,7 +503,7 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
 
     HRESULT hr = S_OK;
 
-    ASSERT(phtable && pvkey);
+    ASSERT(phtable);
     
 	EnterCriticalSection(&phtable->csLock);
     fLocked = TRUE;
@@ -535,8 +535,10 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
     if(phtFoundNode == &phtable->phtNodes[index])
     {
         // Node in the main table is to be removed
+        // Preserve pnext and restore because _ClearNode sets it to NULL
+        HT_NODE* pnext = phtFoundNode->pnext;
         _ClearNode(phtable->keyType, phtable->valType, phtFoundNode, phtable->fValIsInHeap);
-        phtFoundNode->fOccupied = FALSE;
+        phtFoundNode->pnext = pnext;
     }
     else
     {

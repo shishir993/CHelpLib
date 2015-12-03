@@ -5,9 +5,20 @@
 
 #pragma once
 
+#define _CRT_RAND_S     // rand_s
 #include "targetver.h"
 #include <Windows.h>
 #include <strsafe.h>
+#include <stdio.h>
+#include <stdlib.h>     // rand_s
+#include <shlwapi.h>
+
+#include <string>
+#include <sstream>
+#include <vector>
+#include <list>
+#include <memory>
+#include <algorithm>
 
 // Headers for CppUnitTest
 #include "CppUnitTest.h"
