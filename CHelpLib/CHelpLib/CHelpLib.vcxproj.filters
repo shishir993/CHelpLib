@@ -60,6 +60,9 @@
     <ClInclude Include="InternalDefines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RArray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MemFunctions.c">
@@ -96,6 +99,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InternalDefines.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RArray.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
