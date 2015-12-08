@@ -26,7 +26,8 @@ public:
 
         list<wstring> inputStrings;
 
-        FILE* pFile = _wfopen(s_pszInputFileTale, L"r");
+        FILE* pFile = nullptr;
+        Assert::AreEqual(0, _wfopen_s(&pFile, s_pszInputFileTale, L"r"), L"File open must succeed");
         Assert::IsNotNull(pFile);
 
         Helpers::ITimer* pTimer = new Helpers::CTimerTicks();

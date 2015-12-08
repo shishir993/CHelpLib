@@ -25,33 +25,6 @@ public:
     TEST_METHOD(Iteration_WStrInt);
 
 private:
-    struct TestStruct
-    {
-        char _c;
-        int _i;
-        PCWSTR _psz;
-        ULONGLONG _ull;
-        LARGE_INTEGER _li;
-
-        TestStruct() = default;
-
-        TestStruct(char c, int i, PCWSTR psz, ULONGLONG ull)
-        {
-            _c = c;
-            _i = i;
-            _psz = psz;
-            _ull = ull;
-            _li.LowPart = (DWORD)i;
-            _li.HighPart = (LONG)ull;
-        }
-
-        bool operator==(const TestStruct& rhs)
-        {
-            return (_c == rhs._c && _i == rhs._i && _psz == rhs._psz && _ull == rhs._ull);
-        }
-    };
-
-private:
     static WCHAR s_randomStrSource_AlphaNum[];
 };
 
@@ -270,7 +243,7 @@ void HashtableUnitTests::InsertFindRemove_WStrWStr()
 
 void HashtableUnitTests::InsertFindRemove_IntObj()
 {
-    TestStruct objs[] =
+    Helpers::TestStruct objs[] =
         {
             { 'a', 1, L"first one", MAXINT32 },
             { 'b', ~(MAXINT16), L"2nd one", MAXINT64 },
@@ -278,17 +251,10 @@ void HashtableUnitTests::InsertFindRemove_IntObj()
         };
 
     const int c_numValues = ARRAYSIZE(objs);
-    std::vector<int> keysVector((size_t)c_numValues);
-    Assert::AreEqual((size_t)c_numValues, keysVector.size());
 
     // Generate random integers for use as keys
-    srand(GetTickCount());
-
-    for (int idx = 0; idx < c_numValues; ++idx)
-    {
-        keysVector[idx] = rand();
-        logDebug(L"keys[%u] = %d", idx, keysVector[idx]);
-    }
+    auto spKeys = Helpers::GenerateRandomNumbers(c_numValues);
+    const auto& keysVector = *spKeys;
 
     // Hashtable with KT = Int, VT = UObj
     PCHL_HTABLE pht;
@@ -306,7 +272,7 @@ void HashtableUnitTests::InsertFindRemove_IntObj()
     {
         auto key = keysVector[idx];
 
-        TestStruct* pst;
+        Helpers::TestStruct* pst;
         Assert::IsTrue(SUCCEEDED(pht->Find(pht, (PVOID)key, sizeof(int), &pst, nullptr, TRUE)));
         Assert::IsTrue((objs[idx] == *pst), L"Retrieved struct ptr matches expected struct");
     }
@@ -316,7 +282,7 @@ void HashtableUnitTests::InsertFindRemove_IntObj()
     {
         auto key = keysVector[idx];
 
-        TestStruct st;
+        Helpers::TestStruct st;
         int valSize = sizeof(st);
         Assert::IsTrue(SUCCEEDED(pht->Find(pht, (PVOID)key, sizeof(int), &st, &valSize, FALSE)));
         Assert::IsTrue((objs[idx] == st), L"Retrieved struct ptr matches expected struct");

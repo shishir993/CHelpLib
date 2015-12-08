@@ -23,4 +23,4 @@
 // Headers for CppUnitTest
 #include "CppUnitTest.h"
 
-// TODO: reference additional headers your program requires here
+#pragma warning( disable : 4800 )  // 'BOOL': forcing value to bool 'true' or 'false' (performance warning)

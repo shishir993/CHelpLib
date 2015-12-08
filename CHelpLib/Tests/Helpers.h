@@ -16,7 +16,11 @@
 
 #endif
 
+#define LOG_FUNC_ENTRY      logInfo(L"Entry: %s()", __FUNCTIONW__)
+#define LOG_FUNC_EXIT       logInfo(L"Exit : %s()\n", __FUNCTIONW__)
+
 #define ISVALID_HANDLE(h)   (((h) != NULL) && ((h) != INVALID_HANDLE_VALUE))
+
 
 namespace Helpers
 {
@@ -83,6 +87,32 @@ private:
     bool _fIsRunning;
     UINT64 _startTicks;
     UINT64 _elapsedTicks;
+};
+
+struct TestStruct
+{
+    char _c;
+    int _i;
+    PCWSTR _psz;
+    ULONGLONG _ull;
+    LARGE_INTEGER _li;
+
+    TestStruct() = default;
+
+    TestStruct(char c, int i, PCWSTR psz, ULONGLONG ull)
+    {
+        _c = c;
+        _i = i;
+        _psz = psz;
+        _ull = ull;
+        _li.LowPart = (DWORD)i;
+        _li.HighPart = (LONG)ull;
+    }
+
+    bool operator==(const TestStruct& rhs)
+    {
+        return (_c == rhs._c && _i == rhs._i && _psz == rhs._psz && _ull == rhs._ull);
+    }
 };
 
 };

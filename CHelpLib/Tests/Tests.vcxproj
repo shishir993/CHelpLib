@@ -176,6 +176,7 @@
     <ClCompile Include="tHashtable_Perf.cpp" />
     <ClCompile Include="tLinkedList_Perf.cpp" />
     <ClCompile Include="utIOFunctions.cpp" />
+    <ClCompile Include="utResizableArray.cpp" />
     <ClCompile Include="utStringFunctions.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
