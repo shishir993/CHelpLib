@@ -46,8 +46,11 @@ error_return:
 // 
 void CHL_MmFree(_In_ PVOID *ppvToFree)
 {
-    ASSERT(ppvToFree && *ppvToFree);
-    free(*ppvToFree);
-    *ppvToFree = NULL;
+    ASSERT(ppvToFree);
+    if (*ppvToFree != NULL)
+    {
+        free(*ppvToFree);
+        *ppvToFree = NULL;
+    }
     return;
 }

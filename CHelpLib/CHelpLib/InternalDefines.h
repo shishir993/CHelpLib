@@ -3,8 +3,9 @@
 // Contains common #defines, typedefs and data structures
 // Shishir Bhat (http://www.shishirbhat.com)
 // History
-//      09/18/2014 Standardize keys and value types
-//		08/04/2015 Make individual headers usable by clients
+//      09/18/2014 Standardize keys and value types.
+//		08/04/2015 Make individual headers usable by clients.
+//      01/19/2016 Provide a way to test if a CHL_VAL is occupied or not.
 //
 
 #ifndef CHL_INT_DEFINES_H
@@ -15,6 +16,16 @@
 #include "DbgHelpers.h"
 #include "Helpers.h"
 #include "Defines.h"
+
+// -------------------------------------------
+// #defs and typedefs
+
+#define IS_VALID_CHL_VALTYPE(vt)    (((vt) > CHL_VT_START) && ((vt) < CHL_VT_END))
+#define IS_INVALID_CHL_VALTYPE(vt)  (! IS_VALID_CHL_VALTYPE(vt))
+
+// Magic number denoting that a CHL_VAL is currently occupied
+// This is actually prime number 433494437 (see https://en.wikipedia.org/wiki/List_of_prime_numbers#Markov_primes)
+#define MAGIC_CHLVAL_OCCUPIED   ((UINT)0x19D699A5)
 
 // -------------------------------------------
 // Functions internal only
@@ -33,6 +44,9 @@ HRESULT _CopyValIn(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
 HRESULT _CopyValOut(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVOID pvValOut, _In_ BOOL fGetPointerOnly);
 BOOL _IsDuplicateVal(_In_ PCHL_VAL pLeftVal, _In_ PCVOID pRightVal, _In_ CHL_VALTYPE valType, _In_ int iValSize);
 void _DeleteVal(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType);
+void _MarkValUnoccupied(_In_ PCHL_VAL pChlVal);
+void _MarkValOccupied(_In_ PCHL_VAL pChlVal);
+BOOL _IsValOccupied(_In_ PCHL_VAL pChlVal);
 HRESULT _GetValSize(_In_ PVOID pvVal, _In_ CHL_VALTYPE valType, _Inout_ PINT piValSize);
 HRESULT _EnsureSufficientValBuf(
 	_In_ PCHL_VAL pChlVal,

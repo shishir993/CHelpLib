@@ -19,6 +19,8 @@ public:
     TEST_METHOD(GrowManyTimes_Int);
     TEST_METHOD(GrowManually_Obj);
     TEST_METHOD(ShrinkManually_Int);
+    TEST_METHOD(ShrinkManually_Obj);
+    TEST_METHOD(ShrinkManuallyNoWrites_Obj);
 
 private:
     static WCHAR s_randomStrSource_AlphaNum[];
@@ -311,7 +313,7 @@ void ResizableArrayUnitTests::ShrinkManually_Int()
 
     // Shrink to half size
     Assert::IsTrue(SUCCEEDED(ra.Resize(&ra, (c_nItems / 2))));
-    Assert::AreEqual((c_nItems / 2), (int)ra.Size(&ra)); // size hasn't changed
+    Assert::AreEqual((c_nItems / 2), (int)ra.Size(&ra)); // size has changed
 
     // Verify remaining items are intact
     int readVal;
@@ -329,6 +331,151 @@ void ResizableArrayUnitTests::ShrinkManually_Int()
     }
 
     Assert::IsTrue(SUCCEEDED(CHL_DsDestroyRA(&ra)));
+
+    LOG_FUNC_EXIT;
+}
+
+void ResizableArrayUnitTests::ShrinkManually_Obj()
+{
+    LOG_FUNC_ENTRY;
+
+    Helpers::TestStruct objs[] =
+    {
+        { 'a', 1, L"first one", MAXINT32 },
+        { 'b', ~(MAXINT16), L"2nd one", MAXINT64 },
+        { 'z', 384732, L"III", 0 },
+        { 'e', 1, L"IV", MAXINT32 },
+        { 'y', MAXBYTE, L"V", MAXINT64 },
+        { 'i', 45245, L"VI", 85345346ULL }
+    };
+
+    const int c_nItems = ARRAYSIZE(objs);
+    Assert::IsTrue((c_nItems % 2) == 0, L"#items is even");
+
+    Helpers::TestStruct* objPointers[c_nItems];
+
+    // Create the resizable array
+    CHL_RARRAY ra;
+    Assert::IsTrue(SUCCEEDED(CHL_DsCreateRA(&ra, CHL_VT_USEROBJECT, c_nItems, c_nItems)));
+
+    // Insert all items
+    for (int idx = 0; idx < c_nItems; ++idx)
+    {
+        Assert::IsTrue(SUCCEEDED(ra.Write(&ra, idx, &(objs[idx]), sizeof(objs[0]))));
+    }
+
+    // Read all items, get pointer only and save the pointers
+    for (int idx = 0; idx < c_nItems; ++idx)
+    {
+        Helpers::TestStruct *pst;
+        Assert::IsTrue(SUCCEEDED(ra.Read(&ra, idx, &pst, nullptr, TRUE)));
+        Assert::IsTrue((objs[idx] == *pst), L"Retrieved obj via ptr must match input obj");
+        objPointers[idx] = pst;
+        logInfo(L"Read idx %d with ptr = 0x%p", idx, pst);
+    }
+
+    // Resize array to half of original size
+    Assert::IsTrue(SUCCEEDED(ra.Resize(&ra, (c_nItems / 2))));
+
+    // Now accessing the first half of array should be fine
+    for (int idx = 0; idx < (c_nItems / 2); ++idx)
+    {
+        logInfo(L"Reading idx %d with ptr = 0x%p", idx, objPointers[idx]);
+        Assert::IsTrue((objs[idx] == *(objPointers[idx])), L"Stored ptr must match input obj");
+    }
+
+    // Accessing second half must result in exception
+    bool fGotException = false;
+    for (int idx = (c_nItems / 2); idx < c_nItems; ++idx)
+    {
+        logInfo(L"Freeing idx %d with ptr = 0x%p, expecting exception", idx, objPointers[idx]);
+
+        __try
+        {
+            free(objPointers[idx]);
+            break;
+        }
+        __except(Helpers::ExceptionFilter_ExecAll(GetExceptionCode(), GetExceptionInformation()))
+        {
+            // expected exception, move forward
+            fGotException = true;
+        }
+    }
+
+    if (!fGotException)
+    {
+        Assert::Fail(L"Memory not freed after array resizing. Was expecting an exception.");
+    }
+
+    Assert::IsTrue(SUCCEEDED(ra.Destroy(&ra)));
+
+    LOG_FUNC_EXIT;
+}
+
+void ResizableArrayUnitTests::ShrinkManuallyNoWrites_Obj()
+{
+    LOG_FUNC_ENTRY;
+
+    Helpers::TestStruct objs[] =
+    {
+        { 'a', 1, L"first one", MAXINT32 },
+        { 'b', ~(MAXINT16), L"2nd one", MAXINT64 },
+        { 'z', 384732, L"III", 0 },
+        { 'e', 1, L"IV", MAXINT32 },
+        { 'y', MAXBYTE, L"V", MAXINT64 },
+        { 'i', 45245, L"VI", 85345346ULL }
+    };
+
+    const int c_nItems = ARRAYSIZE(objs);
+    Assert::IsTrue((c_nItems % 2) == 0, L"#items is even");
+
+    // Create the resizable array
+    CHL_RARRAY ra;
+    Assert::IsTrue(SUCCEEDED(CHL_DsCreateRA(&ra, CHL_VT_USEROBJECT, c_nItems, c_nItems)));
+
+    // Resize to half, no exceptions expected
+    __try
+    {
+        Assert::IsTrue(SUCCEEDED(ra.Resize(&ra, (c_nItems / 2))));
+    }
+    __except (Helpers::ExceptionFilter_ExecAll(GetExceptionCode(), GetExceptionInformation()))
+    {
+        Assert::Fail(L"Exception while resizing array before any writes");
+    }
+
+    // Bring it back to original size and fill up to (c_nItems - 1)
+    Assert::IsTrue(SUCCEEDED(ra.Resize(&ra, c_nItems)));
+    for (int idx = 0; idx < (c_nItems - 1); ++idx)
+    {
+        Assert::IsTrue(SUCCEEDED(ra.Write(&ra, idx, &(objs[idx]), sizeof(objs[0]))));
+    }
+
+    // Resize to half, no exceptions expected
+    __try
+    {
+        Assert::IsTrue(SUCCEEDED(ra.Resize(&ra, (c_nItems / 2))));
+    }
+    __except (Helpers::ExceptionFilter_ExecAll(GetExceptionCode(), GetExceptionInformation()))
+    {
+        Assert::Fail(L"Exception while resizing array after n-1 writes");
+    }
+    
+    // Clear all remaining indices and resize to 1 (which is minimum currently)
+    for (int idx = 0; idx < (c_nItems / 2); ++idx)
+    {
+        Assert::IsTrue(SUCCEEDED(ra.ClearAt(&ra, idx)));
+    }
+
+    __try
+    {
+        Assert::IsTrue(SUCCEEDED(ra.Resize(&ra, 1)));
+    }
+    __except (Helpers::ExceptionFilter_ExecAll(GetExceptionCode(), GetExceptionInformation()))
+    {
+        Assert::Fail(L"Exception while resizing to min size after clearing");
+    }
+
+    Assert::IsTrue(SUCCEEDED(ra.Destroy(&ra)));
 
     LOG_FUNC_EXIT;
 }

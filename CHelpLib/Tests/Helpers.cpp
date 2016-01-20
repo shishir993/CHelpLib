@@ -35,6 +35,32 @@ void logHelper(_In_z_ PCWSTR pszFmt, ...)
     }
 }
 
+INT ExceptionFilter_ExecAll(UINT code, struct _EXCEPTION_POINTERS* exPtrs)
+{
+    static wchar_t* s_avTypes[] = { L"reading", L"writing", L"executing", L"unknown op" };
+
+    if (code == EXCEPTION_ACCESS_VIOLATION)
+    {
+        int avTypeIdx;
+        switch (exPtrs->ExceptionRecord->ExceptionInformation[0])
+        {
+        case 0: avTypeIdx = 0; break;
+        case 1: avTypeIdx = 1; break;
+        case 8: avTypeIdx = 2; break;
+        default: avTypeIdx = 3; break;
+        }
+        
+        logWarn(L"Caught exception access violation (0x%08X) at code address 0x%p %s location 0x%p",
+            code, exPtrs->ExceptionRecord->ExceptionAddress, s_avTypes[avTypeIdx], exPtrs->ExceptionRecord->ExceptionInformation[1]);
+    }
+    else
+    {
+        logWarn(L"Caught exception 0x%08X at code address 0x%p", code, exPtrs->ExceptionRecord->ExceptionAddress);
+    }
+    
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
 std::unique_ptr<WCHAR[]> BuildString(int cchMax, PCWSTR pszFmt, ...)
 {
     Assert::IsTrue((cchMax > 0) && (cchMax <= MAXUINT16));   // reasonable limits

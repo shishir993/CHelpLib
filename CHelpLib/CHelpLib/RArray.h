@@ -31,6 +31,7 @@ struct _rarray
     HRESULT (*Read)(_In_ PCHL_RARRAY pra, _In_ UINT index, _Out_opt_ PVOID pValBuf,
         _Inout_opt_ PINT piBufSize, _In_ BOOL fGetPointerOnly);
     HRESULT (*Write)(_In_ PCHL_RARRAY pra, _In_ UINT index, _In_ PCVOID pVal, _In_opt_ int iBufSize);
+    HRESULT (*ClearAt)(_In_ PCHL_RARRAY pra, _In_ UINT index);
     HRESULT (*Resize)(_In_ PCHL_RARRAY pra, _In_ UINT newSize);
     UINT    (*Size)(_In_ PCHL_RARRAY pra);
     UINT    (*MaxSize)(_In_ PCHL_RARRAY pra);
@@ -56,8 +57,8 @@ DllExpImp HRESULT CHL_DsDestroyRA(_In_ PCHL_RARRAY pra);
 // Params:
 //  pra             : Pointer to a previously created CHL_RARRAY object
 //  index           : Array index at which to perform the read. Must be less than the current size of array.
-//  pValBuf         : Pointer to a buffer to receive the read value.
-//  piBufSize        : Optional. Pointer to UINT that specifies the provided buffer size.
+//  pValBuf         : Optional. Pointer to a buffer to receive the read value.
+//  piBufSize       : Optional. Pointer to UINT that specifies the provided buffer size.
 //                    If buffer size is insufficient, this argument will contain the required size on return.
 //                    Not required if fGetPointerOnly is TRUE.
 //  fGetPointerOnly : Retrieve only a pointer to the stored array value.
@@ -75,6 +76,13 @@ DllExpImp HRESULT CHL_DsReadRA(_In_ PCHL_RARRAY pra, _In_ UINT index, _Out_opt_ 
 //            Ignored for primitive types.
 //
 DllExpImp HRESULT CHL_DsWriteRA(_In_ PCHL_RARRAY pra, _In_ UINT index, _In_ PCVOID pVal, _In_opt_ int iBufSize);
+
+// Clear the value stored at the specified index
+// Params:
+//  pra             : Pointer to a previously created CHL_RARRAY object
+//  index           : Array index at which to perform the clear. Must be less than the current size of array.
+//
+DllExpImp HRESULT CHL_DsClearAtRA(_In_ PCHL_RARRAY pra, _In_ UINT index);
 
 // Force resize of the resizable array to the specified size. New size can be lower or higher than current size.
 // Params:

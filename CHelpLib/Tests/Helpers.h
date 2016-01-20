@@ -33,6 +33,8 @@ void logHelper(_In_ bool fDebugLog, _In_z_ PCWSTR pszFmt, ...);
 void logHelper(_In_z_ PCWSTR pszFmt, ...);
 #endif
 
+INT ExceptionFilter_ExecAll(UINT code, struct _EXCEPTION_POINTERS* exPtrs);
+
 std::unique_ptr<WCHAR[]> BuildString(int cchMax, _In_ PCWSTR pszFmt, ...);
 
 std::wstring GenerateRandomString(_In_ int nRequiredChars, _In_z_ PCWSTR pszSource);

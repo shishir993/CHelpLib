@@ -3,7 +3,8 @@
 // Contains common #defines, typedefs and data structures
 // Shishir Bhat (http://www.shishirbhat.com)
 // History
-//      09/20/14 Standardize API experience
+//      09/20/2014 Standardize API experience.
+//      01/19/2016 Provide a way to test if a CHL_VAL is occupied or not.
 //
 
 #include "CommonInclude.h"
@@ -387,6 +388,11 @@ HRESULT _CopyValIn(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
             break;
         }
     }
+
+    if (SUCCEEDED(hr))
+    {
+        _MarkValOccupied(pChlVal);
+    }
     return hr;
 }
 
@@ -532,32 +538,46 @@ BOOL _IsDuplicateVal(_In_ PCHL_VAL pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
 
 void _DeleteVal(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType)
 {
-    pChlVal->iValSize = 0;
-    switch(valType)
+    if (_IsValOccupied(pChlVal))
     {
-        case CHL_VT_USEROBJECT:
+        switch (valType)
         {
-            CHL_MmFree((PVOID*)&pChlVal->valDef.pvUserObj);
-            break;
-        }
+        case CHL_VT_USEROBJECT:
+            {
+                CHL_MmFree((PVOID*)&pChlVal->valDef.pvUserObj);
+                break;
+            }
 
         case CHL_VT_STRING:
-        {
-            CHL_MmFree((PVOID*)&pChlVal->valDef.pszVal);
-            break;
-        }
+            {
+                CHL_MmFree((PVOID*)&pChlVal->valDef.pszVal);
+                break;
+            }
 
         case CHL_VT_WSTRING:
-        {
-            CHL_MmFree((PVOID*)&pChlVal->valDef.pwszVal);
-            break;
+            {
+                CHL_MmFree((PVOID*)&pChlVal->valDef.pwszVal);
+                break;
+            }
         }
 
-        default:
-        {
-            break;
-        }
+        _MarkValUnoccupied(pChlVal);
     }
+}
+
+void _MarkValUnoccupied(_In_ PCHL_VAL pChlVal)
+{
+    pChlVal->iValSize = pChlVal->magicOccupied = 0;
+}
+
+void _MarkValOccupied(_In_ PCHL_VAL pChlVal)
+{
+    pChlVal->magicOccupied = MAGIC_CHLVAL_OCCUPIED;
+}
+
+BOOL _IsValOccupied(_In_ PCHL_VAL pChlVal)
+{
+    return (pChlVal->magicOccupied == MAGIC_CHLVAL_OCCUPIED);
 }
 
 HRESULT _GetValSize(_In_ PVOID pvVal, _In_ CHL_VALTYPE valType, _Inout_ PINT piValSize)

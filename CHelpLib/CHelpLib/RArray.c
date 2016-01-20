@@ -2,7 +2,7 @@
 #include "InternalDefines.h"
 #include "RArray.h"
 
-#define RARRAY_MIN_SIZE             2
+#define RARRAY_MIN_SIZE             1
 #define RARRAY_MAX_SIZE_NOLIMIT     0
 
 static __inline UINT _CalcValArrayBytesForSize(_In_ UINT uiSize);
@@ -15,12 +15,10 @@ HRESULT CHL_DsCreateRA(_Out_ PCHL_RARRAY pra, _In_ CHL_VALTYPE valType, _In_opt_
     HRESULT hr = S_OK;
 
     // validate parameters
-    if ((pra == NULL) ||
-        (valType < CHL_VT_START) || (valType > CHL_VT_END) ||
-        ((maxSize > 0) && (maxSize < RARRAY_MIN_SIZE)))
+    if ((pra == NULL) || IS_INVALID_CHL_VALTYPE(valType))
     {
         hr = E_INVALIDARG;
-        goto error_return;
+        goto func_end;
     }
 
     memset(pra, 0, sizeof(*pra));
@@ -33,21 +31,19 @@ HRESULT CHL_DsCreateRA(_Out_ PCHL_RARRAY pra, _In_ CHL_VALTYPE valType, _In_opt_
     if (pra->pValArray == NULL)
     {
         hr = E_OUTOFMEMORY;
-        goto error_return;
+        goto func_end;
     }
 
     pra->Create = CHL_DsCreateRA;
     pra->Destroy = CHL_DsDestroyRA;
     pra->Read = CHL_DsReadRA;
     pra->Write = CHL_DsWriteRA;
+    pra->ClearAt = CHL_DsClearAtRA;
     pra->Resize = CHL_DsResizeRA;
     pra->Size = CHL_DsSizeRA;
     pra->MaxSize = CHL_DsMaxSizeRA;
 
-    return S_OK;
-
-error_return:
-    memset(pra, 0, sizeof(*pra));
+func_end:
     return hr;
 }
 
@@ -128,6 +124,25 @@ func_end:
     return hr;
 }
 
+HRESULT CHL_DsClearAtRA(_In_ PCHL_RARRAY pra, _In_ UINT index)
+{
+    ASSERT(pra->pValArray != NULL);
+
+    HRESULT hr = S_OK;
+
+    if (index >= pra->curSize)
+    {
+        hr = HRESULT_FROM_WIN32(ERROR_INVALID_INDEX);
+        goto func_end;
+    }
+
+    PCHL_VAL pChlVal = &pra->pValArray[index];
+    _DeleteVal(pChlVal, pra->vt);
+
+func_end:
+    return hr;
+}
+
 HRESULT CHL_DsResizeRA(_In_ PCHL_RARRAY pra, _In_ UINT newSize)
 {
     ASSERT(pra->pValArray != NULL);
@@ -144,9 +159,24 @@ HRESULT CHL_DsResizeRA(_In_ PCHL_RARRAY pra, _In_ UINT newSize)
         goto func_end;
     }
 
-    if (pra->curSize == newSize)
+    UINT curSize = CHL_DsSizeRA(pra);
+
+    if (curSize == newSize)
     {
         goto func_end;
+    }
+
+    if (curSize > newSize)
+    {
+        // Array is shrinking, see if there are any stored values to be cleared
+        for (UINT idx = newSize; idx < curSize; ++idx)
+        {
+#ifdef _DEBUG
+            ASSERT(SUCCEEDED(CHL_DsClearAtRA(pra, idx)));
+#else
+            CHL_DsClearAtRA(pra, idx);
+#endif
+        }
     }
 
     pvNew = realloc(pra->pValArray, _CalcValArrayBytesForSize(newSize));
