@@ -74,6 +74,17 @@ HRESULT CHL_DsPopSTK(_In_ PCHL_STACK pstk, _Out_opt_ PVOID pValBuf, _Inout_opt_ 
 #endif
     }
 
+    // Reduce size of underlying array to half if it is mostly empty (3/4th or more empty).
+    // Idea borrowed from Algorithms 4th ed., by Sedgewick & Wayne.
+    if (pstk->topIndex <= (pra->Size(pra) / 4))
+    {
+#ifdef _DEBUG
+        ASSERT(SUCCEEDED(pra->Resize(pra, (pra->Size(pra) / 2))));
+#else
+        pra->Resize(pra, (pra->Size(pra) / 2));
+#endif
+    }
+
 func_end:
     return hr;
 }
