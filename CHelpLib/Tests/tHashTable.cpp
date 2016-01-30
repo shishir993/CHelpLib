@@ -23,13 +23,7 @@ public:
     TEST_METHOD(FindAfterRemove_WStrWStr);
 
     TEST_METHOD(Iteration_WStrInt);
-
-private:
-    static WCHAR s_randomStrSource_AlphaNum[];
 };
-
-WCHAR HashtableUnitTests::s_randomStrSource_AlphaNum[] = L"qwertyuiopasdfghjklzxcvbnmABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
 
 void HashtableUnitTests::CreateAndDestroy()
 {
@@ -341,7 +335,7 @@ void HashtableUnitTests::FindAfterRemove_WStrWStr()
 void HashtableUnitTests::Iteration_WStrInt()
 {
     const int c_nItems = 10;
-    auto spKeys = Helpers::GenerateRandomStrings(c_nItems, s_randomStrSource_AlphaNum);
+    auto spKeys = Helpers::GenerateRandomStrings(c_nItems, Helpers::s_randomStrSource_AlphaNum);
     auto spValues = Helpers::GenerateRandomNumbers(c_nItems);
 
     // Hashtable with KT = WStr, VT = Int

@@ -23,6 +23,9 @@
 #define IS_VALID_CHL_VALTYPE(vt)    (((vt) > CHL_VT_START) && ((vt) < CHL_VT_END))
 #define IS_INVALID_CHL_VALTYPE(vt)  (! IS_VALID_CHL_VALTYPE(vt))
 
+#define IS_VALID_CHL_KEYTYPE(kt)    (((kt) > CHL_KT_START) && ((kt) < CHL_KT_END))
+#define IS_INVALID_CHL_KEYTYPE(kt)  (! IS_VALID_CHL_KEYTYPE(kt))
+
 // Magic number denoting that a CHL_VAL is currently occupied
 // This is actually prime number 433494437 (see https://en.wikipedia.org/wiki/List_of_prime_numbers#Markov_primes)
 #define MAGIC_CHLVAL_OCCUPIED   ((UINT)0x19D699A5)

@@ -1,5 +1,6 @@
-// CHelpLib.h
-// Exported symbols from CHelpLib DLL
+
+// Hashtable.h
+// Hashtable implementation with buckets
 // Shishir Bhat (http://www.shishirbhat.com)
 // History
 //      Unknown history!

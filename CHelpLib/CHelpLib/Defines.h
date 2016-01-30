@@ -27,6 +27,13 @@
 typedef PVOID const PCVOID;
 #endif
 
+// A generic compare function used to compare either two keys or two values.
+// The function must return -
+//  0 if both left and right are equal
+//  1 if right is greater than left
+// -1 if right is lesser than left
+typedef int (*CHL_CompareFn)(_In_ PCVOID pvLeft, _In_ PCVOID pvRight);
+
 // -------------------------------------------
 // Structures
 

@@ -25,6 +25,8 @@
 namespace Helpers
 {
 
+extern WCHAR s_randomStrSource_AlphaNum[];
+
 #pragma region Functions
 
 #ifdef _DEBUG

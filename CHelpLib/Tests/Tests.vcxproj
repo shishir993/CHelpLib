@@ -175,6 +175,7 @@
     <ClCompile Include="tHashTable.cpp" />
     <ClCompile Include="tHashtable_Perf.cpp" />
     <ClCompile Include="tLinkedList_Perf.cpp" />
+    <ClCompile Include="utBinarySearchTree.cpp" />
     <ClCompile Include="utIOFunctions.cpp" />
     <ClCompile Include="utResizableArray.cpp" />
     <ClCompile Include="utStringFunctions.cpp" />

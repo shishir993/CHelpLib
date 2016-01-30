@@ -9,6 +9,8 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace Helpers
 {
 
+WCHAR s_randomStrSource_AlphaNum[] = L"qwertyuiopasdfghjklzxcvbnmABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
 #ifdef _DEBUG
 void logHelper(_In_ bool fDebugLog, _In_z_ PCWSTR pszFmt, ...)
 #else

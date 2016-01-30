@@ -333,6 +333,7 @@ error_return:
     return hr;
 }
 
+// TODO: Replace compare function with the standard CHL_CompareFn type (remember it returns int not BOOL)
 HRESULT CHL_DsFindLL(
     _In_ PCHL_LLIST pLList, 
     _In_ PCVOID pvValToFind, 

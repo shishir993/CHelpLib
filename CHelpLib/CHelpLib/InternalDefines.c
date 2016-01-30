@@ -536,6 +536,7 @@ BOOL _IsDuplicateVal(_In_ PCHL_VAL pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
     return fMatch;
 }
 
+// TODO: BUG: This function must take another parameter fFreePointer in cases of value type CHL_VT_POINTER
 void _DeleteVal(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType)
 {
     if (_IsValOccupied(pChlVal))

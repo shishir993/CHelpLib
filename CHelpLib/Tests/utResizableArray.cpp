@@ -21,12 +21,7 @@ public:
     TEST_METHOD(ShrinkManually_Int);
     TEST_METHOD(ShrinkManually_Obj);
     TEST_METHOD(ShrinkManuallyNoWrites_Obj);
-
-private:
-    static WCHAR s_randomStrSource_AlphaNum[];
 };
-
-WCHAR ResizableArrayUnitTests::s_randomStrSource_AlphaNum[] = L"qwertyuiopasdfghjklzxcvbnmABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 
 void ResizableArrayUnitTests::CreateAndDestroy()
@@ -211,7 +206,7 @@ void ResizableArrayUnitTests::GrowManually_Obj()
     LOG_FUNC_ENTRY;
 
     const int c_nItems = 64;
-    auto spInputStrings = Helpers::GenerateRandomStrings(c_nItems, s_randomStrSource_AlphaNum);
+    auto spInputStrings = Helpers::GenerateRandomStrings(c_nItems, Helpers::s_randomStrSource_AlphaNum);
     Assert::AreEqual(c_nItems, (int)spInputStrings->size());
 
     // Create resizable array specifying an initial size of c_nItems / 4
