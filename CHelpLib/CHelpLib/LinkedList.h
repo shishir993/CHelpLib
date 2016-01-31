@@ -32,7 +32,6 @@ struct _LinkedList {
     CHL_VALTYPE valType;
     PLLNODE pHead;
     PLLNODE pTail;
-	CRITICAL_SECTION csLock;
 
     // Access methods
 

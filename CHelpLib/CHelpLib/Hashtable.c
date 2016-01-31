@@ -200,8 +200,6 @@ HRESULT CHL_DsCreateHT(
     pnewtable->keyType = keyType;
     pnewtable->valType = valType;
 
-	InitializeCriticalSection(&pnewtable->csLock);
-    
     pnewtable->phtNodes = (HT_NODE*)calloc(newTableSize, sizeof(HT_NODE));
     if(pnewtable->phtNodes == NULL)
     {
@@ -252,8 +250,6 @@ HRESULT CHL_DsDestroyHT(_In_ PCHL_HTABLE phtable)
         hr = E_INVALIDARG;
         goto done;  // hashtable isn't destroyed
     }
-    
-	EnterCriticalSection(&phtable->csLock);
 
     phtnodes = phtable->phtNodes;
     if(phtnodes != NULL)
@@ -286,9 +282,6 @@ HRESULT CHL_DsDestroyHT(_In_ PCHL_HTABLE phtable)
     phtable->nTableSize = 0;
     phtable->phtNodes = NULL;
 
-	LeaveCriticalSection(&phtable->csLock);
-	DeleteCriticalSection(&phtable->csLock);
-
     DBG_MEMSET(phtable, sizeof(CHL_HTABLE));
     free(phtable);
 
@@ -307,8 +300,6 @@ HRESULT CHL_DsInsertHT(
     HT_NODE *pNodeAtHashedIndex = NULL;
     HT_NODE *pNodeToInsertTo = NULL;
 
-    BOOL fLocked = FALSE;
-    
     CHL_KEYTYPE keyType;
 
     HRESULT hr = S_OK;
@@ -336,9 +327,6 @@ HRESULT CHL_DsInsertHT(
         hr = E_FAIL;
         goto done;
     }
-
-	EnterCriticalSection(&phtable->csLock);
-    fLocked = TRUE;
 
     ASSERT(phtable->nTableSize > 0);
     index = _GetKeyHash(pvkey, keyType, iKeySize, phtable->nTableSize);
@@ -404,10 +392,6 @@ HRESULT CHL_DsInsertHT(
     }
     
 done:
-    if(fLocked)
-    {
-		LeaveCriticalSection(&phtable->csLock);
-    }
     return hr;
 }
 
@@ -421,7 +405,6 @@ HRESULT CHL_DsFindHT(
 {
     int index = 0;
     HT_NODE *phtFoundNode = NULL;
-    BOOL fLocked = FALSE;
 
     HRESULT hr = S_OK;
 
@@ -432,9 +415,6 @@ HRESULT CHL_DsFindHT(
         goto not_found;
     }
 
-	EnterCriticalSection(&phtable->csLock);
-    fLocked = TRUE;
-    
     ASSERT(phtable->nTableSize > 0);
 
     if(iKeySize <= 0 && FAILED(_GetKeySize(pvkey, phtable->keyType, &iKeySize)))
@@ -482,15 +462,13 @@ HRESULT CHL_DsFindHT(
         *piValSize = phtFoundNode->chlVal.iValSize;
     }
 
-	LeaveCriticalSection(&phtable->csLock);
     return hr;
     
 not_found:
-    if(piValSize) *piValSize = 0;
-	if (fLocked)
-	{
-		LeaveCriticalSection(&phtable->csLock);
-	}
+    if (piValSize)
+    {
+        *piValSize = 0;
+    }
     return hr;
     
 }
@@ -500,23 +478,17 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
     int index = 0;
     HT_NODE *phtFoundNode = NULL;
     HT_NODE *phtPrevFound = NULL;
-    
-    BOOL fLocked = FALSE;
 
     HRESULT hr = S_OK;
 
     ASSERT(phtable);
-    
-	EnterCriticalSection(&phtable->csLock);
-    fLocked = TRUE;
-    
     ASSERT(phtable->nTableSize > 0);
 
     if(iKeySize <= 0 && FAILED(_GetKeySize(pvkey, phtable->keyType, &iKeySize)))
     {
         logerr("%s(): Keysize unspecified or unable to determine.", __FUNCTION__);
         hr = E_FAIL;
-        goto error_return;
+        goto fend;
     }
     index = _GetKeyHash(pvkey, phtable->keyType, iKeySize, phtable->nTableSize);
     
@@ -529,7 +501,7 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
         &phtPrevFound))
     {
         hr = E_NOT_SET;
-        goto error_return;
+        goto fend;
     }
 
     ASSERT(phtFoundNode);
@@ -549,15 +521,8 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
         _ClearNode(phtable->keyType, phtable->valType, phtFoundNode, phtable->fValIsInHeap);
         CHL_MmFree((PVOID*)&phtFoundNode);
     }
-    
-	LeaveCriticalSection(&phtable->csLock);
-    return hr;
-    
-error_return:
-	if (fLocked)
-	{
-		LeaveCriticalSection(&phtable->csLock);
-	}
+
+fend:
     return hr;
     
 }
@@ -600,7 +565,6 @@ HRESULT CHL_DsGetNextHT(
     }
 
     phtable = pItr->pMyHashTable;
-	EnterCriticalSection(&phtable->csLock);
 
     // Trivial check to see if iterator was initialized or not
     hr = S_OK;
@@ -716,7 +680,6 @@ HRESULT CHL_DsGetNextHT(
         }
     }
 
-	LeaveCriticalSection(&phtable->csLock);
     return hr;
 }
 
@@ -738,8 +701,7 @@ void CHL_DsDumpHT(_In_ PCHL_HTABLE phtable)
     //int i;
     //int nNodes = 0;
     //int uTableSize = -1;
-    //BOOL fLocked = FALSE;
-    //
+
     //CHL_KEYTYPE keyType;
     //CHL_VALTYPE valType;
     //
@@ -751,9 +713,6 @@ void CHL_DsDumpHT(_In_ PCHL_HTABLE phtable)
     //uTableSize = phtable->nTableSize;
     //keyType = phtable->keyType;
     //valType = phtable->valType;
-    //
-	//EnterCriticalSection(&phtable->csLock);
-    //fLocked = TRUE;
     //
     //phtNodes = phtable->phtNodes;
     //
@@ -814,8 +773,6 @@ void CHL_DsDumpHT(_In_ PCHL_HTABLE phtable)
     //printf("Occupied       : %d\n", nNodes);
     //    
     //done:
-    //if(fLocked)
-	//	LeaveCriticalSection(&phtable->csLock);
     //return;
     
 }// CHL_DsDumpHT

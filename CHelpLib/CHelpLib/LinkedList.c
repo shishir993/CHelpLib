@@ -43,7 +43,6 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_
     // Populate members
     pListLocal->valType = valType;
     pListLocal->nMaxNodes = nEstEntries;
-	InitializeCriticalSection(&pListLocal->csLock);
 
     pListLocal->Insert = CHL_DsInsertLL;
     pListLocal->Remove = CHL_DsRemoveLL;
@@ -66,9 +65,6 @@ error_return:
 HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int iValSize)
 {
     PLLNODE pNewNode = NULL;
-
-    BOOL fMutexLocked = FALSE;
-
     HRESULT hr = S_OK;
 
     // Parameter validation
@@ -99,25 +95,15 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
         goto error_return;
     }
 
-	EnterCriticalSection(&pLList->csLock);
-
-    fMutexLocked = TRUE;
-
     _InsertNode(pLList, pNewNode);
     ++(pLList->nCurNodes);
 
-	LeaveCriticalSection(&pLList->csLock);
     return hr;
 
 error_return:
     if(pNewNode)
     {
         CHL_MmFree((PVOID*)&pNewNode);
-    }
-
-    if(fMutexLocked)
-    {
-		LeaveCriticalSection(&pLList->csLock);
     }
     return hr;
 }
@@ -140,8 +126,6 @@ HRESULT CHL_DsRemoveLL
         hr = E_INVALIDARG;
         goto error_return;
     }
-
-	EnterCriticalSection(&pLList->csLock);
 
     // Iterate through the list to find
     pCurNode = pLList->pHead;
@@ -167,7 +151,6 @@ HRESULT CHL_DsRemoveLL
         pCurNode = pCurNode->pright;
     }
 
-	LeaveCriticalSection(&pLList->csLock);
     return hr;
 
 error_return:
@@ -184,24 +167,19 @@ HRESULT CHL_DsRemoveAtLL(
 {
     int itr;
     PLLNODE pCurNode;
-    BOOL fMutexLocked = FALSE;
-
     HRESULT hr = S_OK;
+
     if(!pLList || iIndexToRemove < 0)
     {
         hr = E_INVALIDARG;
-        goto error_return;
+        goto fend;
     }
 
     if(iIndexToRemove >= pLList->nCurNodes)
     {
         hr = HRESULT_FROM_WIN32(ERROR_INVALID_INDEX);
-        goto error_return;
+        goto fend;
     }
-
-	EnterCriticalSection(&pLList->csLock);
-
-    fMutexLocked = TRUE;
 
     // Loop until we have address of node to remove
     pCurNode = pLList->pHead;
@@ -239,36 +217,27 @@ HRESULT CHL_DsRemoveAtLL(
         _FreeNodeMem(pCurNode, pLList->valType, (!pvValOut || !fGetPointerOnly));
     }
 
-	LeaveCriticalSection(&pLList->csLock);
-    return hr;
-
-error_return:
-    if(fMutexLocked)
-    {
-		LeaveCriticalSection(&pLList->csLock);
-    }
+fend:
     return hr;
 }
 
-HRESULT CHL_DsPeekAtLL(
+HRESULT CHL_DsPeekAtLL
+(
     _In_ PCHL_LLIST pLList,
     _In_ int iIndexToPeek,
     _Inout_opt_ PVOID pvValOut,
     _Inout_opt_ PINT piValBufSize,
-    _In_opt_ BOOL fGetPointerOnly)
+    _In_opt_ BOOL fGetPointerOnly
+)
 {
-    BOOL fMutexLocked = FALSE;
     PLLNODE pCurNode = NULL;
 
     HRESULT hr = S_OK;
     if(!pLList || iIndexToPeek < 0 || iIndexToPeek >= pLList->nCurNodes)
     {
         hr = E_INVALIDARG;
-        goto error_return;
+        goto fend;
     }
-
-	EnterCriticalSection(&pLList->csLock);
-    fMutexLocked = TRUE;
 
     hr = E_NOT_SET; // Start with this, set to S_OK if node is found
     if(iIndexToPeek == 0)
@@ -317,14 +286,7 @@ HRESULT CHL_DsPeekAtLL(
         }
     }
 
-	LeaveCriticalSection(&pLList->csLock);
-    return hr;
-
-error_return:
-    if(fMutexLocked)
-    {
-		LeaveCriticalSection(&pLList->csLock);
-    }
+fend:
     return hr;
 }
 
@@ -346,10 +308,8 @@ HRESULT CHL_DsFindLL
     if(!pLList || !pfnComparer)
     {
         hr = E_INVALIDARG;
-        goto error_return;
+        goto fend;
     }
-
-	EnterCriticalSection(&pLList->csLock);
 
     // Iterate through the list to find
     pCurNode = pLList->pHead;
@@ -383,11 +343,7 @@ HRESULT CHL_DsFindLL
         }
     }
 
-	LeaveCriticalSection(&pLList->csLock);
-    return hr;
-
-error_return:
-    // CS isn't locked when we are here
+fend:
     return hr;
 }
 
@@ -403,8 +359,6 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
         goto done;
     }
 
-	EnterCriticalSection(&pLList->csLock);
-
     valType = pLList->valType;
 
     // Iterate through the list and delete nodes
@@ -417,9 +371,6 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
 
         pCurNode = pNextNode;
     }
-
-	LeaveCriticalSection(&pLList->csLock);
-	DeleteCriticalSection(&pLList->csLock);
     CHL_MmFree((PVOID*)&pLList);
     
 done:
