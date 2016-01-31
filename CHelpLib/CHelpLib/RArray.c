@@ -137,7 +137,8 @@ HRESULT CHL_DsClearAtRA(_In_ PCHL_RARRAY pra, _In_ UINT index)
     }
 
     PCHL_VAL pChlVal = &pra->pValArray[index];
-    _DeleteVal(pChlVal, pra->vt);
+    _DeleteVal(pChlVal, pra->vt, FALSE);
+    // TODO: Revisit and see if fValIsInHeap is a necessary feature
 
 func_end:
     return hr;

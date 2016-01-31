@@ -257,7 +257,7 @@ PBSTNODE s_DeleteSubTree
     ASSERT(pCurNode->pLeft == NULL);
     ASSERT(pCurNode->pRight == NULL);
 
-    _DeleteVal(&pCurNode->chlVal, pbst->valType);
+    _DeleteVal(&pCurNode->chlVal, pbst->valType, pbst->fValIsInHeap);
     _DeleteKey(&pCurNode->chlKey, pbst->keyType);
     CHL_MmFree(&pCurNode);
 
@@ -299,7 +299,7 @@ HRESULT s_Insert(_Out_ PBSTNODE *ppNewNode, _In_ PCHL_BSTREE pbstree, _In_ PBSTN
         if (SUCCEEDED(hr))
         {
             // Successfully constructed CHL_VAL, now replace the cur node's value with new one
-            _DeleteVal(&pCurNode->chlVal, pbstree->valType);
+            _DeleteVal(&pCurNode->chlVal, pbstree->valType, pbstree->fValIsInHeap);
             CopyMemory(&pCurNode->chlVal, &val, sizeof(val));
         }
     }

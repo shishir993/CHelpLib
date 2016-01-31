@@ -151,6 +151,8 @@ DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize,
     return dwKeyHash;
 }
 
+// TODO: Think about using the CHL_LLIST object here (for hash collisions)
+
 // Creates a hashtable and returns a pointer which can be used for later operations
 // on the table.
 // params:
@@ -822,13 +824,8 @@ void _ClearNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFree
 {
     ASSERT(pnode);
 
-    if(vtype == CHL_VT_POINTER && fFreeVal)
-    {
-        free(pnode->chlVal.valDef.pvPtr);
-    }
-        
     _DeleteKey(&pnode->chlKey, ktype);
-    _DeleteVal(&pnode->chlVal, vtype);
+    _DeleteVal(&pnode->chlVal, vtype, fFreeVal);
     
     pnode->fOccupied = FALSE;
     pnode->pnext = NULL;

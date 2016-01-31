@@ -15,10 +15,6 @@ public:
     TEST_METHOD(CreateAndDestroy);
     TEST_METHOD(SimpleInserts_Ints);
     TEST_METHOD(SimpleInsertFind_StrInt);
-
-private:
-    static int CompareFn_Int32(PCVOID pvLeft, PCVOID pvRight);
-    static int CompareFn_WString(PCVOID pvLeft, PCVOID pvRight);
 };
 
 void BSTUnitTests::CreateAndDestroy()
@@ -26,7 +22,7 @@ void BSTUnitTests::CreateAndDestroy()
     LOG_FUNC_ENTRY;
 
     CHL_BSTREE bst;
-    Assert::IsTrue(SUCCEEDED(CHL_DsCreateBST(&bst, CHL_KT_INT32, CHL_VT_INT32, CompareFn_Int32, FALSE)));
+    Assert::IsTrue(SUCCEEDED(CHL_DsCreateBST(&bst, CHL_KT_INT32, CHL_VT_INT32, Helpers::CompareFn_Int32, FALSE)));
 
     PVOID pv = bst.Create; Assert::IsNotNull(pv);
     pv = bst.Destroy; Assert::IsNotNull(pv);
@@ -44,7 +40,7 @@ void BSTUnitTests::SimpleInserts_Ints()
     LOG_FUNC_ENTRY;
 
     CHL_BSTREE bst;
-    Assert::IsTrue(SUCCEEDED(CHL_DsCreateBST(&bst, CHL_KT_INT32, CHL_VT_INT32, CompareFn_Int32, FALSE)));
+    Assert::IsTrue(SUCCEEDED(CHL_DsCreateBST(&bst, CHL_KT_INT32, CHL_VT_INT32, Helpers::CompareFn_Int32, FALSE)));
 
     for (int i = 0; i < 5; ++i)
     {
@@ -61,7 +57,7 @@ void BSTUnitTests::SimpleInsertFind_StrInt()
     LOG_FUNC_ENTRY;
 
     CHL_BSTREE bst;
-    Assert::IsTrue(SUCCEEDED(CHL_DsCreateBST(&bst, CHL_KT_WSTRING, CHL_VT_INT32, CompareFn_WString, FALSE)));
+    Assert::IsTrue(SUCCEEDED(CHL_DsCreateBST(&bst, CHL_KT_WSTRING, CHL_VT_INT32, Helpers::CompareFn_WString, FALSE)));
 
     const int c_nItems = 5;
     auto spKeysVec = Helpers::GenerateRandomStrings(c_nItems, Helpers::s_randomStrSource_AlphaNum);
@@ -85,31 +81,6 @@ void BSTUnitTests::SimpleInsertFind_StrInt()
     Assert::IsTrue(SUCCEEDED(bst.Destroy(&bst)));
 
     LOG_FUNC_EXIT;
-}
-
-int BSTUnitTests::CompareFn_Int32(PCVOID pvLeft, PCVOID pvRight)
-{
-    int left = (int)pvLeft;
-    int right = (int)pvRight;
-
-    if (left < right)
-    {
-        return -1;
-    }
-
-    if (left > right)
-    {
-        return 1;
-    }
-
-    return 0;
-}
-
-int BSTUnitTests::CompareFn_WString(PCVOID pvLeft, PCVOID pvRight)
-{
-    PCWSTR pszLeft = (PCWSTR)pvLeft;
-    PCWSTR pszRight = (PCWSTR)pvRight;
-    return wcscmp(pszLeft, pszRight);
 }
 
 }

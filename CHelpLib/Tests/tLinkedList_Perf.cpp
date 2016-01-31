@@ -14,16 +14,16 @@ namespace Tests
 TEST_CLASS(LinkedListPerf)
 {
 public:
-    typedef struct _kv {
+    struct KV {
         PWSTR _pwsz;
         int _count;
 
-        _kv(PWSTR pwsz, int count)
+        KV(PWSTR pwsz, int count)
         {
             _pwsz = pwsz;
             _count = count;
         }
-    }KV;
+    };
 
 public:
     TEST_METHOD(StoryProcessing)
@@ -73,10 +73,13 @@ public:
         {
             KV curKV(pwsz, 1);
 
+            KV* pFoundKV;
             Helpers::CTimerTicks timer;
+
             timer.Start();
-            if (SUCCEEDED(pllist->Find(pllist, &curKV, compareKV)))
+            if (SUCCEEDED(pllist->Find(pllist, &curKV, compareKV, &pFoundKV, nullptr, TRUE)))
             {
+                ++(pFoundKV->_count);
                 continue;
             }
 
@@ -112,21 +115,15 @@ public:
         Assert::IsTrue(SUCCEEDED(pllist->Destroy(pllist)));
     }
 
-    static BOOL compareKV(PCVOID lhs, PCVOID rhs)
+    static int compareKV(PCVOID lhs, PCVOID rhs)
     {
         KV* pleft = (KV*)lhs;
         KV* pright = (KV*)rhs;
-        BOOL ret = (wcscmp(pleft->_pwsz, pright->_pwsz) == 0);
-        if (ret)
-        {
-            pright->_count += 1;
-        }
-        return ret;
+        return wcscmp(pleft->_pwsz, pright->_pwsz);
     }
 
 private:
     static PCWSTR s_pszInputFileTale;
-    static int _prevCount;
 };
 
 PCWSTR Tests::LinkedListPerf::s_pszInputFileTale = L"C:\\MyData\\tale.txt";

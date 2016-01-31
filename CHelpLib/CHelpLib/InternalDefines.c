@@ -536,13 +536,21 @@ BOOL _IsDuplicateVal(_In_ PCHL_VAL pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
     return fMatch;
 }
 
-// TODO: BUG: This function must take another parameter fFreePointer in cases of value type CHL_VT_POINTER
-void _DeleteVal(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType)
+void _DeleteVal(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _In_opt_ BOOL fFreePointerType)
 {
     if (_IsValOccupied(pChlVal))
     {
         switch (valType)
         {
+        case CHL_VT_POINTER:
+            {
+                if (fFreePointerType)
+                {
+                    CHL_MmFree(&pChlVal->valDef.pvPtr);
+                }
+                break;
+            }
+
         case CHL_VT_USEROBJECT:
             {
                 CHL_MmFree((PVOID*)&pChlVal->valDef.pvUserObj);

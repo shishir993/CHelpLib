@@ -132,6 +132,31 @@ std::unique_ptr<std::vector<std::wstring>> GenerateRandomStrings(_In_ int count,
     return spVector;
 }
 
+int CompareFn_Int32(const PVOID pvLeft, const PVOID pvRight)
+{
+    int left = (int)pvLeft;
+    int right = (int)pvRight;
+
+    if (left < right)
+    {
+        return -1;
+    }
+
+    if (left > right)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+int CompareFn_WString(const PVOID pvLeft, const PVOID pvRight)
+{
+    PCWSTR pszLeft = (PCWSTR)pvLeft;
+    PCWSTR pszRight = (PCWSTR)pvRight;
+    return wcscmp(pszLeft, pszRight);
+}
+
 CTimerTicks::CTimerTicks()
 {
     Reset();

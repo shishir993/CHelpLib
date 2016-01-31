@@ -46,7 +46,7 @@ HRESULT _EnsureSufficientKeyBuf(
 HRESULT _CopyValIn(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID pvVal, _Inout_opt_ int iValSize);
 HRESULT _CopyValOut(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVOID pvValOut, _In_ BOOL fGetPointerOnly);
 BOOL _IsDuplicateVal(_In_ PCHL_VAL pLeftVal, _In_ PCVOID pRightVal, _In_ CHL_VALTYPE valType, _In_ int iValSize);
-void _DeleteVal(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType);
+void _DeleteVal(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _In_opt_ BOOL fFreePointerType);
 void _MarkValUnoccupied(_In_ PCHL_VAL pChlVal);
 void _MarkValOccupied(_In_ PCHL_VAL pChlVal);
 BOOL _IsValOccupied(_In_ PCHL_VAL pChlVal);

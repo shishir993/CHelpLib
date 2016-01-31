@@ -122,20 +122,20 @@ error_return:
     return hr;
 }
 
-HRESULT CHL_DsRemoveLL(
+HRESULT CHL_DsRemoveLL
+(
     _In_ PCHL_LLIST pLList, 
     _In_ PCVOID pvValToFind, 
     _In_ BOOL fStopOnFirstFind, 
-    _In_ BOOL (*pfnComparer)(PVOID, PVOID))
+    _In_ CHL_CompareFn pfnComparer
+)
 {
     PLLNODE pCurNode = NULL;
     PVOID pvCurVal = NULL;
     CHL_VALTYPE valType = pLList->valType;
 
-    BOOL fMutexLocked = FALSE;
-
     HRESULT hr = S_OK;
-    if(!pLList || !pfnComparer)
+    if (!pLList || !pfnComparer)
     {
         hr = E_INVALIDARG;
         goto error_return;
@@ -143,15 +143,13 @@ HRESULT CHL_DsRemoveLL(
 
 	EnterCriticalSection(&pLList->csLock);
 
-    fMutexLocked = TRUE;
-
     // Iterate through the list to find
     pCurNode = pLList->pHead;
     hr = E_NOT_SET;
     while(pCurNode)
     {
         _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, TRUE);
-        if( pfnComparer(pvValToFind, pvCurVal) )
+        if (pfnComparer(pvValToFind, pvCurVal) == 0)
         {
             hr = S_OK;
 
@@ -160,7 +158,7 @@ HRESULT CHL_DsRemoveLL(
 
             --(pLList->nCurNodes);
 
-            if(fStopOnFirstFind)
+            if (fStopOnFirstFind)
             {
                 break;
             }
@@ -173,10 +171,7 @@ HRESULT CHL_DsRemoveLL(
     return hr;
 
 error_return:
-    if(fMutexLocked)
-    {
-		LeaveCriticalSection(&pLList->csLock);
-    }
+    // CS not locked if we are here
     return hr;
 }
 
@@ -333,14 +328,16 @@ error_return:
     return hr;
 }
 
-// TODO: Replace compare function with the standard CHL_CompareFn type (remember it returns int not BOOL)
-HRESULT CHL_DsFindLL(
+HRESULT CHL_DsFindLL
+(
     _In_ PCHL_LLIST pLList, 
     _In_ PCVOID pvValToFind, 
-    _In_ BOOL (*pfnComparer)(PCVOID, PCVOID))
-{
-    BOOL fMutexLocked = FALSE;
-
+    _In_ CHL_CompareFn pfnComparer,
+    _Inout_opt_ PVOID pvValOut,
+    _Inout_opt_ PINT piValBufSize,
+    _In_opt_ BOOL fGetPointerOnly
+)
+{    
     PLLNODE pCurNode = NULL;
     PVOID pvCurVal = NULL;
     CHL_VALTYPE valType = pLList->valType;
@@ -354,15 +351,13 @@ HRESULT CHL_DsFindLL(
 
 	EnterCriticalSection(&pLList->csLock);
 
-    fMutexLocked = TRUE;
-
     // Iterate through the list to find
     pCurNode = pLList->pHead;
     hr = E_NOT_SET;
     while(pCurNode)
     {
         _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, TRUE);
-        if( pfnComparer(pvValToFind, pvCurVal) )
+        if (pfnComparer(pvValToFind, pvCurVal) == 0)
         {
             hr = S_OK;
             break;
@@ -370,14 +365,29 @@ HRESULT CHL_DsFindLL(
         pCurNode = pCurNode->pright;
     }
 
+    if (SUCCEEDED(hr) && (pvValOut != NULL))
+    {
+        ASSERT(pCurNode != NULL);
+        if (!fGetPointerOnly)
+        {
+            // Ensure sufficient buffer is provided in this case.
+            hr = _EnsureSufficientValBuf(
+                &pCurNode->chlVal,
+                (piValBufSize && (*piValBufSize > 0)) ? *piValBufSize : sizeof(PVOID),
+                piValBufSize);
+        }
+
+        if (SUCCEEDED(hr))
+        {
+            _CopyValOut(&pCurNode->chlVal, valType, pvValOut, fGetPointerOnly);
+        }
+    }
+
 	LeaveCriticalSection(&pLList->csLock);
     return hr;
 
 error_return:
-    if(fMutexLocked)
-    {
-		LeaveCriticalSection(&pLList->csLock);
-    }
+    // CS isn't locked when we are here
     return hr;
 }
 
@@ -507,7 +517,7 @@ static void _FreeNodeMem(PLLNODE pnode, CHL_VALTYPE valType, BOOL fFreeValMem)
     // TODO: Revisit and see if this is a necessary feature.
     if(fFreeValMem)
     {
-        _DeleteVal(&pnode->chlVal, valType);
+        _DeleteVal(&pnode->chlVal, valType, FALSE);
     }
 
     // Finally, free the node itself

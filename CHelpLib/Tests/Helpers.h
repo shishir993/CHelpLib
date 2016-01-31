@@ -43,6 +43,9 @@ std::wstring GenerateRandomString(_In_ int nRequiredChars, _In_z_ PCWSTR pszSour
 std::unique_ptr<std::vector<int>> GenerateRandomNumbers(_In_ int count);
 std::unique_ptr<std::vector<std::wstring>> GenerateRandomStrings(_In_ int count, _In_z_ PCWSTR pszSourceChars);
 
+int CompareFn_Int32(const PVOID pvLeft, const PVOID pvRight);
+int CompareFn_WString(const PVOID pvLeft, const PVOID pvRight);
+
 template <class T, class Fn>
 typename std::list<T>::const_iterator FindInList(_In_ const std::list<T>& srcList, _In_ const T& rhs, _In_ const Fn&& fnCompare)
 {
