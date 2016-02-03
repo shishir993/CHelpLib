@@ -85,12 +85,32 @@ HRESULT _CopyKeyIn(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID 
     return hr;
 }
 
-HRESULT _CopyKeyOut(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType, _Inout_ PVOID pvKeyOut, _In_ BOOL fGetPointerOnly)
+HRESULT _CopyKeyOut
+(
+    _In_ PCHL_KEY pChlKey,
+    _In_ CHL_KEYTYPE keyType,
+    _Inout_ PVOID pvKeyOut,
+    _Inout_ PINT pKeyOutSize,
+    _In_ BOOL fGetPointerOnly
+)
 {
     HRESULT hr = S_OK;
 
     ASSERT(pChlKey && pvKeyOut);
-    ASSERT((keyType > CHL_KT_START) && (keyType < CHL_KT_END));
+    ASSERT(IS_VALID_CHL_KEYTYPE(keyType));
+
+    if (!fGetPointerOnly)
+    {
+        // Ensure sufficient buffer is provided in this case
+        hr = _EnsureSufficientKeyBuf(
+            pChlKey,
+            (pKeyOutSize && (*pKeyOutSize > 0)) ? *pKeyOutSize : sizeof(PVOID),
+            pKeyOutSize);
+        if (FAILED(hr))
+        {
+            goto fend;
+        }
+    }
 
     switch(keyType)
     {
@@ -145,6 +165,8 @@ HRESULT _CopyKeyOut(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType, _Inout_ PVO
             break;
         }
     }
+
+fend:
     return hr;
 }
 
@@ -396,12 +418,32 @@ HRESULT _CopyValIn(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
     return hr;
 }
 
-HRESULT _CopyValOut(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVOID pvValOut, _In_ BOOL fGetPointerOnly)
+HRESULT _CopyValOut
+(
+    _In_ PCHL_VAL pChlVal,
+    _In_ CHL_VALTYPE valType,
+    _Inout_ PVOID pvValOut,
+    _Inout_opt_ PINT pValOutSize,
+    _In_ BOOL fGetPointerOnly
+)
 {
     HRESULT hr = S_OK;
 
     ASSERT(pChlVal && pvValOut);
-    ASSERT((valType > CHL_VT_START) && (valType < CHL_VT_END));
+    ASSERT(IS_VALID_CHL_VALTYPE(valType));
+
+    if (!fGetPointerOnly)
+    {
+        // Ensure sufficient buffer is provided in this case
+        hr = _EnsureSufficientValBuf(
+            pChlVal,
+            (pValOutSize && (*pValOutSize > 0)) ? *pValOutSize : sizeof(PVOID),
+            pValOutSize);
+        if (FAILED(hr))
+        {
+            goto fend;
+        }
+    }
 
     switch(valType)
     {
@@ -469,6 +511,8 @@ HRESULT _CopyValOut(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVO
             break;
         }
     }
+
+fend:
     return hr;
 }
 

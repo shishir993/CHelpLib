@@ -33,6 +33,20 @@ static PBSTNODE s_Find
     _In_ PCHL_INPUT_KV pInputKeyValue
 );
 
+static PBSTNODE s_FindFloor
+(
+    _In_ PCHL_BSTREE pbstree,
+    _In_ PBSTNODE pCurNode,
+    _In_ PCHL_INPUT_KV pInputKey
+);
+
+static PBSTNODE s_FindCeil
+(
+    _In_ PCHL_BSTREE pbstree,
+    _In_ PBSTNODE pCurNode,
+    _In_ PCHL_INPUT_KV pInputKey
+);
+
 static HRESULT s_NewNode
 (
     _Outptr_ PBSTNODE *ppNewNode,
@@ -76,6 +90,10 @@ HRESULT CHL_DsCreateBST
     pbst->Destroy = CHL_DsDestroyBST;
     pbst->Insert = CHL_DsInsertBST;
     pbst->Find = CHL_DsFindBST;
+    pbst->FindMax = CHL_DsFindMaxBST;
+    pbst->FindMin = CHL_DsFindMinBST;
+    pbst->FindFloor = CHL_DsFindFloorBST;
+    pbst->FindCeil = CHL_DsFindCeilBST;
     pbst->InitIterator = CHL_DsInitIteratorBST;
     pbst->GetNext = CHL_DsGetNextBST;
 
@@ -171,19 +189,183 @@ HRESULT CHL_DsFindBST
 
     if (pvVal)
     {
-        // Ensure sufficient buffer is provided in this case.
-        if (!fGetPointerOnly)
+        hr = _CopyValOut(&pFoundNode->chlVal, pbst->valType, pvVal, pValsize, fGetPointerOnly);
+    }
+
+fend:
+    return hr;
+}
+
+HRESULT CHL_DsFindMaxBST
+(
+    _In_ PCHL_BSTREE pbst,
+    _Inout_opt_ PVOID pvKeyOut,
+    _Inout_opt_ PINT pKeySizeOut,
+    _In_opt_ BOOL fGetPointerOnly
+)
+{
+    PBSTNODE pMaxNode;
+    PBSTNODE pCurNode;
+    HRESULT hr = E_NOT_SET;
+
+    if (IS_INVALID_CHL_KEYTYPE(pbst->keyType) || IS_INVALID_CHL_VALTYPE(pbst->valType))
+    {
+        hr = E_INVALIDARG;
+        goto fend;
+    }
+
+    pMaxNode = pCurNode = pbst->pRoot;
+    while (pCurNode && pCurNode->pRight)
+    {
+        pMaxNode = pCurNode;
+        pCurNode = pCurNode->pRight;
+    }
+
+    if (pMaxNode)
+    {
+        hr = S_OK;
+        if (!pvKeyOut)
         {
-            hr = _EnsureSufficientValBuf(
-                &pFoundNode->chlVal,
-                ((pValsize && (*pValsize > 0)) ? *pValsize : sizeof(PVOID)),
-                pValsize);
+            goto fend;
         }
 
-        if (SUCCEEDED(hr))
+        hr = _CopyKeyOut(&pCurNode->chlKey, pbst->keyType, pvKeyOut, pKeySizeOut, fGetPointerOnly);
+    }
+
+fend:
+    return hr;
+}
+
+HRESULT CHL_DsFindMinBST
+(
+    _In_ PCHL_BSTREE pbst,
+    _Inout_opt_ PVOID pvKeyOut,
+    _Inout_opt_ PINT pKeySizeOut,
+    _In_opt_ BOOL fGetPointerOnly
+)
+{
+    PBSTNODE pMinNode;
+    PBSTNODE pCurNode;
+    HRESULT hr = E_NOT_SET;
+
+    if (IS_INVALID_CHL_KEYTYPE(pbst->keyType) || IS_INVALID_CHL_VALTYPE(pbst->valType))
+    {
+        hr = E_INVALIDARG;
+        goto fend;
+    }
+
+    pMinNode = pCurNode = pbst->pRoot;
+    while (pCurNode && pCurNode->pLeft)
+    {
+        pMinNode = pCurNode;
+        pCurNode = pCurNode->pLeft;
+    }
+
+    if (pMinNode)
+    {
+        hr = S_OK;
+        if (!pvKeyOut)
         {
-            hr = _CopyValOut(&pFoundNode->chlVal, pbst->valType, pvVal, fGetPointerOnly);
+            goto fend;
         }
+
+        hr = _CopyKeyOut(&pCurNode->chlKey, pbst->keyType, pvKeyOut, pKeySizeOut, fGetPointerOnly);
+    }
+
+fend:
+    return hr;
+}
+
+HRESULT CHL_DsFindFloorBST
+(
+    _In_ PCHL_BSTREE pbst,
+    _In_ PCVOID pvKey,
+    _In_ int iKeySize,
+    _Inout_opt_ PVOID pvKeyOut,
+    _Inout_opt_ PINT pKeySizeOut,
+    _In_opt_ BOOL fGetPointerOnly
+)
+{
+    HRESULT hr = E_NOT_SET;
+    PBSTNODE pFloorNode = NULL;
+
+    if (IS_INVALID_CHL_KEYTYPE(pbst->keyType) || IS_INVALID_CHL_VALTYPE(pbst->valType))
+    {
+        hr = E_INVALIDARG;
+        goto fend;
+    }
+
+    if (iKeySize <= 0 && FAILED(_GetKeySize(pvKey, pbst->keyType, &iKeySize)))
+    {
+        logerr("%s(): Keysize unspecified or unable to determine.", __FUNCTION__);
+        hr = E_INVALIDARG;
+        goto fend;
+    }
+
+    // floor(k) = Largest key k1 such that k1 <= k, or NULL if no such key exists
+
+    CHL_INPUT_KV kvInput;
+    kvInput.pvKey = pvKey;
+    kvInput.iKeySize = iKeySize;
+    pFloorNode = s_FindFloor(pbst, pbst->pRoot, &kvInput);
+
+    if (pFloorNode)
+    {
+        hr = S_OK;
+        if (!pvKeyOut)
+        {
+            goto fend;
+        }
+
+        hr = _CopyKeyOut(&pFloorNode->chlKey, pbst->keyType, pvKeyOut, pKeySizeOut, fGetPointerOnly);
+    }
+
+fend:
+    return hr;
+}
+
+HRESULT CHL_DsFindCeilBST
+(
+    _In_ PCHL_BSTREE pbst,
+    _In_ PCVOID pvKey,
+    _In_ int iKeySize,
+    _Inout_opt_ PVOID pvKeyOut,
+    _Inout_opt_ PINT pKeySizeOut,
+    _In_opt_ BOOL fGetPointerOnly
+)
+{
+    HRESULT hr = E_NOT_SET;
+    PBSTNODE pCeilNode = NULL;
+
+    if (IS_INVALID_CHL_KEYTYPE(pbst->keyType) || IS_INVALID_CHL_VALTYPE(pbst->valType))
+    {
+        hr = E_INVALIDARG;
+        goto fend;
+    }
+
+    if (iKeySize <= 0 && FAILED(_GetKeySize(pvKey, pbst->keyType, &iKeySize)))
+    {
+        logerr("%s(): Keysize unspecified or unable to determine.", __FUNCTION__);
+        hr = E_INVALIDARG;
+        goto fend;
+    }
+
+    // ceil(k) = Smallest key k1 such that k1 >= k, or NULL if no such key exists
+
+    CHL_INPUT_KV kvInput;
+    kvInput.pvKey = pvKey;
+    kvInput.iKeySize = iKeySize;
+    pCeilNode = s_FindCeil(pbst, pbst->pRoot, &kvInput);
+
+    if (pCeilNode)
+    {
+        hr = S_OK;
+        if (!pvKeyOut)
+        {
+            goto fend;
+        }
+
+        hr = _CopyKeyOut(&pCeilNode->chlKey, pbst->keyType, pvKeyOut, pKeySizeOut, fGetPointerOnly);
     }
 
 fend:
@@ -205,16 +387,17 @@ HRESULT CHL_DsInitIteratorBST
     pItr->itType = itrType;
     pItr->pbst = pbst;
     pItr->pCur = pbst->pRoot;
+    pItr->GetNext = CHL_DsGetNextBST;
     return S_OK;
 }
 
 HRESULT CHL_DsGetNextBST
 (
     _In_ PCHL_BST_ITERATOR pItr,
-    _Inout_opt_ PCVOID pvKey,
+    _Inout_opt_ PVOID pvKey,
     _Inout_opt_ PINT pKeysize,
     _Inout_opt_ PVOID pvVal,
-    _Inout_opt_ PINT pValsize,
+    _Inout_opt_ PINT pValSize,
     _In_opt_ BOOL fGetPointerOnly
 )
 {
@@ -222,7 +405,7 @@ HRESULT CHL_DsGetNextBST
     DBG_UNREFERENCED_PARAMETER(pvKey);
     DBG_UNREFERENCED_PARAMETER(pKeysize);
     DBG_UNREFERENCED_PARAMETER(pvVal);
-    DBG_UNREFERENCED_PARAMETER(pValsize);
+    DBG_UNREFERENCED_PARAMETER(pValSize);
     DBG_UNREFERENCED_PARAMETER(fGetPointerOnly);
     return E_NOTIMPL;
 }
@@ -279,7 +462,7 @@ HRESULT s_Insert(_Out_ PBSTNODE *ppNewNode, _In_ PCHL_BSTREE pbstree, _In_ PBSTN
     }
 
     // Extract key from current node for comparison against user-specified key
-    hrTemp = _CopyKeyOut(&pCurNode->chlKey, pbstree->keyType, &pvExistingKey, TRUE /*fGetPointerOnly*/);
+    hrTemp = _CopyKeyOut(&pCurNode->chlKey, pbstree->keyType, &pvExistingKey, NULL, TRUE /*fGetPointerOnly*/);
     ASSERT(SUCCEEDED(hrTemp));
 
     // Based on key comparison, the new key-value should be inserted in left/right subtree
@@ -328,7 +511,7 @@ PBSTNODE s_Find
         return NULL;
     }
 
-    hrTemp = _CopyKeyOut(&pCurNode->chlKey, pbstree->keyType, &pvExistingKey, TRUE /*fGetPointerOnly*/);
+    hrTemp = _CopyKeyOut(&pCurNode->chlKey, pbstree->keyType, &pvExistingKey, NULL, TRUE /*fGetPointerOnly*/);
     ASSERT(SUCCEEDED(hrTemp));
 
     int cmp = pbstree->fnKeyCompare(pInputKeyValue->pvKey, pvExistingKey);
@@ -340,6 +523,80 @@ PBSTNODE s_Find
     if (cmp > 0)
     {
         return s_Find(pbstree, pCurNode->pRight, pInputKeyValue);
+    }
+
+    return pCurNode;
+}
+
+PBSTNODE s_FindFloor
+(
+    _In_ PCHL_BSTREE pbstree,
+    _In_ PBSTNODE pCurNode,
+    _In_ PCHL_INPUT_KV pInputKey
+)
+{
+    // If key 'k' is < root then floor(k) must be in left subtree.
+    // Else then floor(k) could be in right subtree provided there is a key
+    // in the right subtree <= k.
+
+    PVOID pvExistingKey;
+    HRESULT hrTemp = S_OK;
+
+    if (pCurNode == NULL)
+    {
+        return NULL;
+    }
+
+    hrTemp = _CopyKeyOut(&pCurNode->chlKey, pbstree->keyType, &pvExistingKey, NULL, TRUE /*fGetPointerOnly*/);
+    ASSERT(SUCCEEDED(hrTemp));
+
+    int cmp = pbstree->fnKeyCompare(pInputKey->pvKey, pvExistingKey);
+    if (cmp < 0)
+    {
+        return s_FindFloor(pbstree, pCurNode->pLeft, pInputKey);
+    }
+
+    if (cmp > 0)
+    {
+        PBSTNODE pNodeInRightST = s_FindFloor(pbstree, pCurNode->pRight, pInputKey);
+        return pNodeInRightST ? pNodeInRightST : pCurNode;
+    }
+
+    return pCurNode;
+}
+
+PBSTNODE s_FindCeil
+(
+    _In_ PCHL_BSTREE pbstree,
+    _In_ PBSTNODE pCurNode,
+    _In_ PCHL_INPUT_KV pInputKey
+)
+{
+    // If key 'k' is > root then ceil(k) must be in right subtree.
+    // Else then ceil(k) could be in left subtree provided there is a key
+    // in the left subtree >= k.
+
+    PVOID pvExistingKey;
+    HRESULT hrTemp = S_OK;
+
+    if (pCurNode == NULL)
+    {
+        return NULL;
+    }
+
+    hrTemp = _CopyKeyOut(&pCurNode->chlKey, pbstree->keyType, &pvExistingKey, NULL, TRUE /*fGetPointerOnly*/);
+    ASSERT(SUCCEEDED(hrTemp));
+
+    int cmp = pbstree->fnKeyCompare(pInputKey->pvKey, pvExistingKey);
+    if (cmp > 0)
+    {
+        return s_FindCeil(pbstree, pCurNode->pRight, pInputKey);
+    }
+
+    if (cmp < 0)
+    {
+        PBSTNODE pNodeInLeftST = s_FindCeil(pbstree, pCurNode->pLeft, pInputKey);
+        return pNodeInLeftST ? pNodeInLeftST : pCurNode;
     }
 
     return pCurNode;

@@ -66,7 +66,7 @@ struct _bstTree {
             _In_ int iKeySize,
             _In_ PCVOID pvVal,
             _In_ int iValSize
-            );
+        );
 
     HRESULT (*Find)
         (
@@ -75,6 +75,42 @@ struct _bstTree {
             _In_ int iKeySize,
             _Inout_opt_ PVOID pvVal,
             _Inout_opt_ PINT pValsize,
+            _In_opt_ BOOL fGetPointerOnly
+        );
+
+    HRESULT (*FindMax)
+        (
+            _In_ PCHL_BSTREE pbst,
+            _Inout_opt_ PVOID pvKeyOut,
+            _Inout_opt_ PINT pKeySizeOut,
+            _In_opt_ BOOL fGetPointerOnly
+        );
+
+    HRESULT (*FindMin)
+        (
+            _In_ PCHL_BSTREE pbst,
+            _Inout_opt_ PVOID pvKeyOut,
+            _Inout_opt_ PINT pKeySizeOut,
+            _In_opt_ BOOL fGetPointerOnly
+        );
+
+    HRESULT (*FindFloor)
+        (
+            _In_ PCHL_BSTREE pbst,
+            _In_ PCVOID pvKey,
+            _In_ int iKeySize,
+            _Inout_opt_ PVOID pvKeyOut,
+            _Inout_opt_ PINT pKeySizeOut,
+            _In_opt_ BOOL fGetPointerOnly
+        );
+
+    HRESULT (*FindCeil)
+        (
+            _In_ PCHL_BSTREE pbst,
+            _In_ PCVOID pvKey,
+            _In_ int iKeySize,
+            _Inout_opt_ PVOID pvKeyOut,
+            _Inout_opt_ PINT pKeySizeOut,
             _In_opt_ BOOL fGetPointerOnly
         );
 
@@ -91,9 +127,9 @@ struct _bstTree {
             _Inout_opt_ PCVOID pvKey,
             _Inout_opt_ PINT pKeysize,
             _Inout_opt_ PVOID pvVal,
-            _Inout_opt_ PINT pValsize,
+            _Inout_opt_ PINT pValSize,
             _In_opt_ BOOL fGetPointerOnly
-            );
+        );
 
 };
 
@@ -102,6 +138,18 @@ struct _bstIterator {
     CHL_BstIterationType itType;
     PCHL_BSTREE pbst;
     PBSTNODE pCur;
+
+    // Access methods
+
+    HRESULT(*GetNext)
+        (
+            _In_ PCHL_BST_ITERATOR pItr,
+            _Inout_opt_ PCVOID pvKey,
+            _Inout_opt_ PINT pKeysize,
+            _Inout_opt_ PVOID pvVal,
+            _Inout_opt_ PINT pValSize,
+            _In_opt_ BOOL fGetPointerOnly
+        );
 };
 
 
@@ -174,6 +222,88 @@ DllExpImp HRESULT CHL_DsFindBST
     _In_opt_ BOOL fGetPointerOnly
 );
 
+// Get the maximum key in the binary search tree
+// Params:
+//      pbst            : Pointer to the binary search tree object returned by CHL_DsCreateBST function.
+//      pvKey           : Optional. Pointer to buffer to receive the maximum key.
+//      pKeySize        : Optional. Size of the key buffer in bytes. If specified size is insufficient, the function
+//                        returns the required size back in this parameter.
+//      fGetPointerOnly : Applies to value of type CHL_VT_USEROBJECT/CHL_VT_STRING/CHL_VT_WSTRING - 
+//                        If this is TRUE, function returns a pointer to the stored key in the buffer pvKeyOut.
+//                        Otherwise, the full value is copied into the pKeySizeOut buffer.
+//
+DllExpImp HRESULT CHL_DsFindMaxBST
+(
+    _In_ PCHL_BSTREE pbst,
+    _Inout_opt_ PVOID pvKeyOut,
+    _Inout_opt_ PINT pKeySizeOut,
+    _In_opt_ BOOL fGetPointerOnly
+);
+
+// Get the minimum key in the binary search tree
+// Params:
+//      pbst            : Pointer to the binary search tree object returned by CHL_DsCreateBST function.
+//      pvKey           : Optional. Pointer to buffer to receive the minimum key.
+//      pKeySize        : Optional. Size of the key buffer in bytes. If specified size is insufficient, the function
+//                        returns the required size back in this parameter.
+//      fGetPointerOnly : Applies to value of type CHL_VT_USEROBJECT/CHL_VT_STRING/CHL_VT_WSTRING - 
+//                        If this is TRUE, function returns a pointer to the stored key in the buffer pvKeyOut.
+//                        Otherwise, the full value is copied into the pKeySizeOut buffer.
+//
+DllExpImp HRESULT CHL_DsFindMinBST
+(
+    _In_ PCHL_BSTREE pbst,
+    _Inout_opt_ PVOID pvKey,
+    _Inout_opt_ PINT pKeysize,
+    _In_opt_ BOOL fGetPointerOnly
+);
+
+// Get the floor of specified key in the binary search tree
+// Params:
+//      pbst            : Pointer to the binary search tree object returned by CHL_DsCreateBST function.
+//      pvKey           : Pointer to the key. For primitive types, this is the primitive value casted to a PCVOID.
+//      iKeySize        : Size of the key in bytes. For null-terminated strings, zero may be passed.
+//                        returns the required size back in this parameter.
+//      pvKeyOut        : Optional. Pointer to buffer to receive the floor key, if found.
+//      pKeySizeOut     : Optional. Size of the key buffer in bytes. If specified size is insufficient, the function
+//                        returns the required size back in this parameter.
+//      fGetPointerOnly : Applies to value of type CHL_VT_USEROBJECT/CHL_VT_STRING/CHL_VT_WSTRING - 
+//                        If this is TRUE, function returns a pointer to the stored key in the buffer pvKeyOut.
+//                        Otherwise, the full value is copied into the pKeySizeOut buffer.
+//
+DllExpImp HRESULT CHL_DsFindFloorBST
+(
+    _In_ PCHL_BSTREE pbst,
+    _In_ PCVOID pvKey,
+    _In_ int iKeySize,
+    _Inout_opt_ PVOID pvKeyOut,
+    _Inout_opt_ PINT pKeySizeOut,
+    _In_opt_ BOOL fGetPointerOnly
+);
+
+// Get the ceil of specified key in the binary search tree
+// Params:
+//      pbst            : Pointer to the binary search tree object returned by CHL_DsCreateBST function.
+//      pvKey           : Pointer to the key. For primitive types, this is the primitive value casted to a PCVOID.
+//      iKeySize        : Size of the key in bytes. For null-terminated strings, zero may be passed.
+//                        returns the required size back in this parameter.
+//      pvKeyOut        : Optional. Pointer to buffer to receive the ceil key, if found.
+//      pKeySizeOut     : Optional. Size of the key buffer in bytes. If specified size is insufficient, the function
+//                        returns the required size back in this parameter.
+//      fGetPointerOnly : Applies to value of type CHL_VT_USEROBJECT/CHL_VT_STRING/CHL_VT_WSTRING - 
+//                        If this is TRUE, function returns a pointer to the stored key in the buffer pvKeyOut.
+//                        Otherwise, the full value is copied into the pKeySizeOut buffer.
+//
+DllExpImp HRESULT CHL_DsFindCeilBST
+(
+    _In_ PCHL_BSTREE pbst,
+    _In_ PCVOID pvKey,
+    _In_ int iKeySize,
+    _Inout_opt_ PVOID pvKeyOut,
+    _Inout_opt_ PINT pKeySizeOut,
+    _In_opt_ BOOL fGetPointerOnly
+);
+
 // Initialize the iterator object for use with the specified BST.
 // Params:
 //      pItr    : Pointer to the iterator object to initialize.
@@ -200,10 +330,10 @@ DllExpImp HRESULT CHL_DsInitIteratorBST
 DllExpImp HRESULT CHL_DsGetNextBST
 (
     _In_ PCHL_BST_ITERATOR pItr, 
-    _Inout_opt_ PCVOID pvKey,
+    _Inout_opt_ PVOID pvKey,
     _Inout_opt_ PINT pKeysize,
     _Inout_opt_ PVOID pvVal,
-    _Inout_opt_ PINT pValsize,
+    _Inout_opt_ PINT pValSize,
     _In_opt_ BOOL fGetPointerOnly
 );
 

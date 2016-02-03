@@ -132,7 +132,7 @@ HRESULT CHL_DsRemoveLL
     hr = E_NOT_SET;
     while(pCurNode)
     {
-        _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, TRUE);
+        _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, NULL, TRUE);
         if (pfnComparer(pvValToFind, pvCurVal) == 0)
         {
             hr = S_OK;
@@ -191,21 +191,9 @@ HRESULT CHL_DsRemoveAtLL(
 
     ASSERT(pCurNode);
 
-    if(pvValOut)
+    if (pvValOut)
     {
-        // Ensure sufficient buffer is provided in this case.
-        if(!fGetPointerOnly)
-        {
-            hr = _EnsureSufficientValBuf(
-                    &pCurNode->chlVal,
-                    (piValBufSize && (*piValBufSize > 0)) ? *piValBufSize : sizeof(PVOID),
-                    piValBufSize);
-        }
-
-        if(SUCCEEDED(hr))
-        {
-            hr = _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, fGetPointerOnly);
-        }
+        hr = _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, piValBufSize, fGetPointerOnly);
     }
 
     if(SUCCEEDED(hr))
@@ -271,19 +259,7 @@ HRESULT CHL_DsPeekAtLL
 
     if(SUCCEEDED(hr) && (pvValOut != NULL))
     {
-        // Ensure sufficient buffer is provided in this case.
-        if(!fGetPointerOnly)
-        {
-            hr = _EnsureSufficientValBuf(
-                    &pCurNode->chlVal,
-                    (piValBufSize && (*piValBufSize > 0)) ? *piValBufSize : sizeof(PVOID),
-                    piValBufSize);
-        }
-
-        if(SUCCEEDED(hr))
-        {
-            _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, fGetPointerOnly);
-        }
+        _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, piValBufSize, fGetPointerOnly);
     }
 
 fend:
@@ -316,7 +292,7 @@ HRESULT CHL_DsFindLL
     hr = E_NOT_SET;
     while(pCurNode)
     {
-        _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, TRUE);
+        _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, NULL, TRUE);
         if (pfnComparer(pvValToFind, pvCurVal) == 0)
         {
             hr = S_OK;
@@ -328,19 +304,7 @@ HRESULT CHL_DsFindLL
     if (SUCCEEDED(hr) && (pvValOut != NULL))
     {
         ASSERT(pCurNode != NULL);
-        if (!fGetPointerOnly)
-        {
-            // Ensure sufficient buffer is provided in this case.
-            hr = _EnsureSufficientValBuf(
-                &pCurNode->chlVal,
-                (piValBufSize && (*piValBufSize > 0)) ? *piValBufSize : sizeof(PVOID),
-                piValBufSize);
-        }
-
-        if (SUCCEEDED(hr))
-        {
-            _CopyValOut(&pCurNode->chlVal, valType, pvValOut, fGetPointerOnly);
-        }
+        _CopyValOut(&pCurNode->chlVal, valType, pvValOut, piValBufSize, fGetPointerOnly);
     }
 
 fend:

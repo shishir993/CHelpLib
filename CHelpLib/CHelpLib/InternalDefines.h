@@ -34,7 +34,14 @@
 // Functions internal only
 
 HRESULT _CopyKeyIn(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID pvKey, _Inout_opt_ int iKeySize);
-HRESULT _CopyKeyOut(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType, _Inout_ PVOID pvKeyOut, _In_ BOOL fGetPointerOnly);
+HRESULT _CopyKeyOut
+(
+    _In_ PCHL_KEY pChlKey,
+    _In_ CHL_KEYTYPE keyType,
+    _Inout_ PVOID pvKeyOut,
+    _Inout_opt_ PINT pKeyOutSize,
+    _In_ BOOL fGetPointerOnly
+);
 BOOL _IsDuplicateKey(_In_ PCHL_KEY pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize);
 void _DeleteKey(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType);
 HRESULT _GetKeySize(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _Inout_ PINT piKeySize);
@@ -44,7 +51,14 @@ HRESULT _EnsureSufficientKeyBuf(
 	_Inout_opt_ PINT piReqBufSize);
 
 HRESULT _CopyValIn(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID pvVal, _Inout_opt_ int iValSize);
-HRESULT _CopyValOut(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _Inout_ PVOID pvValOut, _In_ BOOL fGetPointerOnly);
+HRESULT _CopyValOut
+(
+    _In_ PCHL_VAL pChlVal,
+    _In_ CHL_VALTYPE valType,
+    _Inout_ PVOID pvValOut,
+    _Inout_opt_ PINT pValOutSize,
+    _In_ BOOL fGetPointerOnly
+);
 BOOL _IsDuplicateVal(_In_ PCHL_VAL pLeftVal, _In_ PCVOID pRightVal, _In_ CHL_VALTYPE valType, _In_ int iValSize);
 void _DeleteVal(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _In_opt_ BOOL fFreePointerType);
 void _MarkValUnoccupied(_In_ PCHL_VAL pChlVal);

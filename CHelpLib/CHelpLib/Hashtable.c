@@ -440,21 +440,9 @@ HRESULT CHL_DsFindHT(
     // Passed in or Calculated keysize should be equal to stored keysize
     ASSERT(iKeySize == phtFoundNode->chlKey.iKeySize);
 
-    if(pvVal)
+    if (pvVal)
     {
-        // Ensure sufficient buffer is provided in this case.
-        if(!fGetPointerOnly)
-        {
-            hr = _EnsureSufficientValBuf(
-                    &phtFoundNode->chlVal,
-                    (piValSize && (*piValSize > 0)) ? *piValSize : sizeof(PVOID),
-                    piValSize);
-        }
-
-        if(SUCCEEDED(hr))
-        {
-            hr = _CopyValOut(&phtFoundNode->chlVal, phtable->valType, pvVal, fGetPointerOnly);
-        }
+        hr = _CopyValOut(&phtFoundNode->chlVal, phtable->valType, pvVal, piValSize, fGetPointerOnly);
     }
 
     if(SUCCEEDED(hr) && (piValSize != NULL))
@@ -623,44 +611,14 @@ HRESULT CHL_DsGetNextHT(
         hr = E_UNEXPECTED;
     }
 
-    if(SUCCEEDED(hr))
+    if(SUCCEEDED(hr) && pvKey)
     {
-        if(pvKey)
-        {
-            // Ensure sufficient buffer is provided in this case.
-            if(!fGetPointerOnly)
-            {
-                hr = _EnsureSufficientKeyBuf(
-                        &pCurNode->chlKey, 
-                        (piKeySize && (*piKeySize > 0)) ? *piKeySize : sizeof(PVOID),
-                        piKeySize);
-            }
-
-            if(SUCCEEDED(hr))
-            {
-                hr = _CopyKeyOut(&pCurNode->chlKey, phtable->keyType, pvKey, fGetPointerOnly);
-            }
-        }
+        hr = _CopyKeyOut(&pCurNode->chlKey, phtable->keyType, pvKey, piKeySize, fGetPointerOnly);
     }
 
-    if(SUCCEEDED(hr))
+    if(SUCCEEDED(hr) && pvVal)
     {
-        if(pvVal)
-        {
-            // Ensure sufficient buffer is provided in this case.
-            if(!fGetPointerOnly)
-            {
-                hr = _EnsureSufficientValBuf(
-                        &pCurNode->chlVal,
-                        (piValSize && (*piValSize > 0)) ? *piValSize : sizeof(PVOID),
-                        piValSize);
-            }
-
-            if(SUCCEEDED(hr))
-            {
-                hr = _CopyValOut(&pCurNode->chlVal, phtable->valType, pvVal, fGetPointerOnly);
-            }
-        }
+        hr = _CopyValOut(&pCurNode->chlVal, phtable->valType, pvVal, piValSize, fGetPointerOnly);
     }
 
     // Modify iterator only if succeeded, otherwise the caller cannot retry

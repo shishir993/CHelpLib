@@ -76,16 +76,7 @@ HRESULT CHL_DsReadRA(_In_ PCHL_RARRAY pra, _In_ UINT index, _Out_opt_ PVOID pVal
     if (pValBuf != NULL)
     {
         pValToRead = &(pra->pValArray[index]);
-        if (!fGetPointerOnly)
-        {
-            hr = _EnsureSufficientValBuf(pValToRead, (piBufSize != NULL) ? *piBufSize : sizeof(pValBuf), piBufSize);
-            if (FAILED(hr))
-            {
-                goto func_end;
-            }
-        }
-
-        hr = _CopyValOut(pValToRead, pra->vt, pValBuf, fGetPointerOnly);
+        hr = _CopyValOut(pValToRead, pra->vt, pValBuf, piBufSize, fGetPointerOnly);
     }
 
 func_end:
