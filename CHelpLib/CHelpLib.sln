@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26430.15
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CHelpLib", "CHelpLib\CHelpLib.vcxproj", "{8D9FB6D9-1C46-4DBB-8FCB-019E94237BE7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CHelpLib", "Source\CHelpLib.vcxproj", "{8D9FB6D9-1C46-4DBB-8FCB-019E94237BE7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{D866C661-ADDE-47F8-BC60-70EB54133FA9}"
 	ProjectSection(ProjectDependencies) = postProject
