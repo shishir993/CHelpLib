@@ -126,6 +126,6 @@ private:
     static PCWSTR s_pszInputFileTale;
 };
 
-PCWSTR Tests::LinkedListPerf::s_pszInputFileTale = L"C:\\MyData\\tale.txt";
+PCWSTR Tests::LinkedListPerf::s_pszInputFileTale = L"C:\\SelfData\\Tale.txt";
 
 }
