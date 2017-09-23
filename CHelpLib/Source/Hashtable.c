@@ -24,7 +24,6 @@ static DWORD _hashs(_In_ int tablesize, _In_bytecount_c_(iKeySize) const BYTE *k
 static DWORD _hashsW(_In_ int tablesize, _In_bytecount_c_(iKeySize) const PUSHORT key, int iKeySize);
 
 static void _ClearNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFreeVal);
-static HRESULT _UpdateNodeVal(HT_NODE *pnode, PVOID pvVal, CHL_VALTYPE valType, int iValSize);
 
 static BOOL _FindKeyInList(
     _In_ HT_NODE *pFirstHTNode, 
@@ -357,7 +356,8 @@ HRESULT CHL_DsInsertHT(
         {
             // Same key but different value, just update node with new value
             // NOTE: Old value will be lost!!
-            hr =_UpdateNodeVal(pNodeAtHashedIndex, pvVal, phtable->valType, iValSize);
+			_DeleteVal(&pNodeAtHashedIndex->chlVal, phtable->valType, phtable->fValIsInHeap);
+            hr = _CopyValIn(&pNodeAtHashedIndex->chlVal, phtable->valType, pvVal, iValSize);
         }
         goto done;
     }
@@ -747,47 +747,6 @@ void _ClearNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFree
 
     return;
 }// _ClearNode()
-
-HRESULT _UpdateNodeVal(HT_NODE *pnode, PVOID pvVal, CHL_VALTYPE valType, int iValSize)
-{
-    // Free previous value if allocated on heap
-    switch(valType)
-    {
-        case CHL_VT_USEROBJECT:
-        {
-            if(pnode->chlVal.valDef.pvUserObj)
-            {
-                CHL_MmFree((PVOID*)&pnode->chlVal.valDef.pvUserObj);
-            }
-            break;
-        }
-
-        case CHL_VT_STRING:
-        {
-            if(pnode->chlVal.valDef.pszVal)
-            {
-                CHL_MmFree((PVOID*)&pnode->chlVal.valDef.pszVal);
-            }
-            break;
-        }
-
-        case CHL_VT_WSTRING:
-        {
-            if(pnode->chlVal.valDef.pwszVal)
-            {
-                CHL_MmFree((PVOID*)&pnode->chlVal.valDef.pwszVal);
-            }
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
-    }
-
-    return _CopyValIn(&pnode->chlVal, valType, pvVal, iValSize);
-}
 
 BOOL _FindKeyInList(
     _In_ HT_NODE *pFirstHTNode, 
