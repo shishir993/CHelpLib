@@ -18,10 +18,9 @@ int s_hashSizes[] = {43,     197,    547,    1471,
                     16769023};
 
 // File-local Functions
-static DWORD _hashi(_In_ int tablesize, _In_ int key);
-static DWORD _hashu(_In_ int tablesize, _In_ UINT key);
-static DWORD _hashs(_In_ int tablesize, _In_bytecount_c_(iKeySize) const BYTE *key, _In_ int iKeySize);
-static DWORD _hashsW(_In_ int tablesize, _In_bytecount_c_(iKeySize) const PUSHORT key, int iKeySize);
+static DWORD _hashi(_In_ int tablesize, _In_ size_t key);
+static DWORD _hashs(_In_ int tablesize, _In_bytecount_c_(iKeySize) const BYTE *key, _In_ size_t cchKey);
+static DWORD _hashsW(_In_ int tablesize, _In_bytecount_c_(iKeySize) const PUSHORT key, _In_ size_t cchKey);
 
 static void _ClearNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFreeVal);
 
@@ -34,65 +33,58 @@ static BOOL _FindKeyInList(
     _Out_opt_ HT_NODE **phtPrevFound);
 
 
-DWORD _hashi(_In_ int tablesize, _In_ int key)
+DWORD _hashi(_In_ int tablesize, _In_ size_t key)
 {
     ASSERT(tablesize > 0);
     
     return key % tablesize;
 }
 
-DWORD _hashu(_In_ int tablesize, _In_ UINT key)
+DWORD _hashs(_In_ int tablesize, _In_bytecount_c_(iKeySize) const BYTE *key, _In_ size_t cchKey)
 {
-    ASSERT(tablesize > 0);
-    
-    return key % tablesize;
-}
+	DWORD hash = 5381;
+	BYTE c;
+	size_t i = 0;
 
-DWORD _hashs(_In_ int tablesize, _In_bytecount_c_(iKeySize) const BYTE *key, int iKeySize)
-{
-    DWORD hash = 5381;
-    BYTE c;
-    int i = 0;
+	ASSERT(tablesize > 0);
 
-    ASSERT(tablesize > 0);
+	//
+	// hash function from
+	// http://www.cse.yorku.ca/~oz/hash.html
+	//
 
-    //
-    // hash function from
-    // http://www.cse.yorku.ca/~oz/hash.html
-    //
+	c = key[0];
+	while ((c != 0) && (i < cchKey))
+	{
+		hash = ((hash << 5) + hash) + c; // hash * 33 + c
+		c = key[++i];
+	}
 
-    c = key[0];
-    while ((c != 0) && (i < iKeySize))
-    {
-      hash = ((hash << 5) + hash) + c; // hash * 33 + c
-      c = key[++i];
-    }
-
-    return (DWORD)(hash % tablesize);
+	return (DWORD)(hash % tablesize);
 }
 
 // Wide-char version of the hash function
-DWORD _hashsW(_In_ int tablesize, _In_bytecount_c_(iKeySize) const PUSHORT key, int iKeySize)
+DWORD _hashsW(_In_ int tablesize, _In_bytecount_c_(iKeySize) const PUSHORT key, _In_ size_t cchKey)
 {
-    DWORD hash = 5381;
-    USHORT us;
-    int i = 0;
+	DWORD hash = 5381;
+	USHORT us;
+	size_t i = 0;
 
-    ASSERT(tablesize > 0);
+	ASSERT(tablesize > 0);
 
-    //
-    // hash function from
-    // http://www.cse.yorku.ca/~oz/hash.html
-    //
+	//
+	// hash function from
+	// http://www.cse.yorku.ca/~oz/hash.html
+	//
 
-    us = key[0];
-    while ((us != 0) && (i < iKeySize))
-    {
-      hash = ((hash << 5) + hash) + us; // hash * 33 + us
-      us = key[++i];
-    }
+	us = key[0];
+	while ((us != 0) && (i < cchKey))
+	{
+		hash = ((hash << 5) + hash) + us; // hash * 33 + us
+		us = key[++i];
+	}
 
-    return (DWORD)(hash % tablesize);
+	return (DWORD)(hash % tablesize);
 }
 
 DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize, _In_ int iTableNodes)
@@ -106,24 +98,19 @@ DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize,
     switch(keyType)
     {
         case CHL_KT_INT32:
-        {
-            dwKeyHash = _hashi(iTableNodes, (int)pvKey);
-            break;
-        }
-
         case CHL_KT_UINT32:
         case CHL_KT_POINTER:
-        {
-            dwKeyHash = _hashu(iTableNodes, (UINT)pvKey);
-            break;
-        }
+		{
+			dwKeyHash = _hashi(iTableNodes, (size_t)pvKey);
+			break;
+		}
 
         case CHL_KT_STRING:
         {
-            int nChars = iKeySize/sizeof(char);
-            if(nChars <= 0)
+			size_t nChars = iKeySize / sizeof(char);
+            if(iKeySize <= 0)
             {
-                nChars = strlen((PCSTR)pvKey);
+                nChars = (int)strlen((PCSTR)pvKey);
             }
             dwKeyHash = _hashs(iTableNodes, (const PBYTE)pvKey, nChars);
             break;
@@ -131,8 +118,8 @@ DWORD _GetKeyHash(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _In_ int iKeySize,
 
         case CHL_KT_WSTRING:
         {
-            int nChars = iKeySize/sizeof(WCHAR);
-            if(nChars <= 0)
+			size_t nChars = iKeySize / sizeof(WCHAR);
+            if(iKeySize <= 0)
             {
                 nChars = wcslen((PCWSTR)pvKey);
             }

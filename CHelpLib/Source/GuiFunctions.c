@@ -194,7 +194,7 @@ HRESULT CHL_GuiAddListViewRow(
 	lvItem.mask = LVIF_TEXT|LVIF_PARAM;
 	lvItem.pszText = apszItemText[0];
     lvItem.lParam = lParam;
-	if( (iInsertedAt = SendMessage(hList, LVM_INSERTITEM, 0, (LPARAM)&lvItem)) == -1 )
+	if( (iInsertedAt = (int)SendMessage(hList, LVM_INSERTITEM, 0, (LPARAM)&lvItem)) == -1 )
 	{
         hr = E_FAIL;
 		goto done;

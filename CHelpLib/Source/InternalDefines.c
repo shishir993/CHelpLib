@@ -25,12 +25,14 @@ HRESULT _CopyKeyIn(_In_ PCHL_KEY pChlKey, _In_ CHL_KEYTYPE keyType, _In_ PCVOID 
     {
         case CHL_KT_INT32:
         {
+#pragma warning (suppress : 4311)
             pChlKey->keyDef.iKey = (int)pvKey;
             break;
         }
 
         case CHL_KT_UINT32:
         {
+#pragma warning (suppress : 4311)
             pChlKey->keyDef.uiKey = (UINT)pvKey;
             break;
         }
@@ -181,12 +183,14 @@ BOOL _IsDuplicateKey(_In_ PCHL_KEY pChlLeftKey, _In_ PCVOID pvRightKey, _In_ CHL
     {
         case CHL_KT_INT32:
         {
+#pragma warning (suppress : 4311)
             fMatch = (pChlLeftKey->keyDef.iKey == (int)pvRightKey);
             break;
         }
 
         case CHL_KT_UINT32:
         {
+#pragma warning (suppress : 4311)
             fMatch = (pChlLeftKey->keyDef.uiKey == (UINT)pvRightKey);
             break;
         }
@@ -285,13 +289,15 @@ HRESULT _GetKeySize(_In_ PVOID pvKey, _In_ CHL_KEYTYPE keyType, _Inout_ PINT piK
 
         case CHL_KT_STRING:
         {
-            *piKeySize = (strlen((PCSTR)pvKey) + 1) * sizeof(char);
+			size_t size = (strlen((PCSTR)pvKey) + 1) * sizeof(char);
+			hr = SizeTToInt(size, piKeySize);
             break;
         }
 
         case CHL_KT_WSTRING:
         {
-            *piKeySize = (wcslen((PCWSTR)pvKey) + 1) * sizeof(WCHAR);
+            size_t size = (wcslen((PCWSTR)pvKey) + 1) * sizeof(WCHAR);
+			hr = SizeTToInt(size, piKeySize);
             break;
         }
 
@@ -339,12 +345,14 @@ HRESULT _CopyValIn(_In_ PCHL_VAL pChlVal, _In_ CHL_VALTYPE valType, _In_ PCVOID 
     {
         case CHL_VT_INT32:
         {
+#pragma warning (suppress : 4311)
             pChlVal->valDef.iVal = (int)pvVal;
             break;
         }
 
         case CHL_VT_UINT32:
         {
+#pragma warning (suppress : 4311)
             pChlVal->valDef.uiVal = (UINT)pvVal;
             break;
         }
@@ -527,12 +535,14 @@ BOOL _IsDuplicateVal(_In_ PCHL_VAL pChlLeftVal, _In_ PCVOID pvRightVal, _In_ CHL
     {
         case CHL_VT_INT32:
         {
+#pragma warning (suppress : 4311)
             fMatch = (pChlLeftVal->valDef.iVal == (int)pvRightVal);
             break;
         }
 
         case CHL_VT_UINT32:
         {
+#pragma warning (suppress : 4311)
             fMatch = (pChlLeftVal->valDef.uiVal == (UINT)pvRightVal);
             break;
         }
@@ -669,13 +679,15 @@ HRESULT _GetValSize(_In_ PVOID pvVal, _In_ CHL_VALTYPE valType, _Inout_ PINT piV
 
         case CHL_VT_STRING:
         {
-            *piValSize = (strlen((PCSTR)pvVal) + 1) * sizeof(char);
+			size_t size = (strlen((PCSTR)pvVal) + 1) * sizeof(char);
+			hr = SizeTToInt(size, piValSize);
             break;
         }
 
         case CHL_VT_WSTRING:
         {
-            *piValSize = (wcslen((PCWSTR)pvVal) + 1) * sizeof(WCHAR);
+			size_t size = (wcslen((PCWSTR)pvVal) + 1) * sizeof(WCHAR);
+			hr = SizeTToInt(size, piValSize);
             break;
         }
 

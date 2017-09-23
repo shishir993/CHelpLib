@@ -81,18 +81,18 @@ HRESULT CHL_PsGetNtHeaders(_In_ HANDLE hMapView, _Out_ PIMAGE_NT_HEADERS *ppstNt
 // Get a byte pointer to the start of code in a executable file(memory mapped)
 //
 HRESULT CHL_PsGetPtrToCode(
-    _In_ DWORD dwFileBase, 
+    _In_ ULONG_PTR fileBase,
     _In_ PIMAGE_NT_HEADERS pNTHeaders, 
-    _Out_ PDWORD pdwCodePtr, 
+    _Out_ PULONG_PTR pCodePtr, 
     _Out_ PDWORD pdwSizeOfData,
-    _Out_ PDWORD pdwCodeSecVirtAddr)
+    _Out_ PULONG_PTR pCodeSecVirtAddr)
 {
 
 	PIMAGE_SECTION_HEADER pImgSecHeader = NULL;
 	DWORD dwSecChars = 0;
 
     HRESULT hr = S_OK;
-    if(!pNTHeaders || !pdwCodePtr)
+    if(!pNTHeaders || !pCodePtr)
     {
         hr = E_INVALIDARG;
         goto done;
@@ -116,7 +116,7 @@ HRESULT CHL_PsGetPtrToCode(
 		goto done;
 	}
 
-	*pdwCodePtr = dwFileBase + pImgSecHeader->PointerToRawData;
+	*pCodePtr = fileBase + pImgSecHeader->PointerToRawData;
 	
 	// From "Microsoft Portable Executable and Common Object File Format Specification"
 	// todo: If SizeOfRawData is less than VirtualSize, the remainder of the section is zero-filled.
@@ -133,9 +133,9 @@ HRESULT CHL_PsGetPtrToCode(
         }
     }
 	
-    if(pdwCodeSecVirtAddr)
+    if(pCodeSecVirtAddr)
     {
-        *pdwCodeSecVirtAddr = pNTHeaders->OptionalHeader.ImageBase + pImgSecHeader->VirtualAddress;
+        *pCodeSecVirtAddr = pNTHeaders->OptionalHeader.ImageBase + pImgSecHeader->VirtualAddress;
     }
 
 done:

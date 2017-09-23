@@ -32,7 +32,7 @@ public:
 
         Helpers::ITimer* pTimer = new Helpers::CTimerTicks();
         pTimer->Start();
-        while ((nFieldsRead = fwscanf_s(pFile, L"%511s", szLine, ARRAYSIZE(szLine))) == 1)
+        while ((nFieldsRead = fwscanf_s(pFile, L"%511s", szLine, (UINT)ARRAYSIZE(szLine))) == 1)
         {
             // Skip strings that don't meet min length
             if (wcslen(szLine) < minLen)
