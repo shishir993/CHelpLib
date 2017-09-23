@@ -73,11 +73,17 @@ HRESULT CHL_DsReadRA(_In_ PCHL_RARRAY pra, _In_ UINT index, _Out_opt_ PVOID pVal
         goto func_end;
     }
 
-    if (pValBuf != NULL)
-    {
-        pValToRead = &(pra->pValArray[index]);
-        hr = _CopyValOut(pValToRead, pra->vt, pValBuf, piBufSize, fGetPointerOnly);
-    }
+	pValToRead = &(pra->pValArray[index]);
+	if (_IsValOccupied(pValToRead) == FALSE)
+	{
+		hr = E_NOT_SET;
+		goto func_end;
+	}
+
+	if (pValBuf != NULL)
+	{
+		hr = _CopyValOut(pValToRead, pra->vt, pValBuf, piBufSize, fGetPointerOnly);
+	}
 
 func_end:
     return hr;

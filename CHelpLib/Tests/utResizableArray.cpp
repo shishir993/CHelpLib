@@ -21,6 +21,8 @@ public:
     TEST_METHOD(ShrinkManually_Int);
     TEST_METHOD(ShrinkManually_Obj);
     TEST_METHOD(ShrinkManuallyNoWrites_Obj);
+	TEST_METHOD(WriteClearRead_Obj);
+	TEST_METHOD(WriteClearRead_Int);
 };
 
 
@@ -473,6 +475,90 @@ void ResizableArrayUnitTests::ShrinkManuallyNoWrites_Obj()
     Assert::IsTrue(SUCCEEDED(ra.Destroy(&ra)));
 
     LOG_FUNC_EXIT;
+}
+
+void ResizableArrayUnitTests::WriteClearRead_Obj()
+{
+	LOG_FUNC_ENTRY;
+
+	Helpers::TestStruct objs[] =
+		{
+			{ 'a', 1, L"first one", MAXINT32 },
+			{ 'b', ~(MAXINT16), L"2nd one", MAXINT64 },
+			{ 'z', 384732, L"III", 0 },
+			{ 'e', 1, L"IV", MAXINT32 },
+			{ 'y', MAXBYTE, L"V", MAXINT64 },
+			{ 'i', 45245, L"VI", 85345346ULL }
+		};
+
+	const int c_nItems = ARRAYSIZE(objs);
+
+	CHL_RARRAY ra;
+	Assert::IsTrue(SUCCEEDED(CHL_DsCreateRA(&ra, CHL_VT_USEROBJECT, c_nItems, 0)));
+
+	for (int idx = 0; idx < c_nItems; ++idx)
+	{
+		Assert::IsTrue(SUCCEEDED(ra.Write(&ra, idx, (PCVOID)&objs[idx], sizeof(objs[0]))));
+	}
+
+	// Clear even indexed items
+	for (int idx = 0; idx < c_nItems; idx += 2)
+	{
+		int temp;
+		Assert::IsTrue(SUCCEEDED(ra.ClearAt(&ra, idx)));
+		Assert::AreEqual(E_NOT_SET, ra.Read(&ra, idx, &temp, NULL, FALSE));
+	}
+
+	// Verify odd indexed items are still valid
+	for (int idx = 1; idx < c_nItems; idx += 2)
+	{
+		Helpers::TestStruct actual;
+		int cbBuf = sizeof(actual);
+		Assert::IsTrue(SUCCEEDED(ra.Read(&ra, idx, &actual, &cbBuf, FALSE)));
+		Assert::IsTrue(objs[idx] == actual,
+			(objs[idx].ToString() + L" == " + actual.ToString()).c_str());
+	}
+
+	Assert::IsTrue(SUCCEEDED(ra.Destroy(&ra)));
+
+	LOG_FUNC_EXIT;
+}
+
+void ResizableArrayUnitTests::WriteClearRead_Int()
+{
+	LOG_FUNC_ENTRY;
+
+	const int c_nItems = 24;
+	auto spNumVector = Helpers::GenerateRandomNumbers(c_nItems);
+	Assert::AreEqual(c_nItems, (int)spNumVector->size());
+
+	CHL_RARRAY ra;
+	Assert::IsTrue(SUCCEEDED(CHL_DsCreateRA(&ra, CHL_VT_INT32, c_nItems, 0)));
+
+	for (int idx = 0; idx < c_nItems; ++idx)
+	{
+		Assert::IsTrue(SUCCEEDED(ra.Write(&ra, idx, (PCVOID)(*spNumVector)[idx], sizeof(int))));
+	}
+
+	// Clear even indexed items
+	for (int idx = 0; idx < c_nItems; idx += 2)
+	{
+		int temp;
+		Assert::IsTrue(SUCCEEDED(ra.ClearAt(&ra, idx)));
+		Assert::AreEqual(E_NOT_SET, ra.Read(&ra, idx, &temp, NULL, FALSE));
+	}
+
+	// Verify odd indexed items are still valid
+	for (int idx = 1; idx < c_nItems; idx += 2)
+	{
+		int actual;
+		Assert::IsTrue(SUCCEEDED(ra.Read(&ra, idx, &actual, NULL, FALSE)));
+		Assert::AreEqual((*spNumVector)[idx], actual);
+	}
+
+	Assert::IsTrue(SUCCEEDED(ra.Destroy(&ra)));
+
+	LOG_FUNC_EXIT;
 }
 
 } // namespace Tests

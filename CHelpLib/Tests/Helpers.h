@@ -116,10 +116,18 @@ struct TestStruct
         _li.HighPart = (LONG)ull;
     }
 
-    bool operator==(const TestStruct& rhs)
+    bool operator==(const TestStruct& rhs) const
     {
         return (_c == rhs._c && _i == rhs._i && _psz == rhs._psz && _ull == rhs._ull);
     }
+
+	std::wstring ToString()
+	{
+		WCHAR szBuf[128];
+		(void)StringCchPrintf(szBuf, ARRAYSIZE(szBuf), L"%c,%d,%s,%llu,%lld",
+			_c, _i, _psz, _ull, _li.QuadPart);
+		return std::wstring(szBuf);
+	}
 };
 
 };
