@@ -97,7 +97,7 @@ HRESULT CHL_GnCreateMemMapOfFile(
     // that is, create the file mapping object
     if ((hFileMapObj = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, MAPVIEW_NAME)) == NULL)
     {
-        hr = HRESULT_FROM_WIN32(ERROR_EMPTY);
+        hr = HRESULT_FROM_WIN32(GetLastError());
         goto error_return;
     }
 
@@ -106,7 +106,7 @@ HRESULT CHL_GnCreateMemMapOfFile(
     // map this file mapping object into our address space
     if ((hFileMapView = MapViewOfFile(hFileMapObj, FILE_MAP_READ, 0, 0, 0)) == NULL)
     {
-        hr = HRESULT_FROM_WIN32(ERROR_EMPTY);
+        hr = HRESULT_FROM_WIN32(GetLastError());
         goto error_return;
     }
 
