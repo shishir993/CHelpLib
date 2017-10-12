@@ -16,7 +16,7 @@ if "%_plat%" == "Win32" (
   SET _plat=x86
 )
 
-SET _dest=%4\published
+SET _dest=%4
 SET _destBin=%_dest%\bin_%_plat%
 SET _destInc=%_dest%\include
 
