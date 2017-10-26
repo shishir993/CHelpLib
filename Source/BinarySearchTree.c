@@ -72,8 +72,7 @@ HRESULT CHL_DsCreateBST
     ASSERT(IS_VALID_CHL_VALTYPE(valType));
     ASSERT(IS_VALID_CHL_KEYTYPE(keyType));
 
-    if (!pbst || !pfnKeyCompare ||
-        IS_INVALID_CHL_KEYTYPE(keyType) || IS_INVALID_CHL_VALTYPE(valType))
+    if (IS_INVALID_CHL_KEYTYPE(keyType) || IS_INVALID_CHL_VALTYPE(valType))
     {
         hr = E_INVALIDARG;
         goto fend;

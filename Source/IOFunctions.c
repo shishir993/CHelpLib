@@ -67,12 +67,6 @@ HRESULT CHL_IoCreateFileWithSize(_Out_ PHANDLE phFile, _In_z_ PWCHAR pszFilepath
 
     HRESULT hr = S_OK;
 
-    // Parameter validation
-    if (!pszFilepath || !phFile)
-    {
-        return E_INVALIDARG;
-    }
-
     hFile = CreateFile(pszFilepath, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {

@@ -57,23 +57,17 @@ HRESULT CHL_PsGetNtHeaders(_In_ HANDLE hMapView, _Out_ PIMAGE_NT_HEADERS *ppstNt
     PIMAGE_DOS_HEADER pDOSHeader = NULL;
 
     HRESULT hr = S_OK;
-    if (!ISVALID_HANDLE(hMapView) || !ppstNtHeaders)
+
+    pDOSHeader = (PIMAGE_DOS_HEADER)hMapView;
+
+    // verify "MZ" in the DOS header
+    if (pDOSHeader->e_magic == IMAGE_DOS_SIGNATURE)
     {
-        hr = E_INVALIDARG;
+        *ppstNtHeaders = (PIMAGE_NT_HEADERS)((BYTE*)hMapView + pDOSHeader->e_lfanew);
     }
     else
     {
-        pDOSHeader = (PIMAGE_DOS_HEADER)hMapView;
-
-        // verify "MZ" in the DOS header
-        if (pDOSHeader->e_magic == IMAGE_DOS_SIGNATURE)
-        {
-            *ppstNtHeaders = (PIMAGE_NT_HEADERS)((BYTE*)hMapView + pDOSHeader->e_lfanew);
-        }
-        else
-        {
-            hr = E_UNEXPECTED;
-        }
+        hr = E_UNEXPECTED;
     }
     return hr;
 }
@@ -92,11 +86,6 @@ HRESULT CHL_PsGetPtrToCode(
     DWORD dwSecChars = 0;
 
     HRESULT hr = S_OK;
-    if (!pNTHeaders || !pCodePtr)
-    {
-        hr = E_INVALIDARG;
-        goto done;
-    }
 
     // Get the .text section's header using AddressOfEntryPoint as the RVA
     hr = CHL_PsGetEnclosingSectionHeader(
@@ -149,10 +138,10 @@ done:
 // pointer to its IMAGE_SECTION_HEADER.
 //
 // Args:
-//		
-//			
+//
+//
 // RetVal:
-//	
+//
 //
 HRESULT CHL_PsGetEnclosingSectionHeader(_In_ DWORD rva, _In_ PIMAGE_NT_HEADERS pNTHeader, _Out_ PIMAGE_SECTION_HEADER *ppstSecHeader)
 {
@@ -160,24 +149,18 @@ HRESULT CHL_PsGetEnclosingSectionHeader(_In_ DWORD rva, _In_ PIMAGE_NT_HEADERS p
     PIMAGE_SECTION_HEADER pSection = NULL;
 
     HRESULT hr = S_OK;
-    if (!pNTHeader || !ppstSecHeader)
+
+    pSection = IMAGE_FIRST_SECTION(pNTHeader);
+    hr = E_NOT_SET; // Start with this, set to S_OK if found
+    for (index = 0; index < pNTHeader->FileHeader.NumberOfSections; ++index, pSection++)
     {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        pSection = IMAGE_FIRST_SECTION(pNTHeader);
-        hr = E_NOT_SET; // Start with this, set to S_OK if found
-        for (index = 0; index < pNTHeader->FileHeader.NumberOfSections; ++index, pSection++)
+        // Is the RVA within this section?
+        if ((rva >= pSection->VirtualAddress) &&
+            (rva < (pSection->VirtualAddress + pSection->Misc.VirtualSize)))
         {
-            // Is the RVA within this section?
-            if ((rva >= pSection->VirtualAddress) &&
-                (rva < (pSection->VirtualAddress + pSection->Misc.VirtualSize)))
-            {
-                *ppstSecHeader = pSection;
-                hr = S_OK;
-                break;
-            }
+            *ppstSecHeader = pSection;
+            hr = S_OK;
+            break;
         }
     }
     return hr;

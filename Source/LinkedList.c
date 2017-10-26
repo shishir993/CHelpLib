@@ -26,8 +26,7 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_
     HRESULT hr = S_OK;
 
     // validate parameters
-    if (!ppLList ||
-        !((valType > CHL_VT_START) && (valType < CHL_VT_END)))
+    if (!((valType > CHL_VT_START) && (valType < CHL_VT_END)))
     {
         hr = E_INVALIDARG;
         goto error_return;
@@ -68,7 +67,7 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
     HRESULT hr = S_OK;
 
     // Parameter validation
-    if (!pLList || !pvVal || iValSize <= 0)
+    if (iValSize <= 0)
     {
         hr = E_INVALIDARG;
         goto error_return;
@@ -121,11 +120,6 @@ HRESULT CHL_DsRemoveLL
     CHL_VALTYPE valType = pLList->valType;
 
     HRESULT hr = S_OK;
-    if (!pLList || !pfnComparer)
-    {
-        hr = E_INVALIDARG;
-        goto error_return;
-    }
 
     // Iterate through the list to find
     pCurNode = pLList->pHead;
@@ -152,10 +146,6 @@ HRESULT CHL_DsRemoveLL
     }
 
     return hr;
-
-error_return:
-    // CS not locked if we are here
-    return hr;
 }
 
 HRESULT CHL_DsRemoveAtLL(
@@ -169,7 +159,7 @@ HRESULT CHL_DsRemoveAtLL(
     PLLNODE pCurNode;
     HRESULT hr = S_OK;
 
-    if (!pLList || iIndexToRemove < 0)
+    if (iIndexToRemove < 0)
     {
         hr = E_INVALIDARG;
         goto fend;
@@ -221,7 +211,7 @@ HRESULT CHL_DsPeekAtLL
     PLLNODE pCurNode = NULL;
 
     HRESULT hr = S_OK;
-    if (!pLList || iIndexToPeek < 0 || iIndexToPeek >= pLList->nCurNodes)
+    if (iIndexToPeek < 0 || iIndexToPeek >= pLList->nCurNodes)
     {
         hr = E_INVALIDARG;
         goto fend;
@@ -281,11 +271,6 @@ HRESULT CHL_DsFindLL
     CHL_VALTYPE valType = pLList->valType;
 
     HRESULT hr = S_OK;
-    if (!pLList || !pfnComparer)
-    {
-        hr = E_INVALIDARG;
-        goto fend;
-    }
 
     // Iterate through the list to find
     pCurNode = pLList->pHead;
@@ -307,7 +292,6 @@ HRESULT CHL_DsFindLL
         _CopyValOut(&pCurNode->chlVal, valType, pvValOut, piValBufSize, fGetPointerOnly);
     }
 
-fend:
     return hr;
 }
 
@@ -317,11 +301,6 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
     CHL_VALTYPE valType;
 
     HRESULT hr = S_OK;
-    if (!pLList)
-    {
-        hr = E_INVALIDARG;
-        goto done;
-    }
 
     valType = pLList->valType;
 
@@ -337,7 +316,6 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
     }
     CHL_MmFree((PVOID*)&pLList);
 
-done:
     return hr;
 }
 

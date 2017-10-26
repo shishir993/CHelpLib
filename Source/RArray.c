@@ -15,7 +15,7 @@ HRESULT CHL_DsCreateRA(_Out_ PCHL_RARRAY pra, _In_ CHL_VALTYPE valType, _In_opt_
     HRESULT hr = S_OK;
 
     // validate parameters
-    if ((pra == NULL) || IS_INVALID_CHL_VALTYPE(valType))
+    if (IS_INVALID_CHL_VALTYPE(valType))
     {
         hr = E_INVALIDARG;
         goto func_end;

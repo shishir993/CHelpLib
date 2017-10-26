@@ -14,7 +14,7 @@ HRESULT CHL_DsCreateSTK(_Out_ PCHL_STACK pstk, _In_ CHL_VALTYPE valType, _In_opt
 {
     HRESULT hr = S_OK;
 
-    if ((pstk == NULL) || IS_INVALID_CHL_VALTYPE(valType))
+    if (IS_INVALID_CHL_VALTYPE(valType))
     {
         hr = E_INVALIDARG;
         goto func_end;

@@ -163,8 +163,7 @@ HRESULT CHL_DsCreateHT(
     HRESULT hr = S_OK;
 
     // validate parameters
-    if ((pHTableOut == NULL) ||
-        (nEstEntries < 0) ||
+    if ((nEstEntries < 0) ||
         (keyType < CHL_KT_START) || (keyType > CHL_KT_END) ||
         (valType < CHL_VT_START) || (valType > CHL_VT_END))
     {
@@ -230,13 +229,6 @@ HRESULT CHL_DsDestroyHT(_In_ PCHL_HTABLE phtable)
     HT_NODE *pcurnode = NULL;
     HT_NODE *pnextnode = NULL;
 
-    HRESULT hr = S_OK;
-    if (!phtable)
-    {
-        hr = E_INVALIDARG;
-        goto done;  // hashtable isn't destroyed
-    }
-
     phtnodes = phtable->phtNodes;
     if (phtnodes != NULL)
     {
@@ -271,8 +263,7 @@ HRESULT CHL_DsDestroyHT(_In_ PCHL_HTABLE phtable)
     DBG_MEMSET(phtable, sizeof(CHL_HTABLE));
     free(phtable);
 
-done:
-    return hr;
+    return S_OK;
 }
 
 HRESULT CHL_DsInsertHT(
@@ -291,13 +282,6 @@ HRESULT CHL_DsInsertHT(
     HRESULT hr = S_OK;
 
     ASSERT(phtable);
-
-    // validate parameters
-    if (!phtable)
-    {
-        hr = E_INVALIDARG;
-        goto done;
-    }
 
     keyType = phtable->keyType;
     if (iKeySize <= 0 && FAILED(_GetKeySize(pvkey, keyType, &iKeySize)))
@@ -394,13 +378,6 @@ HRESULT CHL_DsFindHT(
     HT_NODE *phtFoundNode = NULL;
 
     HRESULT hr = S_OK;
-
-    // validate parameters
-    if (!phtable)
-    {
-        hr = E_INVALIDARG;
-        goto not_found;
-    }
 
     ASSERT(phtable->nTableSize > 0);
 
@@ -504,11 +481,6 @@ fend:
 
 HRESULT CHL_DsInitIteratorHT(_In_ PCHL_HTABLE phtable, _Inout_ struct _hashtableIterator *pItr)
 {
-    if (!phtable || !pItr)
-    {
-        return E_INVALIDARG;
-    }
-
     pItr->opType = HT_ITR_FIRST;
     pItr->nCurIndex = 0;
     pItr->phtCurNodeInList = NULL;
@@ -524,7 +496,7 @@ HRESULT CHL_DsGetNextHT(
     _Inout_opt_ PINT piValSize,
     _In_opt_ BOOL fGetPointerOnly)
 {
-    HRESULT hr;
+    HRESULT hr = S_OK;
     int indexIterator;
 
     HT_NODE* pCurNode = NULL;
@@ -534,15 +506,9 @@ HRESULT CHL_DsGetNextHT(
 
     ASSERT(pItr && pItr->pMyHashTable);
 
-    if (!pItr)
-    {
-        return E_INVALIDARG;
-    }
-
     phtable = pItr->pMyHashTable;
 
     // Trivial check to see if iterator was initialized or not
-    hr = S_OK;
     if (pItr->opType == HT_ITR_FIRST)
     {
         for (indexIterator = 0; indexIterator < phtable->nTableSize; ++indexIterator)

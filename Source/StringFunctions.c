@@ -12,7 +12,7 @@ PCWSTR CHL_SzGetFilenameFromPath(_In_z_ PCWSTR pszFilepath, _In_ int inputLen)
 {
     PCWSTR psz = NULL;
 
-    if (!pszFilepath || (*pszFilepath == L'\0') || (inputLen < 1))
+    if ((inputLen < 1) || (*pszFilepath == L'\0'))
     {
         return NULL;
     }

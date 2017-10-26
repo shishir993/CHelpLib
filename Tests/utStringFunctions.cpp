@@ -20,7 +20,7 @@ public:
 
 void StringFunctionsTests::NullEmptyTest()
 {
-    Assert::IsNull(CHL_SzGetFilenameFromPath(NULL, 128), L"NULL string returns NULL");
+    Assert::IsNull(CHL_SzGetFilenameFromPath(L"test", 0), L"Zero length string returns NULL");
     Assert::IsNull(CHL_SzGetFilenameFromPath(L"", 0), L"Empty string returns NULL");
     Assert::IsNull(CHL_SzGetFilenameFromPath(L"", 8), L"Empty string with positive char count returns NULL");
 }
