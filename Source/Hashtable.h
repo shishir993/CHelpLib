@@ -31,6 +31,7 @@ struct _hashtableIterator;
 
 // hashtable itself
 typedef struct _hashtable CHL_HTABLE, *PCHL_HTABLE;
+typedef struct _hashtableIterator CHL_HT_ITERATOR;
 struct _hashtable {
     CHL_KEYTYPE keyType;    // Type information for the hashtable key
     CHL_VALTYPE valType;    // Type information for the hashtable value
@@ -57,15 +58,9 @@ struct _hashtable {
         BOOL fGetPointerOnly);
 
     HRESULT (*Remove)(PCHL_HTABLE phtable, PCVOID pvkey, int iKeySize);
+    HRESULT (*RemoveAt)(CHL_HT_ITERATOR *pItr);
 
     HRESULT (*InitIterator)(PCHL_HTABLE phtable, struct _hashtableIterator *pItr);
-    HRESULT (*GetNext)(
-        struct _hashtableIterator *pItr,
-        PCVOID pvKey, 
-        PINT pkeysize,
-        PVOID pvVal, 
-        PINT pvalsize,
-        BOOL fGetPointerOnly);
 
     void (*Dump)(PCHL_HTABLE phtable);
 };
@@ -73,12 +68,29 @@ struct _hashtable {
 // Structure that defines the iterator for the hashtable
 // Callers can use this to iterate through the hashtable
 // and get all (key,value) pairs one-by-one
-typedef struct _hashtableIterator {
+struct _hashtableIterator {
     int opType;
     int nCurIndex;              // current position in the main bucket
     HT_NODE *phtCurNodeInList;  // current position in the sibling list
     PCHL_HTABLE pMyHashTable;   // Pointer to the hashtable to work on
-}CHL_HT_ITERATOR;
+
+    HRESULT (*GetNext)(
+        struct _hashtableIterator *pItr,
+        PCVOID pvKey,
+        PINT piKeySize,
+        PVOID pvVal,
+        PINT piValSize,
+        BOOL fGetPointerOnly);
+
+    HRESULT (*GetCurrent)(
+        CHL_HT_ITERATOR *pItr,
+        PCVOID pvKey,
+        PINT piKeySize,
+        PVOID pvVal,
+        PINT piValSize,
+        BOOL fGetPointerOnly);
+
+};
 
 // -------------------------------------------
 // Functions exported
@@ -152,7 +164,16 @@ DllExpImp HRESULT CHL_DsFindHT(
 //
 DllExpImp HRESULT CHL_DsRemoveHT(_In_ CHL_HTABLE *phtable, _In_ PCVOID pvkey, _In_ int iKeySize);
 
+// Deletes the element that the iterator points to. Upon return, the iterator will
+// have been moved forward to point to the next element or the end if no more elements.
+// Params:
+//      pItr: A previously initialized iterator. If iterator does not point to a valid
+//          element, then this method returns E_NOT_SET.
+//
+DllExpImp HRESULT CHL_DsRemoveAtHT(_In_ CHL_HT_ITERATOR *pItr);
+
 // Initialize the iterator object for use with the specified hashtable.
+// Iterator will point to the first element or nothing if hashtable is empty.
 // Params:
 //      pItr: Pointer to the iterator object to initialize.
 //      phtable: Pointer to the hashtable object returned by CHL_DsCreateHT function.
@@ -171,10 +192,28 @@ DllExpImp HRESULT CHL_DsInitIteratorHT(_In_ PCHL_HTABLE phtable, _Inout_ CHL_HT_
 //
 DllExpImp HRESULT CHL_DsGetNextHT(
     _In_ CHL_HT_ITERATOR *pItr, 
-    _Inout_opt_ PCVOID pvKey, 
-    _Inout_opt_ PINT pkeysize,
-    _Inout_opt_ PVOID pvVal, 
-    _Inout_opt_ PINT pvalsize,
+    _Inout_opt_ PCVOID pvKey,
+    _Inout_opt_ PINT piKeySize,
+    _Inout_opt_ PVOID pvVal,
+    _Inout_opt_ PINT piValSize,
+    _In_opt_ BOOL fGetPointerOnly);
+
+// Get the current element in the hash table using the specified iterator object.
+// Params:
+//      pItr: The iterator object that was initialized by CHL_DsInitIteratorHT.
+//      pvKey: Optional. Pointer to buffer to receive the key of the next item.
+//      pKeySize: Optional. Size of the key buffer in bytes. If specified size is insufficient, the function
+//          returns the required size back in this parameter.
+//      pvVal: Refer documentation of the CHL_DsFindHT() function.
+//      pvalsize: Refer documentation of the CHL_DsFindHT() function.
+//      fGetPointerOnly: Refer documentation of the CHL_DsFindHT() function.
+//
+DllExpImp HRESULT CHL_DsGetCurrentHT(
+    _In_ CHL_HT_ITERATOR *pItr,
+    _Inout_opt_ PCVOID pvKey,
+    _Inout_opt_ PINT piKeySize,
+    _Inout_opt_ PVOID pvVal,
+    _Inout_opt_ PINT piValSize,
     _In_opt_ BOOL fGetPointerOnly);
 
 DllExpImp int CHL_DsGetNearestSizeIndexHT(_In_ int maxNumberOfEntries);

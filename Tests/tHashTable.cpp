@@ -23,6 +23,7 @@ public:
     TEST_METHOD(FindAfterRemove_WStrWStr);
 
     TEST_METHOD(Iteration_WStrInt);
+    TEST_METHOD(IterationAndRemoval_WStrInt);
 };
 
 void HashtableUnitTests::CreateAndDestroy()
@@ -52,10 +53,10 @@ void HashtableUnitTests::FunctionPointers()
     Assert::IsNotNull((PVOID)pht->Destroy);
     Assert::IsNotNull((PVOID)pht->Dump);
     Assert::IsNotNull((PVOID)pht->Find);
-    Assert::IsNotNull((PVOID)pht->GetNext);
     Assert::IsNotNull((PVOID)pht->InitIterator);
     Assert::IsNotNull((PVOID)pht->Insert);
     Assert::IsNotNull((PVOID)pht->Remove);
+    Assert::IsNotNull((PVOID)pht->RemoveAt);
     Assert::IsTrue(SUCCEEDED(CHL_DsDestroyHT(pht)));
 }
 
@@ -357,15 +358,17 @@ void HashtableUnitTests::Iteration_WStrInt()
 
     using KVPair = std::pair<PCWSTR, int>;
     using KVList = std::list<KVPair>;
-    auto spFoundKVs(std::make_unique<KVList>());
+    auto spFoundKVs = std::make_unique<KVList>();
 
     PCWSTR pszKey;
     int iVal;
-    while (SUCCEEDED(pht->GetNext(&htItr, &pszKey, nullptr, &iVal, nullptr, TRUE)))
+    Assert::IsTrue(SUCCEEDED(htItr.GetCurrent(&htItr, &pszKey, nullptr, &iVal, nullptr, TRUE)));
+
+    do
     {
         logDebug(L"Found: %s = %d", pszKey, iVal);
         (*spFoundKVs).push_back(std::make_pair(pszKey, iVal));
-    }
+    } while (SUCCEEDED(htItr.GetNext(&htItr, &pszKey, nullptr, &iVal, nullptr, TRUE)));
 
     Assert::AreEqual((size_t)c_nItems, spFoundKVs->size(), L"Must've found expected #items via iteration");
 
@@ -379,6 +382,57 @@ void HashtableUnitTests::Iteration_WStrInt()
             });
 
         auto spStr = Helpers::BuildString(512, L"Finding: %s = %d", curPair.first, curPair.second);
+        Assert::IsFalse(cItr == spFoundKVs->cend(), spStr.get());
+    }
+
+    Assert::IsTrue(SUCCEEDED(pht->Destroy(pht)));
+}
+
+void HashtableUnitTests::IterationAndRemoval_WStrInt()
+{
+    const int c_nItems = 10;
+    auto spKeys = Helpers::GenerateRandomStrings(c_nItems, Helpers::s_randomStrSource_AlphaNum);
+    auto spValues = Helpers::GenerateRandomNumbers(c_nItems);
+
+    // Hashtable with KT = WStr, VT = Int
+    PCHL_HTABLE pht;
+    Assert::IsTrue(SUCCEEDED(CHL_DsCreateHT(&pht, 10, CHL_KT_WSTRING, CHL_VT_INT32, FALSE)));
+
+    // Insert all key-value pairs
+    for (int idx = 0; idx < c_nItems; ++idx)
+    {
+        logDebug(L"Inserting: %s = %d", (*spKeys)[idx].c_str(), (*spValues)[idx]);
+        Assert::IsTrue(SUCCEEDED(pht->Insert(pht, (PCVOID)(*spKeys)[idx].c_str(), 0,
+            (PVOID)(*spValues)[idx], sizeof(int))));
+    }
+
+    CHL_HT_ITERATOR htItr;
+    Assert::IsTrue(SUCCEEDED(pht->InitIterator(pht, &htItr)));
+
+    using KVPair = std::pair<std::wstring, int>;
+    using KVList = std::list<KVPair>;
+    auto spFoundKVs = std::make_unique<KVList>();
+
+    PCWSTR pszKey;
+    int iVal;
+    while (SUCCEEDED(htItr.GetCurrent(&htItr, &pszKey, nullptr, &iVal, nullptr, TRUE)))
+    {
+        logDebug(L"Found: %s = %d", pszKey, iVal);
+        (*spFoundKVs).push_back(std::make_pair(pszKey, iVal));
+
+        Assert::IsTrue(SUCCEEDED(pht->RemoveAt(&htItr))); // remove automatically moves to next element
+    }
+
+    // Verify all items are present in retrieved KV pairs
+    for (int idx = 0; idx < c_nItems; ++idx)
+    {
+        auto curPair = std::make_pair((*spKeys)[idx], (*spValues)[idx]);
+        auto cItr = Helpers::FindInList(*spFoundKVs, curPair, [](const KVPair& lhs, const KVPair& rhs) -> bool
+            {
+                return (lhs.first == rhs.first) && (rhs.second == rhs.second);
+            });
+
+        auto spStr = Helpers::BuildString(512, L"Finding: %s = %d", curPair.first.c_str(), curPair.second);
         Assert::IsFalse(cItr == spFoundKVs->cend(), spStr.get());
     }
 

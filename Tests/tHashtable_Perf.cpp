@@ -90,7 +90,7 @@ public:
         int keySize = sizeof(PCWSTR);
         int valSize = sizeof(int);
 
-        while (SUCCEEDED(pht->GetNext(&htItr, &pszCur, &keySize, &freqCur, &valSize, TRUE)))
+        while (SUCCEEDED(htItr.GetNext(&htItr, &pszCur, &keySize, &freqCur, &valSize, TRUE)))
         {
             if (freqCur > freqMax)
             {

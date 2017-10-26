@@ -23,6 +23,14 @@ static DWORD _hashs(_In_ int tablesize, _In_bytecount_c_(iKeySize) const BYTE *k
 static DWORD _hashsW(_In_ int tablesize, _In_bytecount_c_(iKeySize) const PUSHORT key, _In_ size_t cchKey);
 
 static void _ClearNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFreeVal);
+static HRESULT _CopyNodeOut(
+    _In_ PCHL_HTABLE phtable,
+    _In_ HT_NODE* phtNode,
+    _Inout_opt_ PCVOID pvKey,
+    _Inout_opt_ PINT piKeySize,
+    _Inout_opt_ PVOID pvVal,
+    _Inout_opt_ PINT piValSize,
+    _In_opt_ BOOL fGetPointerOnly);
 
 static BOOL _FindKeyInList(
     _In_ HT_NODE *pFirstHTNode,
@@ -32,6 +40,13 @@ static BOOL _FindKeyInList(
     _Out_ HT_NODE **phtFoundNode,
     _Out_opt_ HT_NODE **phtPrevFound);
 
+static BOOL _FindKnownKeyInList(
+    _In_ HT_NODE *pFirstHTNode,
+    _In_ HT_NODE *pTarget,
+    _Out_ HT_NODE **phtFoundNode,
+    _Out_ HT_NODE **phtPrevFound);
+
+static HRESULT _IncrementIterator(_In_ CHL_HT_ITERATOR *pItr);
 
 DWORD _hashi(_In_ int tablesize, _In_ size_t key)
 {
@@ -197,8 +212,8 @@ HRESULT CHL_DsCreateHT(
     pnewtable->Insert = CHL_DsInsertHT;
     pnewtable->Find = CHL_DsFindHT;
     pnewtable->Remove = CHL_DsRemoveHT;
+    pnewtable->RemoveAt = CHL_DsRemoveAtHT;
     pnewtable->InitIterator = CHL_DsInitIteratorHT;
-    pnewtable->GetNext = CHL_DsGetNextHT;
     pnewtable->Dump = CHL_DsDumpHT;
 
     *pHTableOut = pnewtable;
@@ -476,7 +491,74 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
 
 fend:
     return hr;
+}
 
+HRESULT CHL_DsRemoveAtHT(_In_ CHL_HT_ITERATOR *pItr)
+{
+    int iFoundIndex = -1;
+    HT_NODE *phtFoundNode = NULL;
+    HT_NODE *phtPrevFound = NULL;
+
+    HRESULT hr = S_OK;
+    HRESULT hrIncrement = S_OK;
+
+    ASSERT(pItr->pMyHashTable);
+    ASSERT(pItr->pMyHashTable->nTableSize > 0);
+
+    PCHL_HTABLE phtable = pItr->pMyHashTable;
+
+    if ((pItr->opType == HT_ITR_NEXT) && (pItr->phtCurNodeInList != NULL)
+        && (0 <= pItr->nCurIndex) && (pItr->nCurIndex < phtable->nTableSize))
+    {
+        if (!_FindKnownKeyInList(&phtable->phtNodes[pItr->nCurIndex], pItr->phtCurNodeInList, &phtFoundNode, &phtPrevFound))
+        {
+            hr = E_NOT_SET;
+        }
+    }
+    else
+    {
+        hr = E_NOT_SET;
+    }
+
+    if (FAILED(hr))
+    {
+        goto fend;
+    }
+    
+    ASSERT(phtFoundNode == pItr->phtCurNodeInList);
+    iFoundIndex = pItr->nCurIndex;
+    hrIncrement = _IncrementIterator(pItr);
+
+    if (phtFoundNode == &phtable->phtNodes[iFoundIndex])
+    {
+        // Node in the main table is to be removed
+        // Preserve pnext and restore because _ClearNode sets it to NULL
+        HT_NODE* pnext = phtFoundNode->pnext;
+        _ClearNode(phtable->keyType, phtable->valType, phtFoundNode, phtable->fValIsInHeap);
+        phtFoundNode->pnext = pnext;
+    }
+    else
+    {
+        ASSERT(phtPrevFound);
+        phtPrevFound->pnext = phtFoundNode->pnext;
+        _ClearNode(phtable->keyType, phtable->valType, phtFoundNode, phtable->fValIsInHeap);
+        CHL_MmFree((PVOID*)&phtFoundNode);
+    }
+
+    if (hrIncrement == E_NOT_SET)
+    {
+        // Cannot use this iterator anymore before calling InitIterator again.
+        pItr->phtCurNodeInList = NULL;
+        pItr->nCurIndex = phtable->nTableSize;
+    }
+    else
+    {
+        ASSERT(pItr->phtCurNodeInList->fOccupied == TRUE);
+        ASSERT(pItr->nCurIndex < pItr->pMyHashTable->nTableSize);
+    }
+
+fend:
+    return hr;
 }
 
 HRESULT CHL_DsInitIteratorHT(_In_ PCHL_HTABLE phtable, _Inout_ struct _hashtableIterator *pItr)
@@ -485,7 +567,9 @@ HRESULT CHL_DsInitIteratorHT(_In_ PCHL_HTABLE phtable, _Inout_ struct _hashtable
     pItr->nCurIndex = 0;
     pItr->phtCurNodeInList = NULL;
     pItr->pMyHashTable = phtable;
-    return S_OK;
+    pItr->GetNext = CHL_DsGetNextHT;
+    pItr->GetCurrent = CHL_DsGetCurrentHT;
+    return _IncrementIterator(pItr); // move to first element or the end if none exist
 }
 
 HRESULT CHL_DsGetNextHT(
@@ -497,101 +581,35 @@ HRESULT CHL_DsGetNextHT(
     _In_opt_ BOOL fGetPointerOnly)
 {
     HRESULT hr = S_OK;
-    int indexIterator;
-
-    HT_NODE* pCurNode = NULL;
-    int iCurIndex = 0;
-
     PCHL_HTABLE phtable = NULL;
 
     ASSERT(pItr && pItr->pMyHashTable);
 
     phtable = pItr->pMyHashTable;
 
-    // Trivial check to see if iterator was initialized or not
-    if (pItr->opType == HT_ITR_FIRST)
-    {
-        for (indexIterator = 0; indexIterator < phtable->nTableSize; ++indexIterator)
-        {
-            if (phtable->phtNodes[indexIterator].fOccupied)
-            {
-                iCurIndex = indexIterator;
-                pCurNode = &phtable->phtNodes[indexIterator];
-                pItr->opType = HT_ITR_NEXT;
-                break;  // out of for loop
-            }
-        }
-
-        if (indexIterator >= phtable->nTableSize)
-        {
-            pCurNode = NULL;
-            iCurIndex = phtable->nTableSize;
-            hr = E_NOT_SET; // reached End of table
-        }
-    }
-    else if (pItr->opType == HT_ITR_NEXT)
-    {
-        pCurNode = pItr->phtCurNodeInList;
-        iCurIndex = pItr->nCurIndex;
-        if (pCurNode && pCurNode->pnext)
-        {
-            pCurNode = pCurNode->pnext;
-        }
-        else
-        {
-            for (indexIterator = iCurIndex + 1; indexIterator < phtable->nTableSize; ++indexIterator)
-            {
-                if (phtable->phtNodes[indexIterator].fOccupied)
-                {
-                    iCurIndex = indexIterator;
-                    pCurNode = &phtable->phtNodes[indexIterator];
-                    pItr->opType = HT_ITR_NEXT;
-                    break;  // out of for loop
-                }
-            }
-
-            if (indexIterator >= phtable->nTableSize)
-            {
-                pCurNode = NULL;
-                iCurIndex = phtable->nTableSize;
-                hr = E_NOT_SET; // reached End of table
-            }
-        }
-    }
-    else
-    {
-        logerr("Iterator invalid opType %x", pItr->opType);
-        hr = E_UNEXPECTED;
-    }
-
-    if (SUCCEEDED(hr) && pvKey)
-    {
-        hr = _CopyKeyOut(&pCurNode->chlKey, phtable->keyType, pvKey, piKeySize, fGetPointerOnly);
-    }
-
-    if (SUCCEEDED(hr) && pvVal)
-    {
-        hr = _CopyValOut(&pCurNode->chlVal, phtable->valType, pvVal, piValSize, fGetPointerOnly);
-    }
-
-    // Modify iterator only if succeeded, otherwise the caller cannot retry
+    hr = _IncrementIterator(pItr);
     if (SUCCEEDED(hr))
     {
-        pItr->nCurIndex = iCurIndex;
-        pItr->phtCurNodeInList = pCurNode;
-
-        if (piKeySize != NULL)
-        {
-            *piKeySize = pCurNode->chlKey.iKeySize;
-        }
-
-        if (piValSize != NULL)
-        {
-            *piValSize = pCurNode->chlVal.iValSize;
-        }
+        hr = _CopyNodeOut(phtable, pItr->phtCurNodeInList, pvKey, piKeySize, pvVal, piValSize, fGetPointerOnly);
     }
-
     return hr;
+}
+
+HRESULT CHL_DsGetCurrentHT(
+    _In_ CHL_HT_ITERATOR *pItr,
+    _Inout_opt_ PCVOID pvKey,
+    _Inout_opt_ PINT piKeySize,
+    _Inout_opt_ PVOID pvVal,
+    _Inout_opt_ PINT piValSize,
+    _In_opt_ BOOL fGetPointerOnly)
+{
+    ASSERT(pItr && pItr->pMyHashTable);
+
+    if (pItr->phtCurNodeInList == NULL)
+    {
+        return E_NOT_SET;
+    }
+    return _CopyNodeOut(pItr->pMyHashTable, pItr->phtCurNodeInList, pvKey, piKeySize, pvVal, piValSize, fGetPointerOnly);
 }
 
 int CHL_DsGetNearestSizeIndexHT(_In_ int maxNumberOfEntries)
@@ -603,7 +621,6 @@ int CHL_DsGetNearestSizeIndexHT(_In_ int maxNumberOfEntries)
     }
     return index;
 }
-
 
 void CHL_DsDumpHT(_In_ PCHL_HTABLE phtable)
 {
@@ -701,6 +718,43 @@ void _ClearNode(CHL_KEYTYPE ktype, CHL_VALTYPE vtype, HT_NODE *pnode, BOOL fFree
     return;
 }// _ClearNode()
 
+HRESULT _CopyNodeOut(
+    _In_ PCHL_HTABLE phtable,
+    _In_ HT_NODE* phtNode,
+    _Inout_opt_ PCVOID pvKey,
+    _Inout_opt_ PINT piKeySize,
+    _Inout_opt_ PVOID pvVal,
+    _Inout_opt_ PINT piValSize,
+    _In_opt_ BOOL fGetPointerOnly)
+{
+    ASSERT(phtNode->fOccupied == TRUE);
+
+    HRESULT hr = S_OK;
+    
+    if (pvKey)
+    {
+        hr = _CopyKeyOut(&phtNode->chlKey, phtable->keyType, pvKey, piKeySize, fGetPointerOnly);
+    }
+    if (SUCCEEDED(hr) && pvVal)
+    {
+        hr = _CopyValOut(&phtNode->chlVal, phtable->valType, pvVal, piValSize, fGetPointerOnly);
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        if (piKeySize != NULL)
+        {
+            *piKeySize = phtNode->chlKey.iKeySize;
+        }
+
+        if (piValSize != NULL)
+        {
+            *piValSize = phtNode->chlVal.iValSize;
+        }
+    }
+    return hr;
+}
+
 BOOL _FindKeyInList(
     _In_ HT_NODE *pFirstHTNode,
     _In_ PVOID pvkey,
@@ -739,3 +793,98 @@ BOOL _FindKeyInList(
     return (pcurNode != NULL);
 }
 
+BOOL _FindKnownKeyInList(
+    _In_ HT_NODE *pFirstHTNode,
+    _In_ HT_NODE *pTarget,
+    _Out_ HT_NODE **phtFoundNode,
+    _Out_ HT_NODE **phtPrevFound)
+{
+    HT_NODE *prevNode = NULL;
+    HT_NODE *pcurNode = NULL;
+
+    ASSERT(phtFoundNode && phtPrevFound);
+
+    *phtFoundNode = NULL;
+
+    pcurNode = pFirstHTNode;
+    while (pcurNode && (pcurNode != pTarget))
+    {
+        prevNode = pcurNode;
+        pcurNode = pcurNode->pnext;
+    }
+
+    *phtFoundNode = pcurNode;
+    *phtPrevFound = prevNode;
+    return (pcurNode != NULL);
+}
+
+HRESULT _IncrementIterator(_In_ CHL_HT_ITERATOR *pItr)
+{
+    int indexIterator;
+    int iCurIndex = 0;
+    HT_NODE* pCurNode = NULL;
+
+    HRESULT hr = S_OK;
+    PCHL_HTABLE phtable = pItr->pMyHashTable;
+    if (pItr->opType == HT_ITR_FIRST) // Trivial check to see if iterator was initialized or not
+    {
+        for (indexIterator = 0; indexIterator < phtable->nTableSize; ++indexIterator)
+        {
+            if (phtable->phtNodes[indexIterator].fOccupied)
+            {
+                iCurIndex = indexIterator;
+                pCurNode = &phtable->phtNodes[indexIterator];
+                pItr->opType = HT_ITR_NEXT;
+                break;  // out of for loop
+            }
+        }
+
+        if (indexIterator >= phtable->nTableSize)
+        {
+            pCurNode = NULL;
+            iCurIndex = phtable->nTableSize;
+            hr = E_NOT_SET; // reached End of table
+        }
+    }
+    else if (pItr->opType == HT_ITR_NEXT)
+    {
+        pCurNode = pItr->phtCurNodeInList;
+        iCurIndex = pItr->nCurIndex;
+        if (pCurNode && pCurNode->pnext)
+        {
+            pCurNode = pCurNode->pnext;
+        }
+        else
+        {
+            for (indexIterator = iCurIndex + 1; indexIterator < phtable->nTableSize; ++indexIterator)
+            {
+                if (phtable->phtNodes[indexIterator].fOccupied)
+                {
+                    iCurIndex = indexIterator;
+                    pCurNode = &phtable->phtNodes[indexIterator];
+                    pItr->opType = HT_ITR_NEXT;
+                    break;  // out of for loop
+                }
+            }
+
+            if (indexIterator >= phtable->nTableSize)
+            {
+                pCurNode = NULL;
+                iCurIndex = phtable->nTableSize;
+                hr = E_NOT_SET; // reached End of table
+            }
+        }
+    }
+    else
+    {
+        logerr("Iterator invalid opType %x", pItr->opType);
+        hr = E_UNEXPECTED;
+    }
+
+    if (SUCCEEDED(hr))
+    {
+        pItr->nCurIndex = iCurIndex;
+        pItr->phtCurNodeInList = pCurNode;
+    }
+    return hr;
+}
