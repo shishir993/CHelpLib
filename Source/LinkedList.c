@@ -66,9 +66,10 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
     PLLNODE pNewNode = NULL;
     HRESULT hr = S_OK;
 
-    // Parameter validation
-    if (iValSize <= 0)
+    // Size parameter validation
+    if (iValSize <= 0 && FAILED(_GetValSize(pvVal, pLList->valType, &iValSize)))
     {
+        logerr("%s(): Valsize unspecified or unable to determine.", __FUNCTION__);
         hr = E_INVALIDARG;
         goto error_return;
     }
@@ -77,14 +78,6 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
     hr = CHL_MmAlloc((PVOID*)&pNewNode, sizeof(LLNODE), NULL);
     if (FAILED(hr))
     {
-        goto error_return;
-    }
-
-    // Populate value into new node
-    if (iValSize <= 0 && FAILED(_GetValSize(pvVal, pLList->valType, &iValSize)))
-    {
-        logerr("%s(): Valsize unspecified or unable to determine.", __FUNCTION__);
-        hr = E_FAIL;
         goto error_return;
     }
 

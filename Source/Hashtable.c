@@ -287,14 +287,14 @@ HRESULT CHL_DsInsertHT(
     if (iKeySize <= 0 && FAILED(_GetKeySize(pvkey, keyType, &iKeySize)))
     {
         logerr("%s(): Keysize unspecified or unable to determine.", __FUNCTION__);
-        hr = E_FAIL;
+        hr = E_INVALIDARG;
         goto done;
     }
 
     if (iValSize <= 0 && FAILED(_GetValSize(pvVal, phtable->valType, &iValSize)))
     {
         logerr("%s(): Valsize unspecified or unable to determine.", __FUNCTION__);
-        hr = E_FAIL;
+        hr = E_INVALIDARG;
         goto done;
     }
 
@@ -384,7 +384,7 @@ HRESULT CHL_DsFindHT(
     if (iKeySize <= 0 && FAILED(_GetKeySize(pvkey, phtable->keyType, &iKeySize)))
     {
         logerr("%s(): Keysize unspecified or unable to determine.", __FUNCTION__);
-        hr = E_FAIL;
+        hr = E_INVALIDARG;
         goto not_found;
     }
 
@@ -439,7 +439,7 @@ HRESULT CHL_DsRemoveHT(_In_ PCHL_HTABLE phtable, _In_ PCVOID pvkey, _In_ int iKe
     if (iKeySize <= 0 && FAILED(_GetKeySize(pvkey, phtable->keyType, &iKeySize)))
     {
         logerr("%s(): Keysize unspecified or unable to determine.", __FUNCTION__);
-        hr = E_FAIL;
+        hr = E_INVALIDARG;
         goto fend;
     }
     index = _GetKeyHash(pvkey, phtable->keyType, iKeySize, phtable->nTableSize);

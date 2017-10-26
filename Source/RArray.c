@@ -96,6 +96,14 @@ HRESULT CHL_DsWriteRA(_In_ PCHL_RARRAY pra, _In_ UINT index, _In_ PCVOID pVal, _
     ASSERT((pra->vt > CHL_VT_START) && (pra->vt < CHL_VT_END));
 
     HRESULT hr = S_OK;
+    
+    // Size parameter validation
+    if (iBufSize <= 0 && FAILED(_GetValSize(pVal, pra->vt, &iBufSize)))
+    {
+        logerr("%s(): Valsize unspecified or unable to determine.", __FUNCTION__);
+        hr = E_INVALIDARG;
+        goto func_end;
+    }
 
     if (index >= pra->curSize)
     {
