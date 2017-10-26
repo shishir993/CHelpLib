@@ -16,15 +16,15 @@
 HRESULT CHL_GuiCenterWindow(_In_ HWND hWnd)
 {
     int x, y;
-	int iWidth, iHeight;
-	RECT rect, rectP;
-	HWND hwndParent = NULL;
-	int iScreenWidth, iScreenHeight;
+    int iWidth, iHeight;
+    RECT rect, rectP;
+    HWND hwndParent = NULL;
+    int iScreenWidth, iScreenHeight;
 
     // Make the window relative to its parent
-    if( (hwndParent = GetParent(hWnd)) == NULL)
+    if ((hwndParent = GetParent(hWnd)) == NULL)
     {
-		return E_INVALIDARG;
+        return E_INVALIDARG;
     }
 
     // todo: handle the case when hWnd is the main window, i.e., 
@@ -32,21 +32,21 @@ HRESULT CHL_GuiCenterWindow(_In_ HWND hWnd)
 
     GetWindowRect(hWnd, &rect);
     GetWindowRect(hwndParent, &rectP);
-        
-    iWidth  = rect.right  - rect.left;
+
+    iWidth = rect.right - rect.left;
     iHeight = rect.bottom - rect.top;
 
-    x = ((rectP.right-rectP.left) -  iWidth) / 2 + rectP.left;
-    y = ((rectP.bottom-rectP.top) - iHeight) / 2 + rectP.top;
+    x = ((rectP.right - rectP.left) - iWidth) / 2 + rectP.left;
+    y = ((rectP.bottom - rectP.top) - iHeight) / 2 + rectP.top;
 
-    iScreenWidth  = GetSystemMetrics(SM_CXSCREEN);
+    iScreenWidth = GetSystemMetrics(SM_CXSCREEN);
     iScreenHeight = GetSystemMetrics(SM_CYSCREEN);
-    
+
     // Make sure that the dialog box never moves outside of the screen
-    if(x < 0) x = 0;
-    if(y < 0) y = 0;
-    if(x + iWidth  > iScreenWidth)  x = iScreenWidth  - iWidth;
-    if(y + iHeight > iScreenHeight) y = iScreenHeight - iHeight;
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x + iWidth > iScreenWidth)  x = iScreenWidth - iWidth;
+    if (y + iHeight > iScreenHeight) y = iScreenHeight - iHeight;
 
     MoveWindow(hWnd, x, y, iWidth, iHeight, FALSE);
     return S_OK;
@@ -64,21 +64,21 @@ HRESULT CHL_GuiGetTextArea(_In_ HWND hWindow, _In_ int nCharsInText, _Out_ int *
     HRESULT hr = S_OK;
 
     // Parameter validation
-    if(!ISVALID_HANDLE(hWindow) || nCharsInText < 0 || !pnPixelsWidth || !pnPixelsHeight)
+    if (!ISVALID_HANDLE(hWindow) || nCharsInText < 0 || !pnPixelsWidth || !pnPixelsHeight)
     {
         hr = E_INVALIDARG;
         goto done;
     }
-    
+
     hDC = GetDC(hWindow);
-    if(hDC == NULL)
+    if (hDC == NULL)
     {
         hr = E_FAIL;    // GetDC doesn't set last error
         goto done;
     }
 
     // TODO: hDC is uninitialized so system (bitmap) font by default? Should I select the font into the DC first?
-    if(!GetTextMetrics(hDC, &stTextMetric))
+    if (!GetTextMetrics(hDC, &stTextMetric))
     {
         hr = E_FAIL;    // GetTextMetric doesn't set last error
         goto done;
@@ -88,7 +88,7 @@ HRESULT CHL_GuiGetTextArea(_In_ HWND hWindow, _In_ int nCharsInText, _Out_ int *
     *pnPixelsHeight = stTextMetric.tmHeight + stTextMetric.tmExternalLeading;
 
 done:
-    if(hDC != NULL)
+    if (hDC != NULL)
     {
         ReleaseDC(hWindow, hDC);
     }
@@ -96,23 +96,23 @@ done:
 }
 
 HRESULT CHL_GuiInitListViewColumns(
-    _In_ HWND hList, 
-    _In_ WCHAR *apszColumNames[], 
-    _In_ int nColumns, 
+    _In_ HWND hList,
+    _In_ WCHAR *apszColumNames[],
+    _In_ int nColumns,
     _In_opt_ int *paiColumnSizePercent)
 {
     int index;
-    LVCOLUMN lvColumn = {0};
+    LVCOLUMN lvColumn = { 0 };
 
     int *paiColumnSizes = NULL;
-    
+
     RECT rcList;
     LONG lListWidth;
 
     HRESULT hr = S_OK;
 
     // Parameter validation
-    if(!ISVALID_HANDLE(hList) || !apszColumNames || nColumns <= 0)
+    if (!ISVALID_HANDLE(hList) || !apszColumNames || nColumns <= 0)
     {
         hr = E_INVALIDARG;
         goto done;
@@ -120,13 +120,13 @@ HRESULT CHL_GuiInitListViewColumns(
 
     // Create memory to hold calculated column sizes
     hr = CHL_MmAlloc((void**)&paiColumnSizes, sizeof(int) * nColumns, NULL);
-    if(FAILED(hr))
+    if (FAILED(hr))
     {
         goto done;
     }
 
     // Calculate listview width
-    if(!GetWindowRect(hList, &rcList))
+    if (!GetWindowRect(hList, &rcList))
     {
         hr = HRESULT_FROM_WIN32(GetLastError());
         goto done;
@@ -134,16 +134,16 @@ HRESULT CHL_GuiInitListViewColumns(
 
     // Calculate column sizes
     lListWidth = rcList.right - rcList.left;
-    if(!paiColumnSizePercent)
+    if (!paiColumnSizePercent)
     {
-        for(index = 0; index < nColumns; ++index)
+        for (index = 0; index < nColumns; ++index)
         {
             paiColumnSizes[index] = (int)(0.5 * lListWidth);
         }
     }
     else
     {
-        for(index = 0; index < nColumns; ++index)
+        for (index = 0; index < nColumns; ++index)
         {
             paiColumnSizes[index] = (int)(paiColumnSizePercent[index] / 100.0 * lListWidth);
         }
@@ -151,7 +151,7 @@ HRESULT CHL_GuiInitListViewColumns(
 
     // List view headers
     lvColumn.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-    for(index = 0; index < nColumns; ++index)
+    for (index = 0; index < nColumns; ++index)
     {
         lvColumn.pszText = apszColumNames[index];
         lvColumn.cx = paiColumnSizes[index];
@@ -164,9 +164,9 @@ done:
 }
 
 HRESULT CHL_GuiAddListViewRow(
-    _In_ HWND hList, 
-    _In_ WCHAR *apszItemText[], 
-    _In_ int nItems, 
+    _In_ HWND hList,
+    _In_ WCHAR *apszItemText[],
+    _In_ int nItems,
     _In_opt_ LPARAM lParam)
 {
     int index;
@@ -178,7 +178,7 @@ HRESULT CHL_GuiAddListViewRow(
     HRESULT hr = S_OK;
 
     // Parameter validation
-    if(!ISVALID_HANDLE(hList) || !apszItemText || nItems <= 0)
+    if (!ISVALID_HANDLE(hList) || !apszItemText || nItems <= 0)
     {
         hr = E_INVALIDARG;
         goto done;
@@ -191,24 +191,24 @@ HRESULT CHL_GuiAddListViewRow(
     ZeroMemory(&lvItem, sizeof(lvItem));
 
     lvItem.iItem = nItemsInListView;
-	lvItem.mask = LVIF_TEXT|LVIF_PARAM;
-	lvItem.pszText = apszItemText[0];
+    lvItem.mask = LVIF_TEXT | LVIF_PARAM;
+    lvItem.pszText = apszItemText[0];
     lvItem.lParam = lParam;
-	if( (iInsertedAt = (int)SendMessage(hList, LVM_INSERTITEM, 0, (LPARAM)&lvItem)) == -1 )
-	{
+    if ((iInsertedAt = (int)SendMessage(hList, LVM_INSERTITEM, 0, (LPARAM)&lvItem)) == -1)
+    {
         hr = E_FAIL;
-		goto done;
-	}
+        goto done;
+    }
 
     // Now, insert sub items
-    for(index = 1; index < nItems; ++index)
+    for (index = 1; index < nItems; ++index)
     {
         lvItem.iSubItem = index;
-		lvItem.pszText = apszItemText[index];
-		if( !SendMessage(hList, LVM_SETITEMTEXT, iInsertedAt, (LPARAM)&lvItem) )
-		{
-			hr = E_FAIL;
-		}
+        lvItem.pszText = apszItemText[index];
+        if (!SendMessage(hList, LVM_SETITEMTEXT, iInsertedAt, (LPARAM)&lvItem))
+        {
+            hr = E_FAIL;
+        }
     }
 
 done:

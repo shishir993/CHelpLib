@@ -13,10 +13,10 @@
 
 void vAssert(const char* psFile, unsigned int uLine)
 {
-	fflush(NULL);		// ensure that all buffers are written out first
-	fprintf(stderr, "Assertion failed in %s at Line %u\n", psFile, uLine);
-	fflush(stderr);
-    
+    fflush(NULL);		// ensure that all buffers are written out first
+    fprintf(stderr, "Assertion failed in %s at Line %u\n", psFile, uLine);
+    fflush(stderr);
+
 #ifdef WIN32
     if (IsDebuggerPresent())
     {
@@ -25,6 +25,6 @@ void vAssert(const char* psFile, unsigned int uLine)
     }
 #endif
 
-	exit(1);
+    exit(1);
 
 }// _Assert()

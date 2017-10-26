@@ -21,17 +21,17 @@ HRESULT CHL_IoReadLineFromStdin(_Inout_z_bytecap_x_(dwBufSize) PWSTR pszBuffer, 
 {
     WCHAR ch;
     DWORD dwReadChars = 0;
-    
+
     ASSERT(pszBuffer);
-    if(dwBufSize <= 0)
+    if (dwBufSize <= 0)
     {
         return E_INVALIDARG;
     }
 
-    while(dwReadChars < (dwBufSize-1))
+    while (dwReadChars < (dwBufSize - 1))
     {
         ch = (WCHAR)getchar();
-        if(ch == '\n')
+        if (ch == '\n')
         {
             break;
         }
@@ -68,33 +68,33 @@ HRESULT CHL_IoCreateFileWithSize(_Out_ PHANDLE phFile, _In_z_ PWCHAR pszFilepath
     HRESULT hr = S_OK;
 
     // Parameter validation
-    if(!pszFilepath || !phFile)
+    if (!pszFilepath || !phFile)
     {
         return E_INVALIDARG;
     }
 
-    hFile = CreateFile(pszFilepath, GENERIC_READ|GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if(hFile == INVALID_HANDLE_VALUE)
+    hFile = CreateFile(pszFilepath, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
     {
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    if(iSizeBytes > 0)
+    if (iSizeBytes > 0)
     {
         hr = CHL_MmAlloc((void**)&pbTemp, iSizeBytes, NULL);
-        if(FAILED(hr))
+        if (FAILED(hr))
         {
             goto error_return;
         }
 
         // Write iSizeBytes of zeroes to file so that we get the desired file size
-        if(!WriteFile(hFile, pbTemp, iSizeBytes, &dwBytesWritten, NULL))
+        if (!WriteFile(hFile, pbTemp, iSizeBytes, &dwBytesWritten, NULL))
         {
             hr = HRESULT_FROM_WIN32(GetLastError());
             goto error_return;
         }
 
-        if(dwBytesWritten != (DWORD)iSizeBytes)
+        if (dwBytesWritten != (DWORD)iSizeBytes)
         {
             hr = E_FAIL;
             goto error_return;
@@ -102,7 +102,7 @@ HRESULT CHL_IoCreateFileWithSize(_Out_ PHANDLE phFile, _In_z_ PWCHAR pszFilepath
 
         CHL_MmFree((void**)&pbTemp);
 
-        if(!SetEndOfFile(hFile))
+        if (!SetEndOfFile(hFile))
         {
             hr = HRESULT_FROM_WIN32(GetLastError());
             goto error_return;
@@ -110,7 +110,7 @@ HRESULT CHL_IoCreateFileWithSize(_Out_ PHANDLE phFile, _In_z_ PWCHAR pszFilepath
 
         // Reset file pointer to beginning of file
         dwError = SetFilePointer(hFile, (LONG)-iSizeBytes, NULL, FILE_CURRENT);
-        if(dwError == INVALID_SET_FILE_POINTER)
+        if (dwError == INVALID_SET_FILE_POINTER)
         {
             hr = HRESULT_FROM_WIN32(GetLastError());
             goto error_return;
@@ -121,13 +121,13 @@ HRESULT CHL_IoCreateFileWithSize(_Out_ PHANDLE phFile, _In_z_ PWCHAR pszFilepath
     return hr;
 
 error_return:
-    if(hFile)
+    if (hFile)
     {
         CloseHandle(hFile);
         DeleteFile(pszFilepath);
     }
 
-    if(pbTemp)
+    if (pbTemp)
     {
         CHL_MmFree((void**)&pbTemp);
     }

@@ -11,14 +11,14 @@ HRESULT CHL_DsCreateQ
 {
     PCHL_QUEUE pq;
     HRESULT hr = CHL_MmAlloc(&pq, sizeof(*pq), NULL);
-    if(FAILED(hr))
+    if (FAILED(hr))
     {
         goto done;
     }
 
     // Create the linked list
     hr = CHL_DsCreateLL(&pq->pList, valType, nEstimatedItems);
-    if(FAILED(hr))
+    if (FAILED(hr))
     {
         goto done;
     }
@@ -31,13 +31,13 @@ HRESULT CHL_DsCreateQ
     pq->Peek = CHL_DsPeekQ;
 
 done:
-    if(SUCCEEDED(hr))
+    if (SUCCEEDED(hr))
     {
         *ppQueueObj = pq;
     }
     else
     {
-        if(pq != NULL)
+        if (pq != NULL)
         {
             free(pq);
         }
@@ -51,10 +51,10 @@ HRESULT CHL_DsDestroyQ(_In_ PCHL_QUEUE pQueueObj)
     HRESULT hr = S_OK;
 
     ASSERT(pQueueObj);
-    if(pQueueObj->pList)
+    if (pQueueObj->pList)
     {
         hr = CHL_DsDestroyLL(pQueueObj->pList);
-        if(FAILED(hr))
+        if (FAILED(hr))
         {
             logwarn("Failed to destroy the list(queue).");
         }
@@ -78,7 +78,7 @@ HRESULT CHL_DsInsertQ
     ASSERT(pQueueObj && pQueueObj->pList);
 
     hr = CHL_DsInsertLL(pQueueObj->pList, pvValue, nValSize);
-    if(SUCCEEDED(hr))
+    if (SUCCEEDED(hr))
     {
         ++(pQueueObj->nCurItems);
     }
@@ -98,7 +98,7 @@ HRESULT CHL_DsDeleteQ
     ASSERT(pQueueObj && pQueueObj->pList);
     ASSERT(pvValOut);
 
-    if(pQueueObj->nCurItems <= 0)
+    if (pQueueObj->nCurItems <= 0)
     {
         hr = E_NOT_SET;
     }
@@ -108,7 +108,7 @@ HRESULT CHL_DsDeleteQ
         {
             // Linked list always inserts at the tail, so the first item is the one to be deleted
             hr = CHL_DsRemoveAtLL(pQueueObj->pList, 0, pvValOut, piValBufSize, fGetPointerOnly);
-            if(SUCCEEDED(hr))
+            if (SUCCEEDED(hr))
             {
                 --(pQueueObj->nCurItems);
             }
@@ -130,7 +130,7 @@ HRESULT CHL_DsPeekQ
     ASSERT(pvValOut);
 
     // Linked list always inserts at the tail, so the first item is the one to be peek'd
-    if(pQueueObj->nCurItems > 0)
+    if (pQueueObj->nCurItems > 0)
     {
         hr = CHL_DsPeekAtLL(pQueueObj->pList, 0, pvValOut, piValBufSize, fGetPointerOnly);
     }
@@ -156,7 +156,7 @@ HRESULT CHL_DsFindQ
     ASSERT(pQueueObj && pQueueObj->pList);
     ASSERT(pvValue);
 
-    if(pQueueObj->nCurItems > 0)
+    if (pQueueObj->nCurItems > 0)
     {
         hr = CHL_DsFindLL(pQueueObj->pList, pvValue, pfnComparer, pvValOut, piValBufSize, fGetPointerOnly);
     }

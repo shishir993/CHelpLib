@@ -21,7 +21,7 @@ static PBSTNODE s_DeleteSubTree
 static HRESULT s_Insert
 (
     _Out_ PBSTNODE *ppNewNode,
-    _In_ PCHL_BSTREE pbstree, 
+    _In_ PCHL_BSTREE pbstree,
     _In_ PBSTNODE pCurNode,
     _In_ PCHL_INPUT_KV pInputKeyValue
 );

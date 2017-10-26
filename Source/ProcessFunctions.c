@@ -22,24 +22,24 @@ HRESULT CHL_PsGetProcNameFromID(_In_ DWORD pid, _Inout_z_ WCHAR *pwsProcName, _I
 
     ASSERT(dwBufSize > 5);    // 3(extension) + 1(.) + 1(imagename atleast one char)
 
-    if(pid == 0)
+    if (pid == 0)
     {
         return E_INVALIDARG;
     }
 
-    if((hProcess = OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ, FALSE, pid)) == NULL)
+    if ((hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid)) == NULL)
     {
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    if(!EnumProcessModules(hProcess, ahModules, sizeof(ahModules), &dwNeeded))
+    if (!EnumProcessModules(hProcess, ahModules, sizeof(ahModules), &dwNeeded))
     {
         hr = HRESULT_FROM_WIN32(GetLastError());
         goto done;
     }
 
     //logdbg("#Modules = %d", dwNeeded/sizeof(HMODULE));
-    if(!GetModuleBaseName(hProcess, ahModules[0], pwsProcName, dwBufSize))
+    if (!GetModuleBaseName(hProcess, ahModules[0], pwsProcName, dwBufSize))
     {
         hr = HRESULT_FROM_WIN32(GetLastError());
     }
@@ -57,19 +57,19 @@ HRESULT CHL_PsGetNtHeaders(_In_ HANDLE hMapView, _Out_ PIMAGE_NT_HEADERS *ppstNt
     PIMAGE_DOS_HEADER pDOSHeader = NULL;
 
     HRESULT hr = S_OK;
-    if(!ISVALID_HANDLE(hMapView) || !ppstNtHeaders)
+    if (!ISVALID_HANDLE(hMapView) || !ppstNtHeaders)
     {
         hr = E_INVALIDARG;
     }
     else
     {
         pDOSHeader = (PIMAGE_DOS_HEADER)hMapView;
-    
+
         // verify "MZ" in the DOS header
-	    if(pDOSHeader->e_magic == IMAGE_DOS_SIGNATURE)
-	    {
+        if (pDOSHeader->e_magic == IMAGE_DOS_SIGNATURE)
+        {
             *ppstNtHeaders = (PIMAGE_NT_HEADERS)((BYTE*)hMapView + pDOSHeader->e_lfanew);
-	    }
+        }
         else
         {
             hr = E_UNEXPECTED;
@@ -82,64 +82,64 @@ HRESULT CHL_PsGetNtHeaders(_In_ HANDLE hMapView, _Out_ PIMAGE_NT_HEADERS *ppstNt
 //
 HRESULT CHL_PsGetPtrToCode(
     _In_ ULONG_PTR fileBase,
-    _In_ PIMAGE_NT_HEADERS pNTHeaders, 
-    _Out_ PULONG_PTR pCodePtr, 
+    _In_ PIMAGE_NT_HEADERS pNTHeaders,
+    _Out_ PULONG_PTR pCodePtr,
     _Out_ PDWORD pdwSizeOfData,
     _Out_ PULONG_PTR pCodeSecVirtAddr)
 {
 
-	PIMAGE_SECTION_HEADER pImgSecHeader = NULL;
-	DWORD dwSecChars = 0;
+    PIMAGE_SECTION_HEADER pImgSecHeader = NULL;
+    DWORD dwSecChars = 0;
 
     HRESULT hr = S_OK;
-    if(!pNTHeaders || !pCodePtr)
+    if (!pNTHeaders || !pCodePtr)
     {
         hr = E_INVALIDARG;
         goto done;
     }
 
-	// Get the .text section's header using AddressOfEntryPoint as the RVA
+    // Get the .text section's header using AddressOfEntryPoint as the RVA
     hr = CHL_PsGetEnclosingSectionHeader(
-            pNTHeaders->OptionalHeader.AddressOfEntryPoint,
-			pNTHeaders, 
-            &pImgSecHeader);
-	if(FAILED(hr))
-	{
-		goto done;
-	}
-
-	// test if the retrieved section contains code and is executable
-    dwSecChars = pImgSecHeader->Characteristics;
-	if( ! ((dwSecChars & IMAGE_SCN_CNT_CODE) && (dwSecChars & IMAGE_SCN_MEM_EXECUTE)) )
-	{
-		hr = E_UNEXPECTED;
-		goto done;
-	}
-
-	*pCodePtr = fileBase + pImgSecHeader->PointerToRawData;
-	
-	// From "Microsoft Portable Executable and Common Object File Format Specification"
-	// todo: If SizeOfRawData is less than VirtualSize, the remainder of the section is zero-filled.
-	// done: 081812
-    if(pdwSizeOfData)
+        pNTHeaders->OptionalHeader.AddressOfEntryPoint,
+        pNTHeaders,
+        &pImgSecHeader);
+    if (FAILED(hr))
     {
-        if(pImgSecHeader->SizeOfRawData < pImgSecHeader->Misc.VirtualSize)
+        goto done;
+    }
+
+    // test if the retrieved section contains code and is executable
+    dwSecChars = pImgSecHeader->Characteristics;
+    if (!((dwSecChars & IMAGE_SCN_CNT_CODE) && (dwSecChars & IMAGE_SCN_MEM_EXECUTE)))
+    {
+        hr = E_UNEXPECTED;
+        goto done;
+    }
+
+    *pCodePtr = fileBase + pImgSecHeader->PointerToRawData;
+
+    // From "Microsoft Portable Executable and Common Object File Format Specification"
+    // todo: If SizeOfRawData is less than VirtualSize, the remainder of the section is zero-filled.
+    // done: 081812
+    if (pdwSizeOfData)
+    {
+        if (pImgSecHeader->SizeOfRawData < pImgSecHeader->Misc.VirtualSize)
         {
-		    *pdwSizeOfData = pImgSecHeader->SizeOfRawData;
+            *pdwSizeOfData = pImgSecHeader->SizeOfRawData;
         }
-	    else
+        else
         {
-		    *pdwSizeOfData = pImgSecHeader->Misc.VirtualSize;
+            *pdwSizeOfData = pImgSecHeader->Misc.VirtualSize;
         }
     }
-	
-    if(pCodeSecVirtAddr)
+
+    if (pCodeSecVirtAddr)
     {
         *pCodeSecVirtAddr = pNTHeaders->OptionalHeader.ImageBase + pImgSecHeader->VirtualAddress;
     }
 
 done:
-	return hr;
+    return hr;
 }
 
 
@@ -158,9 +158,9 @@ HRESULT CHL_PsGetEnclosingSectionHeader(_In_ DWORD rva, _In_ PIMAGE_NT_HEADERS p
 {
     int index;
     PIMAGE_SECTION_HEADER pSection = NULL;
-    
+
     HRESULT hr = S_OK;
-    if(!pNTHeader || !ppstSecHeader)
+    if (!pNTHeader || !ppstSecHeader)
     {
         hr = E_INVALIDARG;
     }
@@ -168,11 +168,11 @@ HRESULT CHL_PsGetEnclosingSectionHeader(_In_ DWORD rva, _In_ PIMAGE_NT_HEADERS p
     {
         pSection = IMAGE_FIRST_SECTION(pNTHeader);
         hr = E_NOT_SET; // Start with this, set to S_OK if found
-        for ( index = 0; index < pNTHeader->FileHeader.NumberOfSections; ++index, pSection++ )
+        for (index = 0; index < pNTHeader->FileHeader.NumberOfSections; ++index, pSection++)
         {
             // Is the RVA within this section?
-            if ( (rva >= pSection->VirtualAddress) && 
-                 (rva < (pSection->VirtualAddress + pSection->Misc.VirtualSize)))
+            if ((rva >= pSection->VirtualAddress) &&
+                (rva < (pSection->VirtualAddress + pSection->Misc.VirtualSize)))
             {
                 *ppstSecHeader = pSection;
                 hr = S_OK;

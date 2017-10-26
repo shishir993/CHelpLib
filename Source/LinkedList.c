@@ -26,7 +26,7 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_
     HRESULT hr = S_OK;
 
     // validate parameters
-    if(!ppLList || 
+    if (!ppLList ||
         !((valType > CHL_VT_START) && (valType < CHL_VT_END)))
     {
         hr = E_INVALIDARG;
@@ -34,7 +34,7 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_
     }
 
     hr = CHL_MmAlloc((PVOID*)&pListLocal, sizeof(CHL_LLIST), NULL);
-    if(FAILED(hr))
+    if (FAILED(hr))
     {
         // pListLocal will be NULL on error
         goto error_return;
@@ -55,7 +55,7 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_
     return hr;
 
 error_return:
-    if(pListLocal)
+    if (pListLocal)
     {
         CHL_MmFree((PVOID*)&pListLocal);
     }
@@ -68,7 +68,7 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
     HRESULT hr = S_OK;
 
     // Parameter validation
-    if(!pLList || !pvVal || iValSize <= 0)
+    if (!pLList || !pvVal || iValSize <= 0)
     {
         hr = E_INVALIDARG;
         goto error_return;
@@ -76,13 +76,13 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
 
     // Create new node
     hr = CHL_MmAlloc((PVOID*)&pNewNode, sizeof(LLNODE), NULL);
-    if(FAILED(hr))
+    if (FAILED(hr))
     {
         goto error_return;
     }
 
     // Populate value into new node
-    if(iValSize <= 0 && FAILED(_GetValSize(pvVal, pLList->valType, &iValSize)))
+    if (iValSize <= 0 && FAILED(_GetValSize(pvVal, pLList->valType, &iValSize)))
     {
         logerr("%s(): Valsize unspecified or unable to determine.", __FUNCTION__);
         hr = E_FAIL;
@@ -90,7 +90,7 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
     }
 
     hr = _CopyValIn(&pNewNode->chlVal, pLList->valType, pvVal, iValSize);
-    if(FAILED(hr))
+    if (FAILED(hr))
     {
         goto error_return;
     }
@@ -101,7 +101,7 @@ HRESULT CHL_DsInsertLL(_In_ PCHL_LLIST pLList, _In_ PCVOID pvVal, _In_opt_ int i
     return hr;
 
 error_return:
-    if(pNewNode)
+    if (pNewNode)
     {
         CHL_MmFree((PVOID*)&pNewNode);
     }
@@ -110,9 +110,9 @@ error_return:
 
 HRESULT CHL_DsRemoveLL
 (
-    _In_ PCHL_LLIST pLList, 
-    _In_ PCVOID pvValToFind, 
-    _In_ BOOL fStopOnFirstFind, 
+    _In_ PCHL_LLIST pLList,
+    _In_ PCVOID pvValToFind,
+    _In_ BOOL fStopOnFirstFind,
     _In_ CHL_CompareFn pfnComparer
 )
 {
@@ -130,7 +130,7 @@ HRESULT CHL_DsRemoveLL
     // Iterate through the list to find
     pCurNode = pLList->pHead;
     hr = E_NOT_SET;
-    while(pCurNode)
+    while (pCurNode)
     {
         _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, NULL, TRUE);
         if (pfnComparer(pvValToFind, pvCurVal) == 0)
@@ -159,8 +159,8 @@ error_return:
 }
 
 HRESULT CHL_DsRemoveAtLL(
-    _In_ PCHL_LLIST pLList, 
-    _In_ int iIndexToRemove, 
+    _In_ PCHL_LLIST pLList,
+    _In_ int iIndexToRemove,
     _Inout_opt_ PVOID pvValOut,
     _Inout_opt_ PINT piValBufSize,
     _In_opt_ BOOL fGetPointerOnly)
@@ -169,13 +169,13 @@ HRESULT CHL_DsRemoveAtLL(
     PLLNODE pCurNode;
     HRESULT hr = S_OK;
 
-    if(!pLList || iIndexToRemove < 0)
+    if (!pLList || iIndexToRemove < 0)
     {
         hr = E_INVALIDARG;
         goto fend;
     }
 
-    if(iIndexToRemove >= pLList->nCurNodes)
+    if (iIndexToRemove >= pLList->nCurNodes)
     {
         hr = HRESULT_FROM_WIN32(ERROR_INVALID_INDEX);
         goto fend;
@@ -183,7 +183,7 @@ HRESULT CHL_DsRemoveAtLL(
 
     // Loop until we have address of node to remove
     pCurNode = pLList->pHead;
-    for(itr = 1; itr <= iIndexToRemove; ++itr)
+    for (itr = 1; itr <= iIndexToRemove; ++itr)
     {
         ASSERT(pCurNode);
         pCurNode = pCurNode->pright;
@@ -196,7 +196,7 @@ HRESULT CHL_DsRemoveAtLL(
         hr = _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, piValBufSize, fGetPointerOnly);
     }
 
-    if(SUCCEEDED(hr))
+    if (SUCCEEDED(hr))
     {
         // Unlink and only then free node memory
         _UnlinkNode(pLList, pCurNode);
@@ -221,19 +221,19 @@ HRESULT CHL_DsPeekAtLL
     PLLNODE pCurNode = NULL;
 
     HRESULT hr = S_OK;
-    if(!pLList || iIndexToPeek < 0 || iIndexToPeek >= pLList->nCurNodes)
+    if (!pLList || iIndexToPeek < 0 || iIndexToPeek >= pLList->nCurNodes)
     {
         hr = E_INVALIDARG;
         goto fend;
     }
 
     hr = E_NOT_SET; // Start with this, set to S_OK if node is found
-    if(iIndexToPeek == 0)
+    if (iIndexToPeek == 0)
     {
         hr = S_OK;
         pCurNode = pLList->pHead;
     }
-    else if(iIndexToPeek == (pLList->nCurNodes - 1))
+    else if (iIndexToPeek == (pLList->nCurNodes - 1))
     {
         hr = S_OK;
         pCurNode = pLList->pTail;
@@ -244,12 +244,12 @@ HRESULT CHL_DsPeekAtLL
 
         // Iterate through the list to the specified index
         pCurNode = pLList->pHead;
-        for(itr = 0; itr < iIndexToPeek; ++itr)
+        for (itr = 0; itr < iIndexToPeek; ++itr)
         {
             pCurNode = pCurNode->pright;
         }
 
-        if(pCurNode != NULL)
+        if (pCurNode != NULL)
         {
             hr = S_OK;
         }
@@ -257,7 +257,7 @@ HRESULT CHL_DsPeekAtLL
         ASSERT(pCurNode != NULL);
     }
 
-    if(SUCCEEDED(hr) && (pvValOut != NULL))
+    if (SUCCEEDED(hr) && (pvValOut != NULL))
     {
         _CopyValOut(&pCurNode->chlVal, pLList->valType, pvValOut, piValBufSize, fGetPointerOnly);
     }
@@ -268,20 +268,20 @@ fend:
 
 HRESULT CHL_DsFindLL
 (
-    _In_ PCHL_LLIST pLList, 
-    _In_ PCVOID pvValToFind, 
+    _In_ PCHL_LLIST pLList,
+    _In_ PCVOID pvValToFind,
     _In_ CHL_CompareFn pfnComparer,
     _Inout_opt_ PVOID pvValOut,
     _Inout_opt_ PINT piValBufSize,
     _In_opt_ BOOL fGetPointerOnly
 )
-{    
+{
     PLLNODE pCurNode = NULL;
     PVOID pvCurVal = NULL;
     CHL_VALTYPE valType = pLList->valType;
 
     HRESULT hr = S_OK;
-    if(!pLList || !pfnComparer)
+    if (!pLList || !pfnComparer)
     {
         hr = E_INVALIDARG;
         goto fend;
@@ -290,7 +290,7 @@ HRESULT CHL_DsFindLL
     // Iterate through the list to find
     pCurNode = pLList->pHead;
     hr = E_NOT_SET;
-    while(pCurNode)
+    while (pCurNode)
     {
         _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, NULL, TRUE);
         if (pfnComparer(pvValToFind, pvCurVal) == 0)
@@ -317,7 +317,7 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
     CHL_VALTYPE valType;
 
     HRESULT hr = S_OK;
-    if(!pLList)
+    if (!pLList)
     {
         hr = E_INVALIDARG;
         goto done;
@@ -327,7 +327,7 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
 
     // Iterate through the list and delete nodes
     pCurNode = pLList->pHead;
-    while(pCurNode)
+    while (pCurNode)
     {
         pNextNode = pCurNode->pright;
 
@@ -336,7 +336,7 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
         pCurNode = pNextNode;
     }
     CHL_MmFree((PVOID*)&pLList);
-    
+
 done:
     return hr;
 }
@@ -347,7 +347,7 @@ static void _InsertNode(PCHL_LLIST pLList, PLLNODE pNodeToInsert)
     ASSERT(pNodeToInsert);
 
     // Linked list empty?
-    if(pLList->pHead == NULL)
+    if (pLList->pHead == NULL)
     {
         ASSERT(pLList->nCurNodes == 0);
 
@@ -378,19 +378,19 @@ static void _UnlinkNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove)
     ASSERT(pNodeToRemove);
 
     // Removing the first one?
-    if(pNodeToRemove->pleft == NULL)
+    if (pNodeToRemove->pleft == NULL)
     {
         // Removing the first node, so this should be true
         ASSERT(pLList->pHead == pNodeToRemove);
 
         pLList->pHead = pNodeToRemove->pright;
-        if(pNodeToRemove->pright)
+        if (pNodeToRemove->pright)
         {
             pNodeToRemove->pright->pleft = pNodeToRemove->pleft;
         }
 
         // Could be first and last node as well!
-        if(pNodeToRemove == pLList->pTail)
+        if (pNodeToRemove == pLList->pTail)
         {
             ASSERT(pNodeToRemove->pright == NULL);
 
@@ -403,17 +403,17 @@ static void _UnlinkNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove)
         ASSERT(pLList->pHead != pNodeToRemove);
 
         // Removing the last one?
-        if(pNodeToRemove == pLList->pTail)
+        if (pNodeToRemove == pLList->pTail)
         {
             pLList->pTail = pNodeToRemove->pleft;
         }
 
-        if(pNodeToRemove->pleft)
+        if (pNodeToRemove->pleft)
         {
             pNodeToRemove->pleft->pright = pNodeToRemove->pright;
         }
 
-        if(pNodeToRemove->pright)
+        if (pNodeToRemove->pright)
         {
             pNodeToRemove->pright->pleft = pNodeToRemove->pleft;
         }
@@ -430,7 +430,7 @@ static void _FreeNodeMem(PLLNODE pnode, CHL_VALTYPE valType, BOOL fFreeValMem)
     // heap memory must be freed when the valtype is CHL_VT_POINTER
     // like the hash table has.
     // TODO: Revisit and see if this is a necessary feature.
-    if(fFreeValMem)
+    if (fFreeValMem)
     {
         _DeleteVal(&pnode->chlVal, valType, FALSE);
     }

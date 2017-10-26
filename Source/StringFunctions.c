@@ -21,9 +21,9 @@ PCWSTR CHL_SzGetFilenameFromPath(_In_z_ PCWSTR pszFilepath, _In_ int inputLen)
 
     // Go in reverse until we find a '\' or we reach the 
     // beginning of the string
-    while(*(--psz) != '\\' && psz > pszFilepath);
+    while (*(--psz) != '\\' && psz > pszFilepath);
 
-    if(psz <= pszFilepath)
+    if (psz <= pszFilepath)
         psz = pszFilepath;
     else
         psz += 1;

@@ -22,11 +22,11 @@ HRESULT CHL_MmAlloc(_Out_cap_(uSizeBytes) PVOID *ppvAddr, _In_ size_t uSizeBytes
     ASSERT(ppvAddr);
     ASSERT(uSizeBytes > 0);
 
-    if((pv = malloc(uSizeBytes)) == NULL)
+    if ((pv = malloc(uSizeBytes)) == NULL)
     {
         goto error_return;
     }
-    
+
     ZeroMemory(pv, uSizeBytes);
 
     *ppvAddr = pv;
