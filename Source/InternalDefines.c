@@ -323,11 +323,10 @@ HRESULT _EnsureSufficientKeyBuf(
     ASSERT(pChlKey->iKeySize > 0);
 
     hr = (iSpecBufSize >= pChlKey->iKeySize) ? S_OK : HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-    if (piReqBufSize != NULL)
+    if (FAILED(hr) && (piReqBufSize != NULL))
     {
         *piReqBufSize = pChlKey->iKeySize;
     }
-
     return hr;
 }
 
@@ -712,10 +711,9 @@ HRESULT _EnsureSufficientValBuf(
     ASSERT(pChlVal->iValSize > 0);
 
     hr = (iSpecBufSize >= pChlVal->iValSize) ? S_OK : HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
-    if (piReqBufSize != NULL)
+    if (FAILED(hr) && (piReqBufSize != NULL))
     {
         *piReqBufSize = pChlVal->iValSize;
     }
-
     return hr;
 }
