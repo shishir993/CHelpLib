@@ -507,27 +507,29 @@ HRESULT CHL_DsRemoveAtHT(_Inout_ CHL_HT_ITERATOR *pItr)
 
     PCHL_HTABLE phtable = pItr->pMyHashTable;
 
-    if ((pItr->opType == HT_ITR_NEXT) && (pItr->phtCurNodeInList != NULL)
-        && (0 <= pItr->nCurIndex) && (pItr->nCurIndex < phtable->nTableSize))
+    if ((pItr->opType != HT_ITR_NEXT) || (pItr->phtCurNodeInList == NULL)
+        || (pItr->nCurIndex < 0) || (phtable->nTableSize <= pItr->nCurIndex)
+        || !_FindKnownKeyInList(&phtable->phtNodes[pItr->nCurIndex], pItr->phtCurNodeInList, &phtFoundNode, &phtPrevFound))
     {
-        if (!_FindKnownKeyInList(&phtable->phtNodes[pItr->nCurIndex], pItr->phtCurNodeInList, &phtFoundNode, &phtPrevFound))
-        {
-            hr = E_NOT_SET;
-        }
+        hr = E_NOT_SET;
+        goto fend;
+    }
+
+    ASSERT(phtFoundNode == pItr->phtCurNodeInList);
+    iFoundIndex = pItr->nCurIndex;
+
+    hrIncrement = _IncrementIterator(pItr);
+    if (SUCCEEDED(hrIncrement))
+    {
+        ASSERT(pItr->phtCurNodeInList->fOccupied == TRUE);
+        ASSERT(pItr->nCurIndex < pItr->pMyHashTable->nTableSize);
     }
     else
     {
-        hr = E_NOT_SET;
+        // Cannot use this iterator anymore before calling InitIterator again.
+        ASSERT(pItr->phtCurNodeInList == NULL);
+        ASSERT(pItr->pMyHashTable->nTableSize <= pItr->nCurIndex);
     }
-
-    if (FAILED(hr))
-    {
-        goto fend;
-    }
-    
-    ASSERT(phtFoundNode == pItr->phtCurNodeInList);
-    iFoundIndex = pItr->nCurIndex;
-    hrIncrement = _IncrementIterator(pItr);
 
     if (phtFoundNode == &phtable->phtNodes[iFoundIndex])
     {
@@ -543,18 +545,6 @@ HRESULT CHL_DsRemoveAtHT(_Inout_ CHL_HT_ITERATOR *pItr)
         phtPrevFound->pnext = phtFoundNode->pnext;
         _ClearNode(phtable->keyType, phtable->valType, phtFoundNode, phtable->fValIsInHeap);
         CHL_MmFree((PVOID*)&phtFoundNode);
-    }
-
-    if (hrIncrement == E_NOT_SET)
-    {
-        // Cannot use this iterator anymore before calling InitIterator again.
-        pItr->phtCurNodeInList = NULL;
-        pItr->nCurIndex = phtable->nTableSize;
-    }
-    else
-    {
-        ASSERT(pItr->phtCurNodeInList->fOccupied == TRUE);
-        ASSERT(pItr->nCurIndex < pItr->pMyHashTable->nTableSize);
     }
 
 fend:
@@ -864,10 +854,7 @@ HRESULT _IncrementIterator(_In_ CHL_HT_ITERATOR *pItr)
         hr = E_UNEXPECTED;
     }
 
-    if (SUCCEEDED(hr))
-    {
-        pItr->nCurIndex = iCurIndex;
-        pItr->phtCurNodeInList = pCurNode;
-    }
+    pItr->nCurIndex = iCurIndex;
+    pItr->phtCurNodeInList = pCurNode;
     return hr;
 }
