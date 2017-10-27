@@ -89,15 +89,15 @@ public:
 
         int keySize = sizeof(PCWSTR);
         int valSize = sizeof(int);
-
-        while (SUCCEEDED(htItr.GetNext(&htItr, &pszCur, &keySize, &freqCur, &valSize, TRUE)))
+        do
         {
+            Assert::AreEqual(S_OK, htItr.GetCurrent(&htItr, &pszCur, &keySize, &freqCur, &valSize, TRUE));
             if (freqCur > freqMax)
             {
                 freqMax = freqCur;
                 pszMax = pszCur;
             }
-        }
+        } while (SUCCEEDED(htItr.MoveNext(&htItr)));
 
         logInfo(L"Time taken = %llu ms", pTimer->GetElapsedMilliseconds());
         logInfo(L"Max : %s = %d", pszMax, freqMax);

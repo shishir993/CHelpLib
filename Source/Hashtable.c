@@ -493,7 +493,7 @@ fend:
     return hr;
 }
 
-HRESULT CHL_DsRemoveAtHT(_In_ CHL_HT_ITERATOR *pItr)
+HRESULT CHL_DsRemoveAtHT(_Inout_ CHL_HT_ITERATOR *pItr)
 {
     int iFoundIndex = -1;
     HT_NODE *phtFoundNode = NULL;
@@ -561,38 +561,21 @@ fend:
     return hr;
 }
 
-HRESULT CHL_DsInitIteratorHT(_In_ PCHL_HTABLE phtable, _Inout_ struct _hashtableIterator *pItr)
+HRESULT CHL_DsInitIteratorHT(_In_ PCHL_HTABLE phtable, _Out_ CHL_HT_ITERATOR *pItr)
 {
     pItr->opType = HT_ITR_FIRST;
     pItr->nCurIndex = 0;
     pItr->phtCurNodeInList = NULL;
     pItr->pMyHashTable = phtable;
-    pItr->GetNext = CHL_DsGetNextHT;
+    pItr->MoveNext = CHL_DsMoveNextHT;
     pItr->GetCurrent = CHL_DsGetCurrentHT;
     return _IncrementIterator(pItr); // move to first element or the end if none exist
 }
 
-HRESULT CHL_DsGetNextHT(
-    _In_ struct _hashtableIterator *pItr,
-    _Inout_opt_ PVOID pvKey,
-    _Inout_opt_ PINT piKeySize,
-    _Inout_opt_ PVOID pvVal,
-    _Inout_opt_ PINT piValSize,
-    _In_opt_ BOOL fGetPointerOnly)
+HRESULT CHL_DsMoveNextHT(_Inout_ CHL_HT_ITERATOR *pItr)
 {
-    HRESULT hr = S_OK;
-    PCHL_HTABLE phtable = NULL;
-
     ASSERT(pItr && pItr->pMyHashTable);
-
-    phtable = pItr->pMyHashTable;
-
-    hr = _IncrementIterator(pItr);
-    if (SUCCEEDED(hr))
-    {
-        hr = _CopyNodeOut(phtable, pItr->phtCurNodeInList, pvKey, piKeySize, pvVal, piValSize, fGetPointerOnly);
-    }
-    return hr;
+    return _IncrementIterator(pItr);
 }
 
 HRESULT CHL_DsGetCurrentHT(

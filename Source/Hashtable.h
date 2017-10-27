@@ -74,13 +74,8 @@ struct _hashtableIterator {
     HT_NODE *phtCurNodeInList;  // current position in the sibling list
     PCHL_HTABLE pMyHashTable;   // Pointer to the hashtable to work on
 
-    HRESULT (*GetNext)(
-        struct _hashtableIterator *pItr,
-        PCVOID pvKey,
-        PINT piKeySize,
-        PVOID pvVal,
-        PINT piValSize,
-        BOOL fGetPointerOnly);
+    HRESULT (*MoveNext)(
+        struct _hashtableIterator *pItr);
 
     HRESULT (*GetCurrent)(
         CHL_HT_ITERATOR *pItr,
@@ -89,7 +84,6 @@ struct _hashtableIterator {
         PVOID pvVal,
         PINT piValSize,
         BOOL fGetPointerOnly);
-
 };
 
 // -------------------------------------------
@@ -170,7 +164,7 @@ DllExpImp HRESULT CHL_DsRemoveHT(_In_ CHL_HTABLE *phtable, _In_ PCVOID pvkey, _I
 //      pItr: A previously initialized iterator. If iterator does not point to a valid
 //          element, then this method returns E_NOT_SET.
 //
-DllExpImp HRESULT CHL_DsRemoveAtHT(_In_ CHL_HT_ITERATOR *pItr);
+DllExpImp HRESULT CHL_DsRemoveAtHT(_Inout_ CHL_HT_ITERATOR *pItr);
 
 // Initialize the iterator object for use with the specified hashtable.
 // Iterator will point to the first element or nothing if hashtable is empty.
@@ -178,25 +172,14 @@ DllExpImp HRESULT CHL_DsRemoveAtHT(_In_ CHL_HT_ITERATOR *pItr);
 //      pItr: Pointer to the iterator object to initialize.
 //      phtable: Pointer to the hashtable object returned by CHL_DsCreateHT function.
 //
-DllExpImp HRESULT CHL_DsInitIteratorHT(_In_ PCHL_HTABLE phtable, _Inout_ CHL_HT_ITERATOR *pItr);
+DllExpImp HRESULT CHL_DsInitIteratorHT(_In_ PCHL_HTABLE phtable, _Out_ CHL_HT_ITERATOR *pItr);
 
-// Get the next element in the hash table using the specified iterator object.
+// Moves iterator to the next element in the hash table using the specified iterator object.
+// If there are no more items remaining, then it returns E_NOT_SET.
 // Params:
 //      pItr: The iterator object that was initialized by CHL_DsInitIteratorHT.
-//      pvKey: Optional. Pointer to buffer to receive the key of the next item.
-//      pKeySize: Optional. Size of the key buffer in bytes. If specified size is insufficient, the function
-//          returns the required size back in this parameter.
-//      pvVal: Refer documentation of the CHL_DsFindHT() function.
-//      pvalsize: Refer documentation of the CHL_DsFindHT() function.
-//      fGetPointerOnly: Refer documentation of the CHL_DsFindHT() function.
 //
-DllExpImp HRESULT CHL_DsGetNextHT(
-    _In_ CHL_HT_ITERATOR *pItr, 
-    _Inout_opt_ PCVOID pvKey,
-    _Inout_opt_ PINT piKeySize,
-    _Inout_opt_ PVOID pvVal,
-    _Inout_opt_ PINT piValSize,
-    _In_opt_ BOOL fGetPointerOnly);
+DllExpImp HRESULT CHL_DsMoveNextHT(_Inout_ CHL_HT_ITERATOR *pItr);
 
 // Get the current element in the hash table using the specified iterator object.
 // Params:

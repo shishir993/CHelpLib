@@ -351,9 +351,6 @@ void HashtableUnitTests::Iteration_WStrInt()
             (PVOID)(*spValues)[idx], sizeof(int))));
     }
 
-    CHL_HT_ITERATOR htItr;
-    Assert::IsTrue(SUCCEEDED(pht->InitIterator(pht, &htItr)));
-
     // Now iterate through the hashtable and ensure all inserted elements are found
 
     using KVPair = std::pair<PCWSTR, int>;
@@ -362,13 +359,14 @@ void HashtableUnitTests::Iteration_WStrInt()
 
     PCWSTR pszKey;
     int iVal;
-    Assert::IsTrue(SUCCEEDED(htItr.GetCurrent(&htItr, &pszKey, nullptr, &iVal, nullptr, TRUE)));
-
+    CHL_HT_ITERATOR htItr;
+    Assert::IsTrue(SUCCEEDED(pht->InitIterator(pht, &htItr)));
     do
     {
+        Assert::IsTrue(SUCCEEDED(htItr.GetCurrent(&htItr, &pszKey, nullptr, &iVal, nullptr, TRUE)));
         logDebug(L"Found: %s = %d", pszKey, iVal);
         (*spFoundKVs).push_back(std::make_pair(pszKey, iVal));
-    } while (SUCCEEDED(htItr.GetNext(&htItr, &pszKey, nullptr, &iVal, nullptr, TRUE)));
+    } while (SUCCEEDED(htItr.MoveNext(&htItr)));
 
     Assert::AreEqual((size_t)c_nItems, spFoundKVs->size(), L"Must've found expected #items via iteration");
 
@@ -406,15 +404,14 @@ void HashtableUnitTests::IterationAndRemoval_WStrInt()
             (PVOID)(*spValues)[idx], sizeof(int))));
     }
 
-    CHL_HT_ITERATOR htItr;
-    Assert::IsTrue(SUCCEEDED(pht->InitIterator(pht, &htItr)));
-
     using KVPair = std::pair<std::wstring, int>;
     using KVList = std::list<KVPair>;
     auto spFoundKVs = std::make_unique<KVList>();
 
     PCWSTR pszKey;
     int iVal;
+    CHL_HT_ITERATOR htItr;
+    Assert::IsTrue(SUCCEEDED(pht->InitIterator(pht, &htItr)));
     while (SUCCEEDED(htItr.GetCurrent(&htItr, &pszKey, nullptr, &iVal, nullptr, TRUE)))
     {
         logDebug(L"Found: %s = %d", pszKey, iVal);
@@ -422,6 +419,7 @@ void HashtableUnitTests::IterationAndRemoval_WStrInt()
 
         Assert::IsTrue(SUCCEEDED(pht->RemoveAt(&htItr))); // remove automatically moves to next element
     }
+    Assert::AreEqual(E_NOT_SET, htItr.MoveNext(&htItr));
 
     // Verify all items are present in retrieved KV pairs
     for (int idx = 0; idx < c_nItems; ++idx)
