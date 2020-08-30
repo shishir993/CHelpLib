@@ -717,3 +717,62 @@ HRESULT _EnsureSufficientValBuf(
     }
     return hr;
 }
+
+int CHL_CompareFnInt32(PCVOID pvLeft, PCVOID pvRight)
+{
+    int left = (int)pvLeft;
+    int right = (int)pvRight;
+    if (left == right)
+    {
+        return 0;
+    }
+    if (left < right)
+    {
+        return 1;
+    }
+    return -1;
+}
+
+CHL_CompareFn CHL_FindCompareFn(CHL_VALTYPE vt)
+{
+    CHL_CompareFn pRet = NULL;
+    switch (vt)
+    {
+    case CHL_VT_INT32:
+        {
+            pRet = CHL_CompareFnInt32;
+            break;
+        }
+
+    case CHL_VT_UINT32:
+        {
+            // TODO
+            break;
+        }
+
+    case CHL_VT_POINTER:
+        {
+            // TODO
+            break;
+        }
+
+    case CHL_VT_USEROBJECT:
+        {
+            // Unsupported
+            break;
+        }
+
+    case CHL_VT_STRING:
+        {
+            // TODO
+            break;
+        }
+
+    case CHL_VT_WSTRING:
+        {
+            // TODO
+            break;
+        }
+    }
+    return pRet;
+}

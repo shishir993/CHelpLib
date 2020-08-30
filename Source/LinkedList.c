@@ -12,8 +12,6 @@
 #include "MemFunctions.h"
 #include "LinkedList.h"
 
-#define MUTEX_NAME_LL   (TEXT("CHL_MUTEX_LL"))
-
 // Local functions
 static void _InsertNode(PCHL_LLIST pLList, PLLNODE pNodeToInsert);
 static void _UnlinkNode(PCHL_LLIST pLList, PLLNODE pNodeToRemove);
@@ -46,9 +44,13 @@ HRESULT CHL_DsCreateLL(_Out_ PCHL_LLIST *ppLList, _In_ CHL_VALTYPE valType, _In_
     pListLocal->Insert = CHL_DsInsertLL;
     pListLocal->Remove = CHL_DsRemoveLL;
     pListLocal->RemoveAt = CHL_DsRemoveAtLL;
+    pListLocal->RemoveAtItr = CHL_DsRemoveAtItrLL;
     pListLocal->Peek = CHL_DsPeekAtLL;
     pListLocal->Find = CHL_DsFindLL;
+    pListLocal->FindItr = CHL_DsFindItrLL;
     pListLocal->Destroy = CHL_DsDestroyLL;
+    pListLocal->IsEmpty = CHL_DsIsEmptyLL;
+    pListLocal->InitIterator = CHL_DsInitIteratorLL;
 
     *ppLList = pListLocal;
     return hr;
@@ -192,6 +194,22 @@ fend:
     return hr;
 }
 
+DllExpImp HRESULT CHL_DsRemoveAtItrLL(_Inout_ CHL_ITERATOR_LL *pItr)
+{
+    HRESULT hr = (pItr->pCur != NULL) ? S_OK : E_NOT_SET;
+    if (SUCCEEDED(hr))
+    {
+        // Unlink and only then free node memory
+        PLLNODE pNextNode = pItr->pCur->pright;
+        _UnlinkNode(pItr->pMyList, pItr->pCur);
+        --(pItr->pMyList->nCurNodes);
+
+        _FreeNodeMem(pItr->pCur, pItr->pMyList->valType, TRUE /*fFreeValMem*/);
+        pItr->pCur = pNextNode;
+    }
+    return hr;
+}
+
 HRESULT CHL_DsPeekAtLL
 (
     _In_ PCHL_LLIST pLList,
@@ -288,7 +306,51 @@ HRESULT CHL_DsFindLL
     return hr;
 }
 
-DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
+HRESULT CHL_DsFindItrLL
+(
+    _In_ PCHL_LLIST pLList,
+    _In_ PCVOID pvValToFind,
+    _In_opt_ CHL_CompareFn pfnComparer,
+    _Out_ CHL_ITERATOR_LL* pItr
+)
+{
+    PLLNODE pCurNode = NULL;
+    PVOID pvCurVal = NULL;
+    CHL_VALTYPE valType = pLList->valType;
+
+    HRESULT hr = S_OK;
+
+    if (!pfnComparer)
+    {
+        pfnComparer = CHL_FindCompareFn(pLList->valType);
+    }
+
+    if (!pfnComparer)
+    {
+        return E_INVALIDARG;
+    }
+
+    // Iterate through the list to find
+    pCurNode = pLList->pHead;
+    hr = E_NOT_SET;
+    while (pCurNode)
+    {
+        _CopyValOut(&pCurNode->chlVal, valType, &pvCurVal, NULL, TRUE);
+        if (pfnComparer(pvValToFind, pvCurVal) == 0)
+        {
+            hr = CHL_DsInitIteratorLL(pLList, pItr);
+            if (SUCCEEDED(hr))
+            {
+                pItr->pCur = pCurNode;
+            }
+            break;
+        }
+        pCurNode = pCurNode->pright;
+    }
+    return hr;
+}
+
+HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
 {
     PLLNODE pCurNode, pNextNode;
     CHL_VALTYPE valType;
@@ -310,6 +372,49 @@ DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList)
     CHL_MmFree((PVOID*)&pLList);
 
     return hr;
+}
+
+DllExpImp BOOL CHL_DsIsEmptyLL(_In_ PCHL_LLIST pLList)
+{
+    return (pLList->nCurNodes == 0);
+}
+
+DllExpImp HRESULT CHL_DsInitIteratorLL(_In_ PCHL_LLIST pList, _Out_ CHL_ITERATOR_LL *pItr)
+{
+    ASSERT(pList);
+    pItr->pCur = pList->pHead;
+    pItr->pMyList = pList;
+    pItr->GetCurrent = CHL_DsGetCurrentLL;
+    pItr->MoveNext = CHL_DsMoveNextLL;
+    return S_OK;
+}
+
+DllExpImp HRESULT CHL_DsMoveNextLL(_Inout_ CHL_ITERATOR_LL *pItr)
+{
+    ASSERT(pItr && pItr->pMyList);
+    if (pItr->pCur != NULL)
+    {
+        pItr->pCur = pItr->pCur->pright;
+    }
+    return (pItr->pCur != NULL) ? S_OK : E_NOT_SET;
+}
+
+DllExpImp HRESULT CHL_DsGetCurrentLL
+(
+    _In_ CHL_ITERATOR_LL *pItr,
+    _Inout_opt_ PVOID pvVal,
+    _Inout_opt_ PINT piValSize,
+    _In_opt_ BOOL fGetPointerOnly
+)
+{
+    ASSERT(pItr && pItr->pMyList);
+
+    if (pItr->pCur == NULL)
+    {
+        return E_NOT_SET;
+    }
+
+    return _CopyValOut(&pItr->pCur->chlVal, pItr->pMyList->valType, pvVal, piValSize, fGetPointerOnly);
 }
 
 static void _InsertNode(PCHL_LLIST pLList, PLLNODE pNodeToInsert)

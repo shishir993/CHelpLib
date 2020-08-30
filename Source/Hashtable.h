@@ -60,7 +60,7 @@ struct _hashtable {
     HRESULT (*Remove)(PCHL_HTABLE phtable, PCVOID pvkey, int iKeySize);
     HRESULT (*RemoveAt)(CHL_HT_ITERATOR *pItr);
 
-    HRESULT (*InitIterator)(PCHL_HTABLE phtable, struct _hashtableIterator *pItr);
+    HRESULT (*InitIterator)(PCHL_HTABLE phtable, CHL_HT_ITERATOR *pItr);
 
     void (*Dump)(PCHL_HTABLE phtable);
 };

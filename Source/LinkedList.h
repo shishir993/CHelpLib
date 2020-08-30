@@ -25,7 +25,11 @@ typedef struct _LlNode {
     struct _LlNode *pright;
 }LLNODE, *PLLNODE;
 
+// Foward declare the iterator struct
+struct _linkedListIterator;
+
 typedef struct _LinkedList CHL_LLIST, *PCHL_LLIST;
+typedef struct _linkedListIterator CHL_ITERATOR_LL;
 struct _LinkedList {
     int nCurNodes;
     int nMaxNodes;
@@ -59,6 +63,8 @@ struct _LinkedList {
         BOOL fGetPointerOnly
     );
 
+    HRESULT (*RemoveAtItr)(CHL_ITERATOR_LL *pItr);
+
     HRESULT (*Peek)
     (
         PCHL_LLIST pLList,
@@ -78,8 +84,37 @@ struct _LinkedList {
         BOOL fGetPointerOnly
     );
 
+    HRESULT (*FindItr)
+    (
+        PCHL_LLIST pLList,
+        PCVOID pvValToFind,
+        CHL_CompareFn pfnComparer,
+        CHL_ITERATOR_LL* pItr
+    );
+
+
     HRESULT (*Destroy)(PCHL_LLIST pLList);
 
+    BOOL (*IsEmpty)(PCHL_LLIST pLList);
+
+    HRESULT (*InitIterator)(PCHL_LLIST pList, CHL_ITERATOR_LL *pItr);
+
+};
+
+// Structure that defines the iterator for the linked list.
+// Callers can use this to iterate through the linked list
+// and get values one-by-one.
+struct _linkedListIterator {
+    PLLNODE pCur;       // current position in the list
+    PCHL_LLIST pMyList; // Pointer to the linked list to work on
+
+    HRESULT (*MoveNext)(CHL_ITERATOR_LL *pItr);
+
+    HRESULT (*GetCurrent)(
+        CHL_ITERATOR_LL *pItr,
+        PVOID pvVal,
+        PINT piValSize,
+        BOOL fGetPointerOnly);
 };
 
 // -------------------------------------------
@@ -121,6 +156,8 @@ DllExpImp HRESULT CHL_DsRemoveAtLL
     _In_opt_ BOOL fGetPointerOnly
 );
 
+DllExpImp HRESULT CHL_DsRemoveAtItrLL(_Inout_ CHL_ITERATOR_LL *pItr);
+
 DllExpImp HRESULT CHL_DsPeekAtLL
 (
     _In_ PCHL_LLIST pLList, 
@@ -140,7 +177,29 @@ DllExpImp HRESULT CHL_DsFindLL
     _In_opt_ BOOL fGetPointerOnly
 );
 
+DllExpImp HRESULT CHL_DsFindItrLL
+(
+    _In_ PCHL_LLIST pLList,
+    _In_ PCVOID pvValToFind,
+    _In_opt_ CHL_CompareFn pfnComparer,
+    _Out_ CHL_ITERATOR_LL* pItr
+);
+
 DllExpImp HRESULT CHL_DsDestroyLL(_In_ PCHL_LLIST pLList);
+
+DllExpImp BOOL CHL_DsIsEmptyLL(_In_ PCHL_LLIST pLList);
+
+DllExpImp HRESULT CHL_DsInitIteratorLL(_In_ PCHL_LLIST pList, _Out_ CHL_ITERATOR_LL *pItr);
+
+DllExpImp HRESULT CHL_DsMoveNextLL(_Inout_ CHL_ITERATOR_LL *pItr);
+
+DllExpImp HRESULT CHL_DsGetCurrentLL
+(
+    _In_ CHL_ITERATOR_LL *pItr,
+    _Inout_opt_ PVOID pvVal,
+    _Inout_opt_ PINT piValSize,
+    _In_opt_ BOOL fGetPointerOnly
+);
 
 #ifdef __cplusplus
 }
