@@ -134,4 +134,7 @@ typedef enum
     CHL_VT_END
 }CHL_VALTYPE;
 
+DllExpImp int CHL_CompareFnInt32(PCVOID pvLeft, PCVOID pvRight);
+DllExpImp CHL_CompareFn CHL_FindCompareFn(CHL_VALTYPE vt);
+
 #endif // CHL_DEFINES_H
